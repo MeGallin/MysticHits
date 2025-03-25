@@ -137,14 +137,17 @@ export const useAudioPlayer = (tracks: Track[]) => {
 
   const handleTrackSelect = useCallback(
     (index: number) => {
-      const actualIndex = isShuffled ? shuffledIndices[index] : index;
-      setCurrentIndex(actualIndex);
-      setCurrentTrack(tracks[actualIndex]);
+      // Disable shuffle mode when manually selecting a track
+      if (isShuffled) {
+        setIsShuffled(false);
+      }
+      setCurrentIndex(index);
+      setCurrentTrack(tracks[index]);
       setIsPlaying(false);
       setProgress(0);
       setError(null);
     },
-    [tracks, setCurrentTrack, setIsPlaying, isShuffled, shuffledIndices],
+    [tracks, setCurrentTrack, setIsPlaying, isShuffled],
   );
 
   const toggleShuffle = useCallback(() => {
