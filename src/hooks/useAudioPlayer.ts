@@ -18,6 +18,8 @@ export const useAudioPlayer = (tracks: Track[]) => {
   const [error, setError] = useState<string | null>(null);
   const [isShuffled, setIsShuffled] = useState(false);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [previousVolume, setPreviousVolume] = useState(volume);
 
   // Initialize or update shuffled indices when tracks change or shuffle mode changes
   useEffect(() => {
@@ -45,9 +47,18 @@ export const useAudioPlayer = (tracks: Track[]) => {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = volume;
+      audioRef.current.volume = isMuted ? 0 : volume;
     }
-  }, [volume]);
+  }, [volume, isMuted]);
+
+  const toggleMute = useCallback(() => {
+    if (!isMuted) {
+      setPreviousVolume(volume);
+    } else {
+      setVolume(previousVolume);
+    }
+    setIsMuted(!isMuted);
+  }, [isMuted, volume, previousVolume, setVolume]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -191,6 +202,8 @@ export const useAudioPlayer = (tracks: Track[]) => {
       handleStop,
       toggleShuffle,
       isShuffled,
+      isMuted,
+      toggleMute,
     },
   };
 };

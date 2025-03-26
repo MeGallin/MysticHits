@@ -6,16 +6,20 @@ import {
   FaBackward,
   FaForward,
   FaRandom,
+  FaVolumeMute,
+  FaVolumeUp,
 } from 'react-icons/fa';
 
 interface AudioControlsProps {
   isPlaying: boolean;
   isShuffled: boolean;
+  isMuted: boolean;
   onPlayPause: () => void;
   onRewind: () => void;
   onFastForward: () => void;
   onStop: () => void;
   onShuffle: () => void;
+  onMute: () => void;
 }
 
 export const AudioControls: React.FC<AudioControlsProps> = ({
@@ -26,9 +30,11 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
   onStop,
   isShuffled,
   onShuffle,
+  isMuted,
+  onMute,
 }) => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
+    <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 mt-4">
       <button
         onClick={onPlayPause}
         className="col-span-2 sm:col-span-1 px-4 py-3 sm:py-2 text-base sm:text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 active:bg-green-700 transition-colors duration-200 flex items-center justify-center"
@@ -67,6 +73,17 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
         aria-label={isShuffled ? 'Shuffle On' : 'Shuffle Off'}
       >
         <FaRandom size={20} />
+      </button>
+      <button
+        onClick={onMute}
+        className={`col-span-2 sm:col-span-1 px-4 py-3 sm:py-2 text-base sm:text-sm ${
+          isMuted
+            ? 'bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700'
+            : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
+        } text-white rounded-lg transition-colors duration-200 flex items-center justify-center`}
+        aria-label={isMuted ? 'Unmute' : 'Mute'}
+      >
+        {isMuted ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
       </button>
     </div>
   );
