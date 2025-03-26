@@ -16,8 +16,8 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
   onVolumeChange,
 }) => {
   return (
-    <>
-      <div className="mt-4 sm:mt-6">
+    <div className="mt-4 space-y-4">
+      <div>
         <label
           htmlFor="progressRange"
           className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
@@ -31,13 +31,13 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
           max={duration ? duration.toString() : '0'}
           value={progress}
           onChange={(e) => onProgressChange(parseFloat(e.target.value))}
-          className="w-full h-3 sm:h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer touch-action-none"
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
         />
-        <div className="text-base sm:text-sm text-gray-500 mt-2">
+        <div className="text-sm text-gray-500 mt-1">
           {Math.floor(progress)} / {Math.floor(duration)} seconds
         </div>
       </div>
-      <div className="mt-4 sm:mt-6">
+      <div>
         <label
           htmlFor="volumeRange"
           className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
@@ -52,9 +52,9 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
           step="0.01"
           value={volume}
           onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-          className="w-full h-3 sm:h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer touch-action-none"
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
         />
       </div>
-    </>
+    </div>
   );
 };

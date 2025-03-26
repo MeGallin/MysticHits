@@ -38,8 +38,8 @@ const AudioPlayer: React.FC = () => {
   }
 
   return (
-    <div className="max-w-lg w-full mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4 text-center">
+    <div className="max-w-lg w-full mx-auto p-6 bg-white rounded-lg shadow-lg flex flex-col flex-1 overflow-hidden">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 text-center">
         {currentTrack ? currentTrack.title : 'No Track Selected'}
       </h2>
 
@@ -70,11 +70,13 @@ const AudioPlayer: React.FC = () => {
         onVolumeChange={controls.handleVolumeChange}
       />
 
-      <TrackList
-        tracks={dynamicTracks}
-        currentTrack={currentTrack}
-        onTrackSelect={controls.handleTrackSelect}
-      />
+      <div className="mt-4 flex-1 overflow-auto min-h-0">
+        <TrackList
+          tracks={dynamicTracks}
+          currentTrack={currentTrack}
+          onTrackSelect={controls.handleTrackSelect}
+        />
+      </div>
     </div>
   );
 };
