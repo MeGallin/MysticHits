@@ -58,6 +58,8 @@ const AudioPlayer: React.FC = () => {
         onStop={controls.handleStop}
         isShuffled={controls.isShuffled}
         onShuffle={controls.toggleShuffle}
+        isMuted={controls.isMuted}
+        onMute={controls.toggleMute}
       />
 
       <AudioProgress
