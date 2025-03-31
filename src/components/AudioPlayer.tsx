@@ -5,19 +5,66 @@ import { TrackList } from './TrackList';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import { Track } from '../types/audio';
 
-// Dynamically import all mp3 files from the assets folder
-const trackModules = (import.meta as any).globEager('../assets/*.mp3');
-const dynamicTracks: Track[] = Object.entries(trackModules).map(
-  ([path, module]) => {
-    const fileName = path.split('/').pop()?.replace('.mp3', '');
-    return {
-      title: fileName || 'Unknown',
-      url: (module as { default: string }).default,
-    };
-  },
-);
-
 const AudioPlayer: React.FC = () => {
+  const [tracks, setTracks] = React.useState<Track[]>([]);
+  const [musicFolder, setMusicFolder] = React.useState<string>('');
+  const [folderError, setFolderError] = React.useState<string>('');
+
+  // Cleanup URLs when tracks change
+  React.useEffect(() => {
+    return () => {
+      tracks.forEach((track) => {
+        if (track.url.startsWith('blob:')) {
+          URL.revokeObjectURL(track.url);
+        }
+      });
+    };
+  }, [tracks]);
+
+  const handleFolderSelect = async () => {
+    try {
+      // Create a file input element
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.webkitdirectory = true;
+
+      setFolderError('');
+
+      // Handle file selection
+      input.onchange = (e) => {
+        if (!e.target) return;
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+        const mp3Files = files.filter((file) =>
+          file.name.toLowerCase().endsWith('.mp3'),
+        );
+
+        if (mp3Files.length === 0) {
+          setFolderError('No MP3 files found in the selected folder');
+          return;
+        }
+
+        // Cleanup existing URLs
+        tracks.forEach((track) => {
+          if (track.url.startsWith('blob:')) {
+            URL.revokeObjectURL(track.url);
+          }
+        });
+
+        const newTracks: Track[] = mp3Files.map((file) => ({
+          title: file.name.replace('.mp3', ''),
+          url: URL.createObjectURL(file),
+        }));
+
+        setTracks(newTracks);
+        setMusicFolder((e.target as HTMLInputElement).value);
+      };
+
+      input.click();
+    } catch (error) {
+      console.error('Error selecting folder:', error);
+    }
+  };
+
   const {
     audioRef,
     currentTrack,
@@ -27,7 +74,7 @@ const AudioPlayer: React.FC = () => {
     duration,
     error,
     controls,
-  } = useAudioPlayer(dynamicTracks);
+  } = useAudioPlayer(tracks);
 
   if (error) {
     return (
@@ -39,6 +86,22 @@ const AudioPlayer: React.FC = () => {
 
   return (
     <div className="max-w-lg w-full mx-auto p-6 bg-white bg-opacity-50 rounded-lg shadow-lg flex flex-col flex-1 overflow-hidden">
+      <div className="mb-4">
+        <button
+          onClick={handleFolderSelect}
+          className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+        >
+          Select Music Folder
+        </button>
+        {folderError && (
+          <p className="mt-2 text-red-500 text-sm">{folderError}</p>
+        )}
+        {musicFolder && (
+          <p className="mt-2 text-sm text-gray-600 truncate">
+            Selected: {musicFolder}
+          </p>
+        )}
+      </div>
       <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 text-center">
         {currentTrack ? currentTrack.title : 'No Track Selected'}
       </h2>
@@ -72,7 +135,7 @@ const AudioPlayer: React.FC = () => {
 
       <div className="mt-4 flex-1 overflow-auto min-h-0">
         <TrackList
-          tracks={dynamicTracks}
+          tracks={tracks}
           currentTrack={currentTrack}
           onTrackSelect={controls.handleTrackSelect}
         />
