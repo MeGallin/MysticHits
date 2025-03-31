@@ -13,11 +13,8 @@ export const TrackList: React.FC<TrackListProps> = ({
   onTrackSelect,
 }) => {
   return (
-    <div className="h-full">
-      <h3 className="text-lg sm:text-base font-semibold text-gray-800 mb-3 sticky top-0 bg-white pb-2">
-        Tracks
-      </h3>
-      <div className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+    <div className="h-full bg-white rounded-lg">
+      <div className="overflow-y-auto pr-2 pl-2 pt-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <ul className="space-y-2">
           {tracks.map((track, index) => (
             <li key={index}>

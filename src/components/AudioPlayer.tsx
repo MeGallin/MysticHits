@@ -38,7 +38,7 @@ const AudioPlayer: React.FC = () => {
   }
 
   return (
-    <div className="max-w-lg w-full mx-auto p-6 bg-white rounded-lg shadow-lg flex flex-col flex-1 overflow-hidden">
+    <div className="max-w-lg w-full mx-auto p-6 bg-white bg-opacity-50 rounded-lg shadow-lg flex flex-col flex-1 overflow-hidden">
       <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 text-center">
         {currentTrack ? currentTrack.title : 'No Track Selected'}
       </h2>
