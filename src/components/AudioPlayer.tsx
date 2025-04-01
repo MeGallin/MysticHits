@@ -34,12 +34,21 @@ const AudioPlayer: React.FC = () => {
       input.onchange = (e) => {
         if (!e.target) return;
         const files = Array.from((e.target as HTMLInputElement).files || []);
-        const mp3Files = files.filter((file) =>
-          file.name.toLowerCase().endsWith('.mp3'),
+        const audioExtensions = [
+          '.mp3',
+          '.wav',
+          '.m4a',
+          '.aac',
+          '.ogg',
+          '.flac',
+          '.wma',
+        ];
+        const audioFiles = files.filter((file) =>
+          audioExtensions.some((ext) => file.name.toLowerCase().endsWith(ext)),
         );
 
-        if (mp3Files.length === 0) {
-          setFolderError('No MP3 files found in the selected folder');
+        if (audioFiles.length === 0) {
+          setFolderError('No audio files found in the selected folder');
           return;
         }
 
@@ -50,8 +59,8 @@ const AudioPlayer: React.FC = () => {
           }
         });
 
-        const newTracks: Track[] = mp3Files.map((file) => ({
-          title: file.name.replace('.mp3', ''),
+        const newTracks: Track[] = audioFiles.map((file) => ({
+          title: file.name.substring(0, file.name.lastIndexOf('.')),
           url: URL.createObjectURL(file),
         }));
 
