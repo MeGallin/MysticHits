@@ -141,11 +141,11 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
   };
 
   return (
-    <div className="mt-6 space-y-6 px-3 select-none">
+    <div className="mt-6 space-y-6 px-3 py-4 select-none bg-white rounded-lg shadow-md">
       {/* Progress Bar */}
       <div className="space-y-1">
         <div
-          className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer group"
+          className="relative h-2 bg-gray-700 rounded-full cursor-pointer group"
           onClick={handleProgressBarClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setShowTooltip(false)}
@@ -153,21 +153,21 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
           {/* Progress fill */}
           <div
             ref={progressBarRef}
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-100 ease-out"
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-purple-500 rounded-full transition-all duration-100 ease-out shadow-inner"
             style={{ width: `${(progress / duration) * 100}%` }}
           />
 
           {/* Thumb indicator */}
           <div
             ref={progressThumbRef}
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-gray-100 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 ring-2 ring-gray-400 dark:ring-gray-600"
             style={{ left: `${(progress / duration) * 100}%` }}
           />
 
           {/* Tooltip */}
           {showTooltip && (
             <div
-              className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded transform -translate-x-1/2"
+              className="absolute bottom-full mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded transform -translate-x-1/2 shadow-lg"
               style={{ left: tooltipPosition }}
             >
               {tooltipValue}
@@ -176,7 +176,7 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
         </div>
 
         {/* Time indicators */}
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 px-0.5 font-medium">
+        <div className="flex justify-between text-xs text-gray-300 px-0.5 font-medium">
           <span>{formatTime(progress)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -198,19 +198,19 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
             step="0.01"
             value={volume}
             onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-            className="w-full h-1 appearance-none bg-gray-300 dark:bg-gray-700 rounded-lg cursor-pointer accent-purple-500"
+            className="w-full h-1 appearance-none bg-gray-700 rounded-lg cursor-pointer accent-purple-400"
             aria-label="Volume control"
           />
 
           {/* Custom volume track */}
           <div
-            className="pointer-events-none absolute top-1/2 left-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg"
+            className="pointer-events-none absolute top-1/2 left-0 h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg"
             style={{ width: `${volume * 100}%`, transform: 'translateY(-50%)' }}
           />
 
           {/* Custom volume thumb */}
           <div
-            className="pointer-events-none absolute top-1/2 w-3 h-3 bg-white dark:bg-gray-100 rounded-full shadow-md transform -translate-y-1/2"
+            className="pointer-events-none absolute top-1/2 w-3 h-3 bg-white rounded-full shadow-md transform -translate-y-1/2 ring-2 ring-gray-400 dark:ring-gray-600"
             style={{ left: `calc(${volume * 100}% - ${volume * 3}px)` }}
           />
         </div>
