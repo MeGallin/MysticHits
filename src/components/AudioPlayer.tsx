@@ -114,7 +114,6 @@ const AudioPlayer: React.FC = () => {
       <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 text-center">
         {currentTrack ? currentTrack.title : 'No Track Selected'}
       </h2>
-
       <audio
         ref={audioRef}
         src={currentTrack ? currentTrack.url : undefined}
@@ -122,33 +121,85 @@ const AudioPlayer: React.FC = () => {
         onLoadedMetadata={controls.handleLoadedMetadata}
       />
 
-      <AudioControls
-        isPlaying={isPlaying}
-        onPlayPause={controls.togglePlay}
-        onRewind={controls.handleRewind}
-        onFastForward={controls.handleFastForward}
-        onStop={controls.handleStop}
-        isShuffled={controls.isShuffled}
-        onShuffle={controls.toggleShuffle}
-        isMuted={controls.isMuted}
-        onMute={controls.toggleMute}
-      />
+      {tracks.length === 0 ? (
+        <>
+          <div className="bg-purple-100 p-4 rounded-lg text-center">
+            <h3 className="text-lg font-semibold text-purple-800">
+              Discover New Music!
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Stream thousands of songs with a premium subscription.
+            </p>
+            <button className="mt-2 px-4 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+              Try Now
+            </button>
+          </div>
 
-      <AudioProgress
-        progress={progress}
-        duration={duration}
-        volume={volume}
-        onProgressChange={controls.handleProgressChange}
-        onVolumeChange={controls.handleVolumeChange}
-      />
+          <div className="bg-gray-100 p-4 rounded-lg text-center flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Upgrade Your Sound
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Get 20% off premium headphones this week!
+            </p>
+            <button className="mt-2 px-4 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+              Shop Now
+            </button>
+          </div>
 
-      <div className="mt-4 flex-1 overflow-auto min-h-0">
-        <TrackList
-          tracks={tracks}
-          currentTrack={currentTrack}
-          onTrackSelect={controls.handleTrackSelect}
-        />
-      </div>
+          <div className="bg-blue-100 p-4 rounded-lg text-center">
+            <h3 className="text-lg font-semibold text-blue-800">
+              Learn to Play
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Sign up for online music lessons today!
+            </p>
+            <button className="mt-2 px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+              Start Learning
+            </button>
+          </div>
+
+          <div className="bg-green-100 p-4 rounded-lg text-center">
+            <h3 className="text-lg font-semibold text-green-800">
+              Share Your Vibe
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Create and share playlists with friends.
+            </p>
+            <button className="mt-2 px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+              Get Started
+            </button>
+          </div>
+        </>
+      ) : (
+        <div>
+          <AudioControls
+            isPlaying={isPlaying}
+            onPlayPause={controls.togglePlay}
+            onRewind={controls.handleRewind}
+            onFastForward={controls.handleFastForward}
+            onStop={controls.handleStop}
+            isShuffled={controls.isShuffled}
+            onShuffle={controls.toggleShuffle}
+            isMuted={controls.isMuted}
+            onMute={controls.toggleMute}
+          />
+          <AudioProgress
+            progress={progress}
+            duration={duration}
+            volume={volume}
+            onProgressChange={controls.handleProgressChange}
+            onVolumeChange={controls.handleVolumeChange}
+          />
+          <div className="mt-4 flex-1 overflow-auto min-h-0">
+            <TrackList
+              tracks={tracks}
+              currentTrack={currentTrack}
+              onTrackSelect={controls.handleTrackSelect}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
