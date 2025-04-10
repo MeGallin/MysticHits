@@ -6,6 +6,7 @@ import {
   volumeAtom,
 } from '../state/audioAtoms';
 import { Track } from '../types/audio';
+import { advertisements } from '../data/advertisements';
 
 export const useAudioPlayer = (tracks: Track[]) => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -21,6 +22,8 @@ export const useAudioPlayer = (tracks: Track[]) => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(volume);
+  const [showingAd, setShowingAd] = useState(false);
+  const [currentAdId, setCurrentAdId] = useState<number | null>(null);
 
   // Initialize or update shuffled indices when tracks change or shuffle mode changes
   useEffect(() => {
@@ -106,6 +109,29 @@ export const useAudioPlayer = (tracks: Track[]) => {
     setIsPlaying,
   ]);
 
+  const playPreviousTrack = useCallback(() => {
+    if (tracks.length > 0) {
+      const currentShuffledIndex = shuffledIndices.indexOf(currentIndex);
+      const prevShuffledIndex =
+        (currentShuffledIndex - 1 + tracks.length) % tracks.length;
+      const prevIndex = isShuffled
+        ? shuffledIndices[prevShuffledIndex]
+        : (currentIndex - 1 + tracks.length) % tracks.length;
+
+      setCurrentIndex(prevIndex);
+      setCurrentTrack(tracks[prevIndex]);
+      setProgress(0);
+      setIsPlaying(true);
+    }
+  }, [
+    tracks,
+    currentIndex,
+    shuffledIndices,
+    isShuffled,
+    setCurrentTrack,
+    setIsPlaying,
+  ]);
+
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
       const audioDuration = audioRef.current.duration;
@@ -135,6 +161,22 @@ export const useAudioPlayer = (tracks: Track[]) => {
     setIsRepeating((prev) => !prev);
   }, []);
 
+  // Show a random advertisement
+  const showAdvertisement = useCallback(() => {
+    // Select a random ad
+    const randomAdIndex = Math.floor(Math.random() * advertisements.length);
+    setCurrentAdId(advertisements[randomAdIndex].id);
+    setShowingAd(true);
+    setIsPlaying(false); // Pause playback while ad is showing
+  }, [setIsPlaying]);
+
+  // Close the advertisement and continue playback
+  const closeAdvertisement = useCallback(() => {
+    setShowingAd(false);
+    setCurrentAdId(null);
+    setIsPlaying(true); // Resume playback
+  }, [setIsPlaying]);
+
   const handleTrackEnd = useCallback(() => {
     if (isRepeating && audioRef.current) {
       // If repeat is on, restart the current track
@@ -144,10 +186,29 @@ export const useAudioPlayer = (tracks: Track[]) => {
         setIsPlaying(false);
       });
     } else {
-      // Otherwise play the next track
-      playNextTrack();
+      // Show an advertisement before playing the next track
+      // 30% chance to show an ad between tracks
+      const shouldShowAd = Math.random() < 0.3;
+
+      if (shouldShowAd) {
+        showAdvertisement();
+        // Set a timeout to automatically close the ad after 5 seconds
+        setTimeout(() => {
+          closeAdvertisement();
+          playNextTrack();
+        }, 5000);
+      } else {
+        // Otherwise play the next track immediately
+        playNextTrack();
+      }
     }
-  }, [playNextTrack, isRepeating, setIsPlaying]);
+  }, [
+    playNextTrack,
+    isRepeating,
+    setIsPlaying,
+    showAdvertisement,
+    closeAdvertisement,
+  ]);
 
   // Add event listener for track end
   useEffect(() => {
@@ -223,12 +284,20 @@ export const useAudioPlayer = (tracks: Track[]) => {
     duration,
     currentIndex,
     error,
+    isShuffled,
+    shuffledIndices,
+    showingAd,
+    currentAdId,
+    showAdvertisement,
+    closeAdvertisement,
     controls: {
       togglePlay,
       handleTimeUpdate,
       handleLoadedMetadata,
       handleFastForward,
       handleRewind,
+      playNextTrack,
+      playPreviousTrack,
       handleVolumeChange,
       handleTrackSelect,
       handleProgressChange,
