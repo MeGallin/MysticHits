@@ -9,6 +9,7 @@ import {
   Volume2,
   Heart,
   ListMusic,
+  Square,
 } from 'lucide-react';
 
 interface AudioControlsProps {
@@ -34,6 +35,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
   onPlayPause,
   onPrevious,
   onNext,
+  onStop,
   onShuffle,
   isShuffled,
   onRepeat,
@@ -85,6 +87,13 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             aria-label="Next Track"
           >
             <SkipForward className="h-6 w-6" />
+          </button>
+          <button
+            className="text-white/70 hover:text-pink-300 p-2 rounded-full"
+            onClick={onStop}
+            aria-label="Stop"
+          >
+            <Square className="h-6 w-6" />
           </button>
         </div>
         <button
