@@ -17,6 +17,7 @@ export const useAudioPlayer = (tracks: Track[]) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [isRepeating, setIsRepeating] = useState(false);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(volume);
@@ -107,14 +108,46 @@ export const useAudioPlayer = (tracks: Track[]) => {
 
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
-      setDuration(audioRef.current.duration);
+      const audioDuration = audioRef.current.duration;
+      setDuration(audioDuration);
+
+      // Update the track's duration if it's not set
+      if (currentTrack && currentIndex >= 0 && currentIndex < tracks.length) {
+        const updatedTracks = [...tracks];
+        if (
+          !updatedTracks[currentIndex].duration ||
+          updatedTracks[currentIndex].duration === 0
+        ) {
+          updatedTracks[currentIndex] = {
+            ...updatedTracks[currentIndex],
+            duration: audioDuration,
+          };
+          // We don't need to setTracks here as it would cause a re-render loop
+          // This is just updating the duration for display purposes
+        }
+      }
+
       setError(null);
     }
+  }, [currentTrack, currentIndex, tracks]);
+
+  const toggleRepeat = useCallback(() => {
+    setIsRepeating((prev) => !prev);
   }, []);
 
   const handleTrackEnd = useCallback(() => {
-    playNextTrack();
-  }, [playNextTrack]);
+    if (isRepeating && audioRef.current) {
+      // If repeat is on, restart the current track
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((error) => {
+        setError('Error playing audio: ' + error.message);
+        setIsPlaying(false);
+      });
+    } else {
+      // Otherwise play the next track
+      playNextTrack();
+    }
+  }, [playNextTrack, isRepeating, setIsPlaying]);
 
   // Add event listener for track end
   useEffect(() => {
@@ -154,7 +187,7 @@ export const useAudioPlayer = (tracks: Track[]) => {
       }
       setCurrentIndex(index);
       setCurrentTrack(tracks[index]);
-      setIsPlaying(false);
+      setIsPlaying(true); // Auto-play when selecting a track
       setProgress(0);
       setError(null);
     },
@@ -202,6 +235,8 @@ export const useAudioPlayer = (tracks: Track[]) => {
       handleStop,
       toggleShuffle,
       isShuffled,
+      toggleRepeat,
+      isRepeating,
       isMuted,
       toggleMute,
     },

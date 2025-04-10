@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AudioControls } from './AudioControls';
-import { AudioProgress } from './AudioProgress';
 import { TrackList } from './TrackList';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
 import { Track } from '../types/audio';
 
 const AudioPlayer: React.FC = () => {
-  const [tracks, setTracks] = React.useState<Track[]>([]);
-  const [musicFolder, setMusicFolder] = React.useState<string>('');
-  const [folderError, setFolderError] = React.useState<string>('');
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [musicFolder, setMusicFolder] = useState<string>('');
+  const [folderError, setFolderError] = useState<string>('');
+  const [showPlaylist, setShowPlaylist] = useState<boolean>(false);
 
   // Cleanup URLs when tracks change
   React.useEffect(() => {
@@ -59,10 +59,31 @@ const AudioPlayer: React.FC = () => {
           }
         });
 
-        const newTracks: Track[] = audioFiles.map((file) => ({
-          title: file.name.substring(0, file.name.lastIndexOf('.')),
-          url: URL.createObjectURL(file),
-        }));
+        const newTracks: Track[] = audioFiles.map((file) => {
+          const title = file.name.substring(0, file.name.lastIndexOf('.'));
+          // Extract artist from filename if it contains a dash
+          let artist = 'Unknown Artist';
+          let trackTitle = title;
+
+          if (title.includes(' - ')) {
+            const parts = title.split(' - ');
+            artist = parts[0];
+            trackTitle = parts.slice(1).join(' - ');
+          } else if (title.includes('-')) {
+            const parts = title.split('-');
+            artist = parts[0].trim();
+            trackTitle = parts.slice(1).join('-').trim();
+          }
+
+          return {
+            title: trackTitle,
+            artist: artist,
+            album: 'Unknown Album',
+            duration: 0, // Will be set when audio loads
+            url: URL.createObjectURL(file),
+            cover: '/placeholder.svg?height=300&width=300',
+          };
+        });
 
         setTracks(newTracks);
         setMusicFolder((e.target as HTMLInputElement).value);
@@ -85,35 +106,49 @@ const AudioPlayer: React.FC = () => {
     controls,
   } = useAudioPlayer(tracks);
 
+  // Format time helper function
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   if (error) {
     return (
-      <div className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
+      <div className="w-full max-w-md mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
         <div className="text-red-500 text-center">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-lg w-full mx-auto p-6 bg-white bg-opacity-50 rounded-lg shadow-lg flex flex-col flex-1 overflow-hidden">
-      <div className="mb-4">
+    <div className="flex flex-col w-full max-w-md mx-auto bg-gradient-to-br from-purple-900 via-fuchsia-900 to-blue-900 rounded-xl shadow-lg overflow-hidden text-white">
+      {/* Select Music Button */}
+      <div className="px-6 pt-4">
         <button
           onClick={handleFolderSelect}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+          className="w-full px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-colors shadow-md"
         >
           Select Music Folder
         </button>
         {folderError && (
-          <p className="mt-2 text-red-500 text-sm">{folderError}</p>
-        )}
-        {musicFolder && (
-          <p className="mt-2 text-sm text-gray-600 truncate">
-            Selected: {musicFolder}
-          </p>
+          <p className="mt-2 text-red-300 text-sm">{folderError}</p>
         )}
       </div>
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 text-center">
-        {currentTrack ? currentTrack.title : 'No Track Selected'}
-      </h2>
+
+      {/* Track Info */}
+      <div className="p-6 bg-gradient-to-br from-pink-500/20 to-blue-500/20">
+        <div className="text-white">
+          <h2 className="text-2xl font-bold">
+            {currentTrack ? currentTrack.title : 'No Track Selected'}
+          </h2>
+          <p className="text-sm opacity-90">
+            {currentTrack?.artist || 'Select a track to play'}
+          </p>
+        </div>
+      </div>
+
       <audio
         ref={audioRef}
         src={currentTrack ? currentTrack.url : undefined}
@@ -122,82 +157,78 @@ const AudioPlayer: React.FC = () => {
       />
 
       {tracks.length === 0 ? (
-        <>
-          <div className="bg-purple-100 p-4 rounded-lg text-center">
-            <h3 className="text-lg font-semibold text-purple-800">
-              Discover New Music!
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Stream thousands of songs with a premium subscription.
-            </p>
-            <button className="mt-2 px-4 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
-              Try Now
-            </button>
+        <div className="p-6 space-y-4">
+          <div className="text-center text-white/80">
+            <p>Select a music folder to get started</p>
           </div>
-
-          <div className="bg-gray-100 p-4 rounded-lg text-center flex flex-col items-center">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Upgrade Your Sound
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Get 20% off premium headphones this week!
-            </p>
-            <button className="mt-2 px-4 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
-              Shop Now
-            </button>
-          </div>
-
-          <div className="bg-blue-100 p-4 rounded-lg text-center">
-            <h3 className="text-lg font-semibold text-blue-800">
-              Learn to Play
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Sign up for online music lessons today!
-            </p>
-            <button className="mt-2 px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-              Start Learning
-            </button>
-          </div>
-
-          <div className="bg-green-100 p-4 rounded-lg text-center">
-            <h3 className="text-lg font-semibold text-green-800">
-              Share Your Vibe
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Create and share playlists with friends.
-            </p>
-            <button className="mt-2 px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
-              Get Started
-            </button>
-          </div>
-        </>
+        </div>
       ) : (
-        <div>
+        <div className="p-6 space-y-4">
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="relative w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <input
+                type="range"
+                min="0"
+                max={duration || 100}
+                value={progress}
+                onChange={(e) =>
+                  controls.handleProgressChange(parseFloat(e.target.value))
+                }
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                aria-label="Seek"
+              />
+              <div
+                className="h-full bg-gradient-to-r from-pink-500 to-blue-500 rounded-full pointer-events-none"
+                style={{
+                  width: `${duration > 0 ? (progress / duration) * 100 : 0}%`,
+                }}
+              ></div>
+              <div
+                className="absolute top-1/2 h-3 w-3 rounded-full bg-white shadow-md -translate-y-1/2 pointer-events-none"
+                style={{
+                  left: `${duration > 0 ? (progress / duration) * 100 : 0}%`,
+                  transform: 'translateX(-50%) translateY(-50%)',
+                }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span className="text-pink-200">{formatTime(progress)}</span>
+              <span className="text-blue-200">{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Controls */}
           <AudioControls
             isPlaying={isPlaying}
             onPlayPause={controls.togglePlay}
-            onRewind={controls.handleRewind}
-            onFastForward={controls.handleFastForward}
+            onPrevious={controls.handleRewind}
+            onNext={controls.handleFastForward}
             onStop={controls.handleStop}
             isShuffled={controls.isShuffled}
             onShuffle={controls.toggleShuffle}
+            isRepeating={controls.isRepeating}
+            onRepeat={controls.toggleRepeat}
             isMuted={controls.isMuted}
             onMute={controls.toggleMute}
-          />
-          <AudioProgress
-            progress={progress}
-            duration={duration}
+            onShowPlaylist={() => setShowPlaylist(!showPlaylist)}
+            showPlaylist={showPlaylist}
             volume={volume}
-            onProgressChange={controls.handleProgressChange}
             onVolumeChange={controls.handleVolumeChange}
           />
-          <div className="mt-4 flex-1 overflow-auto min-h-0">
-            <TrackList
-              tracks={tracks}
-              currentTrack={currentTrack}
-              onTrackSelect={controls.handleTrackSelect}
-            />
-          </div>
+        </div>
+      )}
+
+      {/* Playlist */}
+      {showPlaylist && tracks.length > 0 && (
+        <div className="border-t border-white/10 p-4 max-h-64 overflow-y-auto bg-gradient-to-br from-purple-900/80 to-blue-900/80">
+          <h3 className="font-medium mb-2">Up Next</h3>
+          <TrackList
+            tracks={tracks}
+            currentTrack={currentTrack}
+            onTrackSelect={controls.handleTrackSelect}
+            formatTime={formatTime}
+          />
         </div>
       )}
     </div>
