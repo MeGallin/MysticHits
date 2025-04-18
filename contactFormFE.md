@@ -78,3 +78,69 @@ Add tests using your preferred testing library (e.g., React Testing Library + Je
 - Tests cover loading, error, and success states
 - API mock used in tests
 - Component renders correctly with mock data
+
+---
+
+## 🆕 Epic: Contact Form Integration
+
+---
+
+### 🧑‍💼 User Story 2:
+**As a user, I want to send a message via a contact form so I can get in touch with the business easily.**
+
+---
+
+### 📝 Ticket 6: Add contact form fields
+
+**Title:** `Add input fields for name, email, and message`
+
+**Description:**  
+Extend the `ContactPage` component to include a form with inputs for user's name, email, and message.
+
+**Acceptance Criteria:**
+- Form includes `name`, `email`, and `message` fields
+- Form fields are styled with Tailwind CSS
+- Fields are required and accept user input
+
+---
+
+### 📤 Ticket 7: Submit contact form data to API
+
+**Title:** `Send form data to API via POST request`
+
+**Description:**  
+On form submission, send a `POST` request to the contact API endpoint. Handle success and error cases with user-friendly messages.
+
+**Acceptance Criteria:**
+- Sends POST request to `POST /api/contact/submit`
+- Displays confirmation on success
+- Shows error message if submission fails
+
+---
+
+### ⚠️ Ticket 8: Basic form validation
+
+**Title:** `Add basic form validation`
+
+**Description:**  
+Ensure that the contact form validates required fields and email format before submitting.
+
+**Acceptance Criteria:**
+- Prevent submission with empty fields
+- Show inline validation messages
+- Email must be in valid format (e.g., using regex)
+
+---
+
+### 🧪 Ticket 9: Test contact form behavior
+
+**Title:** `Test contact form states and submission`
+
+**Description:**  
+Write tests for the contact form to ensure it handles user input, validation, submission success, and failure correctly.
+
+**Acceptance Criteria:**
+- Tests for input changes
+- Tests for validation errors
+- Tests for successful form submission
+- Tests for submission failure state
