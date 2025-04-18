@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
   const [uniqueHitCount, setUniqueHitCount] = useState<number | null>(null);
@@ -45,12 +46,12 @@ const Footer: React.FC = () => {
           >
             Twitter
           </a>
-          <a
-            href="mailto:info@mystichits.com"
+          <Link
+            to="/contact"
             className="hover:text-custom-green transition-colors duration-200"
           >
             Contact
-          </a>
+          </Link>
         </div>
         <div className="mt-2 text-xs opacity-90">
           {error

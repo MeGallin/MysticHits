@@ -1,8 +1,11 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AudioPlayer } from './components/AudioPlayer';
 import Footer from './components/Footer';
+import ContactPage from './pages/ContactPage';
 
-function App() {
+// Home page component that contains the audio player
+const HomePage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,50,255,0.15),transparent_70%)] pointer-events-none"></div>
@@ -17,6 +20,17 @@ function App() {
       </div>
       <Footer />
     </div>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/contact" element={<ContactPage />} />
+      </Routes>
+    </Router>
   );
 }
 
