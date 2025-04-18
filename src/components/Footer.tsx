@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 const Footer: React.FC = () => {
-  const [uniqueViewCount, setUniqueViewCount] = useState<number | null>(null);
+  const [uniqueHitCount, setUniqueHitCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchViewCount = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/views/register-view`,
+          `${import.meta.env.VITE_API_URL}/hits/page-hits`,
         );
-        setUniqueViewCount(res.data.uniqueViewCount);
+        setUniqueHitCount(res.data.uniqueHitCount);
       } catch (err: any) {
         setError('Could not load visitor stats');
       }
@@ -55,9 +55,9 @@ const Footer: React.FC = () => {
         <div className="mt-2 text-xs opacity-90">
           {error
             ? error
-            : uniqueViewCount === null
+            : uniqueHitCount === null
             ? 'Loading visitors...'
-            : `Unique Visitors: ${uniqueViewCount}`}
+            : `Unique Visitors: ${uniqueHitCount}`}
         </div>
       </div>
     </footer>
