@@ -19,6 +19,19 @@ interface ContactFormData {
   message: string;
 }
 
+// Define the playlist data structure
+interface PlaylistTrack {
+  title: string;
+  url: string;
+  mime: string;
+}
+
+interface PlaylistResponse {
+  success: boolean;
+  count: number;
+  data: PlaylistTrack[];
+}
+
 // Define the contact services
 export interface ContactServices {
   submitContactForm: (
@@ -26,12 +39,21 @@ export interface ContactServices {
   ) => Promise<ApiSuccessResponse | ApiErrorResponse>;
 }
 
-// Export the contact services
+// Define the playlist services
+export interface PlaylistServices {
+  getPlaylistFromUrl: (
+    url: string,
+  ) => Promise<ApiSuccessResponse<PlaylistResponse> | ApiErrorResponse>;
+}
+
+// Export the services
 export const contactServices: ContactServices;
+export const playlistServices: PlaylistServices;
 
 // Default export
 declare const services: {
   contactServices: ContactServices;
+  playlistServices: PlaylistServices;
 };
 
 export default services;
