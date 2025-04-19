@@ -69,6 +69,7 @@ export const AudioPlayer: React.FC = () => {
     setRemoteError(null);
 
     try {
+      // Import playlistServices
       const { playlistServices } = await import('../../services/fetchServices');
       const response = await playlistServices.getPlaylistFromUrl(remoteUrl);
 
@@ -83,8 +84,6 @@ export const AudioPlayer: React.FC = () => {
 
         // Create a function to fetch and convert a remote file to a blob URL
         const fetchAndCreateBlobUrl = async (track: Track): Promise<Track> => {
-          console.log('Processing remote track:', track);
-
           // Ensure the URL is absolute
           let url = track.url;
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -95,8 +94,6 @@ export const AudioPlayer: React.FC = () => {
 
           // Due to CORS restrictions, we can't fetch the remote files directly
           // Instead, we'll use the original URLs and handle errors gracefully
-          console.log(`Processing remote track with URL: ${url}`);
-
           // Check if the URL has encoded characters and decode them
           // URLs from the API might have %20 instead of spaces, etc.
           let cleanUrl = url;
@@ -104,7 +101,6 @@ export const AudioPlayer: React.FC = () => {
             // Check if the URL contains encoded characters like %20
             if (url.includes('%')) {
               cleanUrl = decodeURIComponent(url);
-              console.log(`Decoded URL: ${cleanUrl}`);
             }
           } catch (e) {
             console.error(`Error decoding URL ${url}:`, e);
@@ -296,7 +292,7 @@ export const AudioPlayer: React.FC = () => {
         <Advertisement adId={currentAdId} onClose={closeAdvertisement} />
       )}
 
-      <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-xl shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm">
+      <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-xl shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm flex-grow">
         {/* Music Source Selection Tabs */}
         <div className="flex border-b border-white/20">
           <button
@@ -498,10 +494,7 @@ export const AudioPlayer: React.FC = () => {
 
                 // Try with a different MIME type if the current one fails
                 if (currentTrack.mime !== 'audio/mpeg') {
-                  console.log(
-                    'Trying with audio/mpeg MIME type instead of',
-                    currentTrack.mime,
-                  );
+                  // Try with audio/mpeg MIME type as fallback
 
                   // Update the track in the combined tracks array with audio/mpeg MIME type
                   const updatedTracks = combinedTracks.map((track, idx) =>
