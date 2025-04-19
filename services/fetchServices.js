@@ -52,7 +52,26 @@ export const contactServices = {
   },
 };
 
-// Export other service groups as needed
+// Playlist services
+export const playlistServices = {
+  // Get playlist from remote URL
+  getPlaylistFromUrl: async (url) => {
+    try {
+      const response = await api.get('/playlist', {
+        params: { url },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+};
+
+// Export all service groups
 export default {
   contactServices,
+  playlistServices,
 };
