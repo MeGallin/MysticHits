@@ -70,8 +70,25 @@ export const playlistServices = {
   },
 };
 
+// Hits/visitor count services
+export const hitsServices = {
+  // Get page hit count
+  getPageHits: async () => {
+    try {
+      const response = await api.get('/hits/page-hits');
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+};
+
 // Export all service groups
 export default {
   contactServices,
   playlistServices,
+  hitsServices,
 };

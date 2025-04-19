@@ -46,14 +46,23 @@ export interface PlaylistServices {
   ) => Promise<ApiSuccessResponse<PlaylistResponse> | ApiErrorResponse>;
 }
 
+// Define the hits/visitor count services
+export interface HitsServices {
+  getPageHits: () => Promise<
+    ApiSuccessResponse<{ uniqueHitCount: number }> | ApiErrorResponse
+  >;
+}
+
 // Export the services
 export const contactServices: ContactServices;
 export const playlistServices: PlaylistServices;
+export const hitsServices: HitsServices;
 
 // Default export
 declare const services: {
   contactServices: ContactServices;
   playlistServices: PlaylistServices;
+  hitsServices: HitsServices;
 };
 
 export default services;

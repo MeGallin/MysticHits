@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';
 import { contactServices } from '../../services/fetchServices';
 
@@ -171,7 +170,7 @@ const ContactPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,50,255,0.15),transparent_70%)] pointer-events-none"></div>
 
       {/* Animated background elements - keeping the same style as the main app */}
@@ -385,7 +384,6 @@ const ContactPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
