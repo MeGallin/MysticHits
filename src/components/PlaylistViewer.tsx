@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useAtom } from 'jotai';
 import { playlistAtom } from '../state/playlistAtom';
 

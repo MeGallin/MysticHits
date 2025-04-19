@@ -3,8 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AudioPlayer } from './components/AudioPlayer';
 import Footer from './components/Footer';
 import ContactPage from './pages/ContactPage';
-import RemotePlaylistLoader from './components/RemotePlaylistLoader';
-import PlaylistViewer from './components/PlaylistViewer';
 
 // Navigation component
 const Navigation = () => {
@@ -19,14 +17,6 @@ const Navigation = () => {
               className="text-white hover:text-pink-300 transition-colors"
             >
               Home
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/playlist"
-              className="text-white hover:text-pink-300 transition-colors"
-            >
-              Remote Playlist
             </Link>
           </li>
           <li>
@@ -52,17 +42,6 @@ const HomePage = () => {
   );
 };
 
-// Playlist page component that contains the remote playlist loader and viewer
-const PlaylistPage = () => {
-  return (
-    <div className="flex flex-col items-center justify-start p-4 gap-6 py-8 min-h-screen">
-      <h1 className="text-3xl font-bold text-white mb-4">Remote Playlist</h1>
-      <RemotePlaylistLoader />
-      <PlaylistViewer />
-    </div>
-  );
-};
-
 function App() {
   return (
     <Router>
@@ -81,7 +60,6 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/playlist" element={<PlaylistPage />} />
           </Routes>
         </main>
         <Footer />
