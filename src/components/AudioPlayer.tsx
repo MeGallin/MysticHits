@@ -292,7 +292,7 @@ export const AudioPlayer: React.FC = () => {
         <Advertisement adId={currentAdId} onClose={closeAdvertisement} />
       )}
 
-      <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-xl shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm flex-grow">
+      <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-none shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm flex-grow">
         {/* Music Source Selection Tabs */}
         <div className="flex border-b border-white/20">
           <button
