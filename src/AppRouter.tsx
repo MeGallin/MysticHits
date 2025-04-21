@@ -1,10 +1,15 @@
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+
+// Page imports
 import Home from './pages/Home';
+import ContactPage from './pages/ContactPage';
+
+// Auth page imports
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
-import ContactPage from './pages/ContactPage';
 
 export default function AppRouter() {
   return (
