@@ -2,7 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for the range slider thumb and track */
+/**
+ * Custom styles for the volume range slider
+ * Consistent styling across different browsers
+ */
+
+/* WebKit (Chrome, Safari, newer versions of Opera) */
 input[type='range'].volume-range::-webkit-slider-thumb {
   height: 1.5rem;
   width: 1.5rem;
@@ -16,6 +21,8 @@ input[type='range'].volume-range::-webkit-slider-runnable-track {
   height: 1rem;
   background: transparent;
 }
+
+/* Firefox */
 input[type='range'].volume-range::-moz-range-thumb {
   height: 1.5rem;
   width: 1.5rem;
@@ -27,6 +34,8 @@ input[type='range'].volume-range::-moz-range-track {
   height: 1rem;
   background: transparent;
 }
+
+/* Microsoft Edge / IE */
 input[type='range'].volume-range::-ms-thumb {
   height: 1.5rem;
   width: 1.5rem;
@@ -39,6 +48,8 @@ input[type='range'].volume-range::-ms-fill-upper {
   height: 1rem;
   background: transparent;
 }
+
+/* General styles */
 input[type='range'].volume-range:focus {
   outline: none;
 }

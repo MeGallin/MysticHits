@@ -1,7 +1,7 @@
 import React from 'react';
 import AppRouter from './AppRouter';
 import Footer from './components/Footer';
-import { Link } from 'react-router-dom';
+import Navigation from './components/Navigation';
 
 function App() {
   return (
@@ -15,30 +15,8 @@ function App() {
       ></div>
 
       {/* Navigation Header */}
-      <header className="w-full py-4 px-6 z-10">
-        <nav className="flex justify-between items-center">
-          <div className="text-2xl font-bold text-white">
-            <Link to="/" className="flex items-center">
-              <span className="bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green bg-clip-text text-transparent">
-                Mystic Hits
-              </span>
-            </Link>
-          </div>
-          <div className="flex gap-6">
-            <Link
-              to="/"
-              className="text-white hover:text-custom-blue transition-colors duration-200"
-            >
-              Home
-            </Link>
-            <Link
-              to="/contact"
-              className="text-white hover:text-custom-blue transition-colors duration-200"
-            >
-              Contact
-            </Link>
-          </div>
-        </nav>
+      <header className="w-full z-10">
+        <Navigation />
       </header>
 
       <main className="flex-grow z-10 overflow-y-auto">
