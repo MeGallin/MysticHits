@@ -111,13 +111,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
 
       {/* Volume and Additional Controls */}
       <div className="flex items-center justify-between pt-2">
-        <button
-          className="text-white/70 hover:text-pink-300 p-2 rounded-full"
-          aria-label="Favorite"
-        >
-          <Heart className="h-5 w-5" />
-        </button>
-        <div className="flex items-center space-x-2 w-32">
+        <div className="flex items-center space-x-2 w-full">
           <button
             onClick={onMute}
             className="text-white/70 hover:text-pink-300"
@@ -126,12 +120,12 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             {isMuted ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                width="26"
+                height="26"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="lucide lucide-volume-x"
@@ -141,9 +135,10 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
                 <line x1="17" x2="23" y1="9" y2="15" />
               </svg>
             ) : (
-              <Volume2 className="h-4 w-4" />
+              <Volume2 className="h-6 w-6" />
             )}
           </button>
+
           <div className="relative w-full">
             <input
               type="range"
@@ -152,16 +147,16 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
               step="0.01"
               value={volume}
               onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-1 appearance-none bg-white/20 rounded-full outline-none cursor-pointer z-10 relative opacity-0"
+              className="w-full h-4 appearance-none bg-white/20 rounded-full outline-none cursor-pointer z-10 relative opacity-0 volume-range"
               aria-label="Volume control"
             />
-            <div className="absolute top-1/2 left-0 w-full h-1 bg-white/20 rounded-full -translate-y-1/2 pointer-events-none">
+            <div className="absolute top-1/2 left-0 w-full h-4 bg-white/20 rounded-full -translate-y-1/2 pointer-events-none">
               <div
                 className="h-full bg-blue-400 rounded-full"
                 style={{ width: `${volume * 100}%` }}
               ></div>
               <div
-                className="absolute top-1/2 h-2.5 w-2.5 rounded-full bg-blue-400 -translate-y-1/2 pointer-events-none"
+                className="absolute top-1/2 h-5 w-5 rounded-full bg-blue-400 -translate-y-1/2 pointer-events-none"
                 style={{
                   left: `${volume * 100}%`,
                   transform: 'translateX(-50%) translateY(-50%)',

@@ -25,15 +25,15 @@ const Footer: React.FC = () => {
   }, []);
 
   return (
-    <footer className="w-full py-2 bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green text-white text-center shadow-lg shrink-0">
-      <div className="flex flex-col items-center gap-2">
+    <footer className="w-full size-auto bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green text-white text-center shadow-lg shrink-0">
+      <div className="flex flex-col items-center">
         <span className="font-bold tracking-wider text-lg drop-shadow">
           Mystic Hits &copy; {new Date().getFullYear()}
         </span>
         <span className="text-sm opacity-80">
           Funky Modern Music Player &mdash; Enjoy the vibes!
         </span>
-        <div className="flex gap-4 mt-1">
+        <div className="flex gap-4">
           <Link
             to="/"
             className="hover:text-custom-green transition-colors duration-200"
@@ -47,12 +47,12 @@ const Footer: React.FC = () => {
             Contact
           </Link>
         </div>
-        <div className="mt-2 text-xs opacity-90">
+        <div className="mb-1 text-xs opacity-90">
           {error
             ? error
             : uniqueHitCount === null
-            ? 'Loading visitors...'
-            : `Unique Visitors: ${uniqueHitCount}`}
+            ? 'Loading...'
+            : `Page Visits: ${uniqueHitCount}`}
         </div>
       </div>
     </footer>

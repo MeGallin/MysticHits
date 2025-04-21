@@ -52,7 +52,7 @@ function App() {
           </nav>
         </header>
 
-        <main className="flex-grow z-10">
+        <main className="flex-grow z-10 overflow-y-auto">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/contact" element={<ContactPage />} />
