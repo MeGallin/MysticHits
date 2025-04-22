@@ -137,6 +137,7 @@ export default function ResetPassword() {
     setSubmitStatus({ type: null, message: null });
 
     try {
+      // Note: resetPassword now uses the token in the URL path instead of the request body
       const response = await resetPassword(token, formData.password);
 
       if (response.success) {
