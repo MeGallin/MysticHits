@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contactServices } from '../../services/fetchServices';
+import { Button } from '@/components/ui/button';
 
 // Icons
 import {
@@ -276,14 +277,11 @@ const ContactPage: React.FC = () => {
 
               {/* Submit Button */}
               <div>
-                <button
+                <Button
                   type="submit"
                   disabled={isSubmitting || !isFormValid}
-                  className={`w-full ${
-                    isSubmitting || !isFormValid
-                      ? 'bg-gray-500 cursor-not-allowed'
-                      : 'bg-custom-blue hover:bg-blue-600'
-                  } text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center`}
+                  variant={isFormValid ? 'default' : 'secondary'}
+                  className="w-full"
                 >
                   {isSubmitting ? (
                     <>
@@ -315,7 +313,7 @@ const ContactPage: React.FC = () => {
                       Send Message
                     </>
                   )}
-                </button>
+                </Button>
               </div>
 
               {/* Success Message */}
@@ -341,24 +339,23 @@ const ContactPage: React.FC = () => {
 
           {/* Back to Home button */}
           <div className="flex justify-center mt-8">
-            <Link
-              to="/"
-              className="px-6 py-2 bg-custom-blue hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-300 flex items-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Back to Home
-            </Link>
+            <Button variant="outline" asChild>
+              <Link to="/" className="flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Back to Home
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

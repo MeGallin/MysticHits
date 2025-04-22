@@ -7,6 +7,7 @@ import { Track } from '../types/audio';
 import { Advertisement } from './Advertisement';
 import { StaticAdvertisements } from './StaticAdvertisements';
 import { playlistAtom } from '../state/playlistAtom';
+import { Button } from '@/components/ui/button';
 
 export const AudioPlayer: React.FC = () => {
   // Local tracks from file selection
@@ -295,33 +296,35 @@ export const AudioPlayer: React.FC = () => {
       <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-none shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm flex-grow">
         {/* Music Source Selection Tabs */}
         <div className="flex border-b border-white/20">
-          <button
+          <Button
             onClick={() => setActiveTab('local')}
-            className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
+            variant={activeTab === 'local' ? 'default' : 'ghost'}
+            className={`flex-1 rounded-none border-0 ${
               activeTab === 'local'
-                ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500'
-                : 'text-white/70 hover:text-white'
+                ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500 shadow-none hover:bg-white/15'
+                : 'bg-transparent text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
             Local Files
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab('remote')}
-            className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
+            variant={activeTab === 'remote' ? 'default' : 'ghost'}
+            className={`flex-1 rounded-none border-0 ${
               activeTab === 'remote'
-                ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500'
-                : 'text-white/70 hover:text-white'
+                ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500 shadow-none hover:bg-white/15'
+                : 'bg-transparent text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
             Remote URL
-          </button>
+          </Button>
         </div>
 
         {/* Source Selection UI */}
         <div className="px-6 py-4">
           {activeTab === 'local' ? (
             <>
-              <button
+              <Button
                 onClick={handleFolderSelect}
                 className="w-full px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-pink-500/20 flex items-center justify-center font-medium"
               >
@@ -338,7 +341,7 @@ export const AudioPlayer: React.FC = () => {
                   />
                 </svg>
                 Select Music Folder
-              </button>
+              </Button>
               {folderError && (
                 <p className="mt-2 text-red-300 text-sm">{folderError}</p>
               )}
@@ -363,7 +366,7 @@ export const AudioPlayer: React.FC = () => {
                 </p>
               </div>
 
-              <button
+              <Button
                 onClick={handleRemoteLoad}
                 disabled={isLoadingRemote || !remoteUrl.trim()}
                 className="w-full px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-md hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -395,7 +398,7 @@ export const AudioPlayer: React.FC = () => {
                 ) : (
                   'Load Remote Playlist'
                 )}
-              </button>
+              </Button>
 
               {remoteError && (
                 <div className="mt-2 p-3 bg-red-500/30 border border-red-500/50 rounded-md text-white">
