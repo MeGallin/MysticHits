@@ -62,7 +62,7 @@ export const authServices = {
   // Register a new user
   registerUser: async (userData) => {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/auth/signup', userData);
       return {
         success: true,
         data: response.data,
@@ -88,8 +88,7 @@ export const authServices = {
   // Reset password with token
   resetPassword: async (token, newPassword) => {
     try {
-      const response = await api.post('/auth/reset-password', {
-        token,
+      const response = await api.post(`/auth/reset-password/${token}`, {
         password: newPassword,
       });
       return {

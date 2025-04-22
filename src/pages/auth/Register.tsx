@@ -14,6 +14,7 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export default function Register() {
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -21,6 +22,7 @@ export default function Register() {
 
   // Validation state
   const [errors, setErrors] = useState({
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -28,6 +30,7 @@ export default function Register() {
 
   // Touched state (to show validation errors only after field is touched)
   const [touched, setTouched] = useState({
+    username: false,
     email: false,
     password: false,
     confirmPassword: false,
@@ -41,6 +44,12 @@ export default function Register() {
   // Validate form fields
   const validateField = (name: string, value: string): string => {
     switch (name) {
+      case 'username':
+        if (!value.trim()) return 'Username is required';
+        if (value.trim().length < 3)
+          return 'Username must be at least 3 characters';
+        return '';
+
       case 'email':
         if (!value.trim()) return 'Email is required';
         if (!EMAIL_REGEX.test(value))
@@ -105,9 +114,10 @@ export default function Register() {
 
   // Check if the entire form is valid
   useEffect(() => {
-    const { email, password, confirmPassword } = formData;
+    const { username, email, password, confirmPassword } = formData;
 
     // Validate all fields
+    const usernameError = validateField('username', username);
     const emailError = validateField('email', email);
     const passwordError = validateField('password', password);
     const confirmPasswordError = validateField(
@@ -116,7 +126,9 @@ export default function Register() {
     );
 
     // Update form validity
-    setIsFormValid(!emailError && !passwordError && !confirmPasswordError);
+    setIsFormValid(
+      !usernameError && !emailError && !passwordError && !confirmPasswordError,
+    );
   }, [formData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,6 +137,7 @@ export default function Register() {
     if (!isFormValid) {
       // Mark all fields as touched to show validation errors
       setTouched({
+        username: true,
         email: true,
         password: true,
         confirmPassword: true,
@@ -136,11 +149,13 @@ export default function Register() {
     setSubmitError(null);
 
     const userData = {
+      username: formData.username,
       email: formData.email,
       password: formData.password,
     };
 
     try {
+      // Note: registerUser now calls '/auth/signup' internally
       const response = await registerUser(userData);
 
       if (response.success) {
@@ -173,6 +188,38 @@ export default function Register() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username Field */}
+          <div className="space-y-2">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-300 mb-1"
+            >
+              Username <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiUser className="text-gray-400" />
+              </div>
+              <input
+                id="username"
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="johndoe"
+                className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            {touched.username && errors.username && (
+              <div className="mt-1 text-red-400 text-sm flex items-center">
+                <FiAlertTriangle className="mr-1" />
+                {errors.username}
+              </div>
+            )}
+          </div>
+
           {/* Email Field */}
           <div className="space-y-2">
             <label
