@@ -96,7 +96,10 @@ const Navigation: React.FC = () => {
               <span>Logout</span>
             </Button>
           ) : (
-            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenu
+              open={isDropdownOpen}
+              onOpenChange={setIsDropdownOpen}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
@@ -129,7 +132,7 @@ const Navigation: React.FC = () => {
                       className="h-4 w-4 mr-2 text-yellow-300"
                       strokeWidth={2.5}
                     />
-                    <span>Sign In</span>
+                    <span>Login</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="rounded-md focus:bg-white/10 transition-all duration-200 my-1 py-2.5 cursor-pointer data-[highlighted]:bg-white/10 data-[highlighted]:outline-none">
