@@ -49,12 +49,46 @@ export const authServices = {
         api.defaults.headers.common[
           'Authorization'
         ] = `Bearer ${response.data.token}`;
+        
+        // Broadcast login event
+        window.dispatchEvent(new Event('auth:login'));
       }
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Logout user
+  logoutUser: async () => {
+    try {
+      // Call backend logout endpoint
+      const response = await api.post('/auth/logout');
+      
+      // Remove token from localStorage
+      localStorage.removeItem('token');
+      
+      // Remove Authorization header from axios
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Broadcast logout event
+      window.dispatchEvent(new Event('auth:logout'));
+      
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      // Still remove token even if backend call fails
+      localStorage.removeItem('token');
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Still broadcast logout event even if API call fails
+      window.dispatchEvent(new Event('auth:logout'));
+      
       return handleApiError(error);
     }
   },
@@ -164,3 +198,4 @@ export const loginUser = authServices.loginUser;
 export const registerUser = authServices.registerUser;
 export const requestPasswordReset = authServices.requestPasswordReset;
 export const resetPassword = authServices.resetPassword;
+export const logoutUser = authServices.logoutUser;

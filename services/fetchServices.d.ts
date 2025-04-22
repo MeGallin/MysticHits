@@ -35,6 +35,8 @@ export interface AuthServices {
     password: string,
   ) => Promise<ApiSuccessResponse<LoginResponse> | ApiErrorResponse>;
 
+  logoutUser: () => Promise<ApiSuccessResponse | ApiErrorResponse>;
+
   registerUser: (
     userData: UserRegistrationData,
   ) => Promise<ApiSuccessResponse | ApiErrorResponse>;
@@ -95,6 +97,8 @@ export function loginUser(
   email: string,
   password: string,
 ): Promise<ApiSuccessResponse<LoginResponse> | ApiErrorResponse>;
+
+export function logoutUser(): Promise<ApiSuccessResponse | ApiErrorResponse>;
 
 export function registerUser(
   userData: UserRegistrationData,
