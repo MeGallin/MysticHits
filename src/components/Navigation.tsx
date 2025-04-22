@@ -18,6 +18,12 @@ import { Menu, User, LogIn, UserPlus, ChevronDown } from 'lucide-react';
  */
 const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Function to close dropdown menu
+  const closeDropdown = () => {
+    setIsDropdownOpen(false);
+  };
 
   return (
     <nav className="bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green text-white px-4 py-3 shadow-md border-b-2 border-gray-900">
@@ -44,7 +50,7 @@ const Navigation: React.FC = () => {
           </Link>
 
           {/* Auth Dropdown - Completely Redesigned */}
-          <DropdownMenu>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
@@ -71,6 +77,7 @@ const Navigation: React.FC = () => {
                 <Link
                   to="/login"
                   className="w-full flex items-center text-white hover:text-yellow-400 font-medium"
+                  onClick={closeDropdown}
                 >
                   <LogIn
                     className="h-4 w-4 mr-2 text-yellow-300"
@@ -83,6 +90,7 @@ const Navigation: React.FC = () => {
                 <Link
                   to="/register"
                   className="w-full flex items-center text-white hover:text-yellow-400 font-medium"
+                  onClick={closeDropdown}
                 >
                   <UserPlus
                     className="h-4 w-4 mr-2 text-yellow-300"
