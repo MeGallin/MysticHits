@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -10,7 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogIn, UserPlus, ChevronDown } from 'lucide-react';
+import { Menu, User, LogIn, UserPlus, ChevronDown, LogOut } from 'lucide-react';
+import { logoutUser } from '../../services/fetchServices';
+import { AUTH_EVENTS, isAuthenticated } from '../utils/authUtils';
 
 /**
  * Navigation component that displays the site navigation bar
@@ -19,10 +21,43 @@ import { Menu, User, LogIn, UserPlus, ChevronDown } from 'lucide-react';
 const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
+  const navigate = useNavigate();
+
+  // Function to update auth state
+  const updateAuthState = () => {
+    setIsLoggedIn(isAuthenticated());
+  };
+
+  // Listen for authentication events
+  useEffect(() => {
+    // Set initial auth state
+    updateAuthState();
+
+    // Add event listeners for login and logout events
+    window.addEventListener(AUTH_EVENTS.LOGIN, updateAuthState);
+    window.addEventListener(AUTH_EVENTS.LOGOUT, updateAuthState);
+
+    // Cleanup event listeners when component unmounts
+    return () => {
+      window.removeEventListener(AUTH_EVENTS.LOGIN, updateAuthState);
+      window.removeEventListener(AUTH_EVENTS.LOGOUT, updateAuthState);
+    };
+  }, []);
 
   // Function to close dropdown menu
   const closeDropdown = () => {
     setIsDropdownOpen(false);
+  };
+
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -49,58 +84,70 @@ const Navigation: React.FC = () => {
             Contact
           </Link>
 
-          {/* Auth Dropdown - Completely Redesigned */}
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-white/10 border border-white/20 text-white rounded-md px-3 py-1 hover:bg-white/20 transition-all duration-200 flex items-center gap-1.5 group"
-              >
-                <User className="h-4 w-4 mr-1 text-yellow-300 group-hover:text-yellow-400 transition-colors" />
-                <span>Account</span>
-                <ChevronDown className="h-3.5 w-3.5 ml-0.5 opacity-70 group-hover:opacity-100 group-data-[state=open]:rotate-180 transition-all" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={5}
-              alignOffset={0}
-              className="w-56 bg-gradient-to-b from-gray-800 to-gray-900 border-0 rounded-lg shadow-xl p-2 before:content-[''] before:absolute before:top-0 before:right-5 before:w-3 before:h-3 before:bg-gray-800 before:-translate-y-1.5 before:rotate-45 before:border-t-0 before:border-l-0 animate-in zoom-in-95 origin-[var(--radix-dropdown-menu-content-transform-origin)]"
+          {/* Conditionally render logout button or auth dropdown */}
+          {isLoggedIn ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border border-white/20 text-white rounded-md px-3 py-1 hover:bg-white/20 transition-all duration-200 flex items-center gap-1.5 group"
+              onClick={handleLogout}
             >
-              <DropdownMenuLabel className="text-gray-300 text-xs uppercase font-semibold tracking-wider px-2 pt-1 pb-2.5">
-                Authentication
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10 my-1" />
+              <LogOut className="h-4 w-4 mr-1 text-yellow-300 group-hover:text-yellow-400 transition-colors" />
+              <span>Logout</span>
+            </Button>
+          ) : (
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border border-white/20 text-white rounded-md px-3 py-1 hover:bg-white/20 transition-all duration-200 flex items-center gap-1.5 group"
+                >
+                  <User className="h-4 w-4 mr-1 text-yellow-300 group-hover:text-yellow-400 transition-colors" />
+                  <span>Account</span>
+                  <ChevronDown className="h-3.5 w-3.5 ml-0.5 opacity-70 group-hover:opacity-100 group-data-[state=open]:rotate-180 transition-all" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={5}
+                alignOffset={0}
+                className="w-56 bg-gradient-to-b from-gray-800 to-gray-900 border-0 rounded-lg shadow-xl p-2 before:content-[''] before:absolute before:top-0 before:right-5 before:w-3 before:h-3 before:bg-gray-800 before:-translate-y-1.5 before:rotate-45 before:border-t-0 before:border-l-0 animate-in zoom-in-95 origin-[var(--radix-dropdown-menu-content-transform-origin)]"
+              >
+                <DropdownMenuLabel className="text-gray-300 text-xs uppercase font-semibold tracking-wider px-2 pt-1 pb-2.5">
+                  Authentication
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10 my-1" />
 
-              <DropdownMenuItem className="rounded-md focus:bg-white/10 transition-all duration-200 my-1 py-2.5 cursor-pointer data-[highlighted]:bg-white/10 data-[highlighted]:outline-none">
-                <Link
-                  to="/login"
-                  className="w-full flex items-center text-white hover:text-yellow-400 font-medium"
-                  onClick={closeDropdown}
-                >
-                  <LogIn
-                    className="h-4 w-4 mr-2 text-yellow-300"
-                    strokeWidth={2.5}
-                  />
-                  <span>Sign In</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-md focus:bg-white/10 transition-all duration-200 my-1 py-2.5 cursor-pointer data-[highlighted]:bg-white/10 data-[highlighted]:outline-none">
-                <Link
-                  to="/register"
-                  className="w-full flex items-center text-white hover:text-yellow-400 font-medium"
-                  onClick={closeDropdown}
-                >
-                  <UserPlus
-                    className="h-4 w-4 mr-2 text-yellow-300"
-                    strokeWidth={2.5}
-                  />
-                  <span>Create Account</span>
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem className="rounded-md focus:bg-white/10 transition-all duration-200 my-1 py-2.5 cursor-pointer data-[highlighted]:bg-white/10 data-[highlighted]:outline-none">
+                  <Link
+                    to="/login"
+                    className="w-full flex items-center text-white hover:text-yellow-400 font-medium"
+                    onClick={closeDropdown}
+                  >
+                    <LogIn
+                      className="h-4 w-4 mr-2 text-yellow-300"
+                      strokeWidth={2.5}
+                    />
+                    <span>Sign In</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-md focus:bg-white/10 transition-all duration-200 my-1 py-2.5 cursor-pointer data-[highlighted]:bg-white/10 data-[highlighted]:outline-none">
+                  <Link
+                    to="/register"
+                    className="w-full flex items-center text-white hover:text-yellow-400 font-medium"
+                    onClick={closeDropdown}
+                  >
+                    <UserPlus
+                      className="h-4 w-4 mr-2 text-yellow-300"
+                      strokeWidth={2.5}
+                    />
+                    <span>Create Account</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -143,22 +190,37 @@ const Navigation: React.FC = () => {
 
               <div className="h-px bg-gray-700 my-2"></div>
 
-              <Link
-                to="/login"
-                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <LogIn className="h-5 w-5 mr-2 text-yellow-400" />
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <UserPlus className="h-5 w-5 mr-2 text-yellow-400" />
-                Register
-              </Link>
+              {isLoggedIn ? (
+                <button
+                  className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="h-5 w-5 mr-2 text-yellow-400" />
+                  Logout
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <LogIn className="h-5 w-5 mr-2 text-yellow-400" />
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <UserPlus className="h-5 w-5 mr-2 text-yellow-400" />
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </SheetContent>
         </Sheet>
