@@ -36,6 +36,72 @@ const handleApiError = (error) => {
   }
 };
 
+// Authentication services
+export const authServices = {
+  // Login user with email and password
+  loginUser: async (email, password) => {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      // Store token in local storage
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        // Add token to default axios headers for future requests
+        api.defaults.headers.common[
+          'Authorization'
+        ] = `Bearer ${response.data.token}`;
+      }
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Register a new user
+  registerUser: async (userData) => {
+    try {
+      const response = await api.post('/auth/register', userData);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Request password reset
+  requestPasswordReset: async (email) => {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Reset password with token
+  resetPassword: async (token, newPassword) => {
+    try {
+      const response = await api.post('/auth/reset-password', {
+        token,
+        password: newPassword,
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+};
+
 // Contact form services
 export const contactServices = {
   // Submit contact form data
@@ -88,7 +154,14 @@ export const hitsServices = {
 
 // Export all service groups
 export default {
+  authServices,
   contactServices,
   playlistServices,
   hitsServices,
 };
+
+// Export individual functions for direct import
+export const loginUser = authServices.loginUser;
+export const registerUser = authServices.registerUser;
+export const requestPasswordReset = authServices.requestPasswordReset;
+export const resetPassword = authServices.resetPassword;
