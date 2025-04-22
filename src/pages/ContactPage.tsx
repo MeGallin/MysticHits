@@ -16,9 +16,6 @@ import {
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 const ContactPage: React.FC = () => {
-  // Loading state for placeholder UI
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
   // Form submission states
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
@@ -160,15 +157,6 @@ const ContactPage: React.FC = () => {
     }
   };
 
-  // Simulate loading for demonstration purposes
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,50,255,0.15),transparent_70%)] pointer-events-none"></div>
@@ -190,176 +178,166 @@ const ContactPage: React.FC = () => {
             you!
           </p>
 
-          {isLoading ? (
-            // Placeholder UI while loading
-            <div className="space-y-4 animate-pulse">
-              <div className="h-14 bg-gray-700/50 rounded-lg"></div>
-              <div className="h-14 bg-gray-700/50 rounded-lg"></div>
-              <div className="h-14 bg-gray-700/50 rounded-lg"></div>
-              <div className="h-14 bg-gray-700/50 rounded-lg"></div>
-            </div>
-          ) : (
-            // Contact Form Section - Full Width
-            <div className="w-full">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Name Field */}
-                <div className="space-y-2">
-                  <label
-                    htmlFor="name"
-                    className="block text-white font-medium"
-                  >
-                    Your Name <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiUser className="text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      id="name"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      required
-                      onBlur={handleBlur}
-                      className="bg-gray-700/50 text-white w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue"
-                      placeholder="John Doe"
-                    />
+          {/* Contact Form Section - Full Width */}
+          <div className="w-full">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name Field */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="name"
+                  className="block text-gray-200 font-medium"
+                >
+                  Your Name <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiUser className="text-gray-300" />
                   </div>
-                  {touched.fullName && errors.fullName && (
-                    <div className="mt-1 text-red-400 text-sm flex items-center">
-                      <FiAlertTriangle className="mr-1" />
-                      {errors.fullName}
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    id="name"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    required
+                    onBlur={handleBlur}
+                    className="bg-gray-700/50 text-white w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue placeholder-gray-400"
+                    placeholder="John Doe"
+                  />
                 </div>
-
-                {/* Email Field */}
-                <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="block text-white font-medium"
-                  >
-                    Your Email <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiMail className="text-gray-400" />
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      onBlur={handleBlur}
-                      className="bg-gray-700/50 text-white w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                  {touched.email && errors.email && (
-                    <div className="mt-1 text-red-400 text-sm flex items-center">
-                      <FiAlertTriangle className="mr-1" />
-                      {errors.email}
-                    </div>
-                  )}
-                </div>
-
-                {/* Message Field */}
-                <div className="space-y-2">
-                  <label
-                    htmlFor="message"
-                    className="block text-white font-medium"
-                  >
-                    Your Message <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                      onBlur={handleBlur}
-                      rows={5}
-                      className="bg-gray-700/50 text-white w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue"
-                      placeholder="How can we help you?"
-                    ></textarea>
-                  </div>
-                  {touched.message && errors.message && (
-                    <div className="mt-1 text-red-400 text-sm flex items-center">
-                      <FiAlertTriangle className="mr-1" />
-                      {errors.message}
-                    </div>
-                  )}
-                </div>
-
-                {/* Submit Button */}
-                <div>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !isFormValid}
-                    className={`w-full ${
-                      isSubmitting || !isFormValid
-                        ? 'bg-gray-500 cursor-not-allowed'
-                        : 'bg-custom-blue hover:bg-blue-600'
-                    } text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center`}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <FiSend className="mr-2" />
-                        Send Message
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Success Message */}
-                {submitSuccess && (
-                  <div className="mt-4 bg-green-500/20 border border-green-500 text-green-100 px-4 py-3 rounded-lg flex items-start">
-                    <FiCheckCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-                    <p>
-                      Thank you for your message! We'll get back to you as soon
-                      as possible.
-                    </p>
+                {touched.fullName && errors.fullName && (
+                  <div className="mt-1 text-red-400 text-sm flex items-center">
+                    <FiAlertTriangle className="mr-1" />
+                    {errors.fullName}
                   </div>
                 )}
+              </div>
 
-                {/* Error Message */}
-                {submitError && (
-                  <div className="mt-4 bg-red-500/20 border border-red-500 text-red-100 px-4 py-3 rounded-lg flex items-start">
-                    <FiAlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-                    <p>{submitError}</p>
+              {/* Email Field */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="block text-gray-200 font-medium"
+                >
+                  Your Email <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiMail className="text-gray-300" />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    onBlur={handleBlur}
+                    className="bg-gray-700/50 text-white w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue placeholder-gray-400"
+                    placeholder="john@example.com"
+                  />
+                </div>
+                {touched.email && errors.email && (
+                  <div className="mt-1 text-red-400 text-sm flex items-center">
+                    <FiAlertTriangle className="mr-1" />
+                    {errors.email}
                   </div>
                 )}
-              </form>
-            </div>
-          )}
+              </div>
+
+              {/* Message Field */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="message"
+                  className="block text-gray-200 font-medium"
+                >
+                  Your Message <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    onBlur={handleBlur}
+                    rows={5}
+                    className="bg-gray-700/50 text-white w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-custom-blue placeholder-gray-400"
+                    placeholder="How can we help you?"
+                  ></textarea>
+                </div>
+                {touched.message && errors.message && (
+                  <div className="mt-1 text-red-400 text-sm flex items-center">
+                    <FiAlertTriangle className="mr-1" />
+                    {errors.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !isFormValid}
+                  className={`w-full ${
+                    isSubmitting || !isFormValid
+                      ? 'bg-gray-500 cursor-not-allowed'
+                      : 'bg-custom-blue hover:bg-blue-600'
+                  } text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <FiSend className="mr-2" />
+                      Send Message
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Success Message */}
+              {submitSuccess && (
+                <div className="mt-4 bg-green-500/20 border border-green-500 text-green-100 px-4 py-3 rounded-lg flex items-start">
+                  <FiCheckCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                  <p>
+                    Thank you for your message! We'll get back to you as soon as
+                    possible.
+                  </p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {submitError && (
+                <div className="mt-4 bg-red-500/20 border border-red-500 text-red-100 px-4 py-3 rounded-lg flex items-start">
+                  <FiAlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                  <p>{submitError}</p>
+                </div>
+              )}
+            </form>
+          </div>
 
           {/* Back to Home button */}
           <div className="flex justify-center mt-8">
