@@ -15,6 +15,12 @@ const NavigationLinks: React.FC = () => (
         Home
       </Link>
       <Link
+        to="/about"
+        className="hover:text-yellow-400 transition-colors uppercase"
+      >
+        About
+      </Link>
+      <Link
         to="/contact"
         className="hover:text-yellow-400 transition-colors uppercase"
       >

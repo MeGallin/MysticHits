@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 // Page imports
 import Home from './pages/Home';
 import ContactPage from './pages/ContactPage';
+import About from './pages/About';
 
 // Auth page imports
 import Login from './pages/auth/Login';
@@ -20,6 +21,7 @@ export default function AppRouter() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/about" element={<About />} />
     </Routes>
   );
 }
