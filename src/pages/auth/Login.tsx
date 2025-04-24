@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../../../services/fetchServices';
+import { useAuth } from '../../context/AuthContext';
 import {
   FiMail,
   FiLock,
@@ -15,6 +16,9 @@ import {
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export default function Login() {
+  // Get auth context
+  const { login, isAdmin } = useAuth();
+
   // Form state
   const [formData, setFormData] = useState({
     email: '',
@@ -130,9 +134,16 @@ export default function Login() {
       // Call the API service to login
       const response = await loginUser(formData.email, formData.password);
 
-      if (response.success) {
-        // Redirect to home page or dashboard after successful login
-        navigate('/');
+      if (response.success && response.data.token) {
+        // Use the auth context to handle login
+        login(response.data.token);
+
+        // If user is admin, redirect to admin dashboard, otherwise go to home
+        if (isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       } else {
         // Handle error from API
         setSubmitError(
