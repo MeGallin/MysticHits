@@ -1,151 +1,152 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { jwtDecode } from 'jwt-decode';
 
-// Define user type
-type User = {
-  id: string;
+// Define the shape of the JWT payload
+interface JwtPayload {
+  userId: string;
   email: string;
   isAdmin: boolean;
-  name?: string;
-};
-
-// Type for the JWT payload
-type JwtPayload = {
-  id: string;
-  email: string;
-  isAdmin: boolean;
-  name?: string;
-  iat: number;
   exp: number;
-};
+}
 
-// Define context type
-type AuthContextType = {
-  user: User | null;
-  isLoading: boolean;
+// Define the shape of our auth context
+interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
+  user: { id: string; email: string } | null;
+  token: string | null;
   login: (token: string) => void;
   logout: () => void;
-};
+}
 
-// Create context with default values
+// Create the context with a default value
 const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isLoading: true,
   isAuthenticated: false,
   isAdmin: false,
+  user: null,
+  token: null,
   login: () => {},
   logout: () => {},
 });
 
-// Auth provider component
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+// Hook for using the auth context
+export const useAuth = () => useContext(AuthContext);
+
+// Provider component
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
+  // Check for token in localStorage on mount
   useEffect(() => {
-    // Check for token on mount and set user if valid
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const decodedToken = jwtDecode<JwtPayload>(token);
+    const storedToken = localStorage.getItem('token');
 
-          // Check if token is expired
-          const currentTime = Date.now() / 1000;
-          if (decodedToken.exp < currentTime) {
-            // Token expired, log out
-            localStorage.removeItem('token');
-            setUser(null);
-          } else {
-            // Valid token, set user
-            setUser({
-              id: decodedToken.id,
-              email: decodedToken.email,
-              isAdmin: decodedToken.isAdmin,
-              name: decodedToken.name,
-            });
-          }
-        } catch (error) {
-          console.error('Invalid token:', error);
+    if (storedToken) {
+      try {
+        // Decode the token
+        const decodedToken = jwtDecode<JwtPayload>(storedToken);
+
+        // Check if token is expired
+        const currentTime = Date.now() / 1000;
+        if (decodedToken.exp < currentTime) {
+          // Token expired, remove from storage
+          console.log('Token expired, logging out');
           localStorage.removeItem('token');
+          setIsAuthenticated(false);
+          setIsAdmin(false);
           setUser(null);
+          setToken(null);
+          return;
         }
+
+        // Token is valid, set auth state
+        console.log(
+          'Valid token found, setting auth state. Admin:',
+          !!decodedToken.isAdmin,
+        );
+        setIsAuthenticated(true);
+        setIsAdmin(!!decodedToken.isAdmin);
+        setUser({
+          id: decodedToken.userId,
+          email: decodedToken.email,
+        });
+        setToken(storedToken);
+      } catch (error) {
+        // Invalid token
+        console.error('Error decoding token:', error);
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        setIsAdmin(false);
+        setUser(null);
+        setToken(null);
       }
-      setIsLoading(false);
-    };
-
-    // Run auth check
-    checkAuth();
-
-    // Listen for auth events
-    const handleLogin = () => {
-      checkAuth();
-    };
-
-    const handleLogout = () => {
-      setUser(null);
-    };
-
-    window.addEventListener('auth:login', handleLogin);
-    window.addEventListener('auth:logout', handleLogout);
-
-    return () => {
-      window.removeEventListener('auth:login', handleLogin);
-      window.removeEventListener('auth:logout', handleLogout);
-    };
+    }
   }, []);
 
   // Login function
-  const login = (token: string) => {
-    // Store token
-    localStorage.setItem('token', token);
-
+  const login = (newToken: string) => {
     try {
-      // Decode token
-      const decodedToken = jwtDecode<JwtPayload>(token);
+      // Store token in localStorage
+      localStorage.setItem('token', newToken);
 
-      // Set user
+      // Decode the token
+      const decodedToken = jwtDecode<JwtPayload>(newToken);
+
+      console.log('Login successful. Admin status:', !!decodedToken.isAdmin);
+
+      // Set auth state
+      setIsAuthenticated(true);
+      setIsAdmin(!!decodedToken.isAdmin);
       setUser({
-        id: decodedToken.id,
+        id: decodedToken.userId,
         email: decodedToken.email,
-        isAdmin: decodedToken.isAdmin,
-        name: decodedToken.name,
       });
-
-      // Dispatch login event
-      window.dispatchEvent(new Event('auth:login'));
+      setToken(newToken);
     } catch (error) {
-      console.error('Invalid token:', error);
+      console.error('Error during login:', error);
+      logout();
     }
   };
 
   // Logout function
   const logout = () => {
+    // Remove token from localStorage
     localStorage.removeItem('token');
+
+    // Reset auth state
+    setIsAuthenticated(false);
+    setIsAdmin(false);
     setUser(null);
+    setToken(null);
 
-    // Dispatch logout event
-    window.dispatchEvent(new Event('auth:logout'));
+    console.log('User logged out');
   };
 
-  // Context value
-  const value = {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    isAdmin: user?.isAdmin || false,
-    login,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Provide the auth context to children
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        isAdmin,
+        user,
+        token,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
-
-// Custom hook to use auth context
-export const useAuth = () => useContext(AuthContext);
 
 export default AuthContext;
