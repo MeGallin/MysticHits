@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { broadcastLogin, broadcastLogout } from '../utils/authUtils';
 
 // Define the shape of the JWT payload
 interface JwtPayload {
@@ -112,6 +113,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         email: decodedToken.email,
       });
       setToken(newToken);
+
+      // Broadcast login event to update Navigation component
+      broadcastLogin();
     } catch (error) {
       console.error('Error during login:', error);
       logout();
@@ -128,6 +132,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setIsAdmin(false);
     setUser(null);
     setToken(null);
+
+    // Broadcast logout event to update Navigation component
+    broadcastLogout();
 
     console.log('User logged out');
   };

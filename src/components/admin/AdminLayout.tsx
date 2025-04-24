@@ -23,7 +23,7 @@ interface NavigationItem {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Changed to false - sidebar closed by default
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar closed by default when navigating to the page
   const { logout, user } = useAuth();
   const location = useLocation();
 
@@ -60,11 +60,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   const handleNavigation = () => {
-    // Close sidebar when navigation item is selected (on mobile)
-    if (window.innerWidth < 1024) {
-      // 1024px is the lg breakpoint in Tailwind
-      setSidebarOpen(false);
-    }
+    // Close sidebar when navigation item is selected
+    setSidebarOpen(false);
   };
 
   const isActive = (path: string) => {
@@ -76,32 +73,39 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-gray-900">
-      {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-20">
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-md bg-gray-800 text-white hover:bg-gray-700"
-        >
-          {sidebarOpen ? <FiX /> : <FiMenu />}
-        </button>
+      {/* Header with title, logout and sidebar toggle */}
+      <div className="fixed top-0 right-0 left-0 h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 z-20">
+        <h1 className="text-xl font-bold text-white">Mystic Hits Admin</h1>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => logout()}
+            className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 flex items-center"
+            title="Logout"
+          >
+            <FiLogOut className="h-5 w-5" />
+          </button>
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600"
+          >
+            {sidebarOpen ? <FiX /> : <FiMenu />}
+          </button>
+        </div>
       </div>
 
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed inset-y-0 left-0 z-10 w-64 transition-transform duration-300 ease-in-out transform lg:translate-x-0 bg-gray-800 border-r border-gray-700 flex flex-col`}
+        } fixed top-14 bottom-0 left-0 z-10 w-64 transition-transform duration-300 ease-in-out transform bg-gray-800 border-r border-gray-700 flex flex-col`}
       >
-        {/* Admin logo/title */}
+        {/* Welcome message */}
         <div className="p-4 border-b border-gray-700">
-          <h1 className="text-xl font-bold text-white">Mystic Hits Admin</h1>
-          <p className="text-sm text-gray-400">
-            Welcome, {user?.name || user?.email}
-          </p>
+          <p className="text-sm text-gray-400">Welcome, {user?.email}</p>
         </div>
 
         {/* Navigation items */}
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y">
           {navigationItems.map((item) => (
             <Link
               key={item.path}
@@ -136,17 +140,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
       {/* Main content area */}
       <main
-        className={`flex-1 ml-0 lg:ml-64 p-6 transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'lg:ml-64' : 'ml-0'
-        } overflow-y-auto`}
+        className={`flex-1 ml-0 p-6 pt-20 transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'ml-64' : 'ml-0'
+        } `}
       >
         {children}
       </main>
 
-      {/* Overlay for mobile */}
+      {/* Overlay for when sidebar is open */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-5 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-5 bg-black bg-opacity-50"
           onClick={toggleSidebar}
         ></div>
       )}
