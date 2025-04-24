@@ -11,13 +11,24 @@ import {
   FiEyeOff,
   FiLogIn,
 } from 'react-icons/fi';
+import { jwtDecode } from 'jwt-decode';
 
 // Email validation regex
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+// Type for the JWT payload
+type JwtPayload = {
+  id: string;
+  email: string;
+  isAdmin: boolean;
+  name?: string;
+  iat: number;
+  exp: number;
+};
+
 export default function Login() {
   // Get auth context
-  const { login, isAdmin } = useAuth();
+  const { login } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -135,13 +146,32 @@ export default function Login() {
       const response = await loginUser(formData.email, formData.password);
 
       if (response.success && response.data.token) {
-        // Use the auth context to handle login
-        login(response.data.token);
+        // Decode token to get user info directly
+        try {
+          const decodedToken = jwtDecode<JwtPayload>(response.data.token);
+          console.log(
+            'Token decoded successfully. Admin status:',
+            decodedToken.isAdmin,
+          );
 
-        // If user is admin, redirect to admin dashboard, otherwise go to home
-        if (isAdmin) {
-          navigate('/admin');
-        } else {
+          // First update the auth context
+          login(response.data.token);
+
+          // Wait for a moment to ensure auth context is updated
+          setTimeout(() => {
+            // Redirect based on admin status
+            if (decodedToken.isAdmin) {
+              console.log('Redirecting to admin dashboard');
+              navigate('/admin');
+            } else {
+              console.log('Redirecting to home page');
+              navigate('/');
+            }
+          }, 1000);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+          // Fallback to home if we can't decode
+          login(response.data.token);
           navigate('/');
         }
       } else {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Page imports
 import Home from './pages/Home';
@@ -14,6 +14,10 @@ import ResetPassword from './pages/auth/ResetPassword';
 
 // Admin page imports
 import AdminDashboard from './pages/admin/Dashboard';
+import UsersPage from './pages/admin/Users';
+import MusicPage from './pages/admin/Music';
+import StatsPage from './pages/admin/Stats';
+import MessagesPage from './pages/admin/Messages';
 
 // Route protection components
 import AdminRoute from './components/AdminRoute';
@@ -31,13 +35,57 @@ export default function AppRouter() {
       <Route path="/about" element={<About />} />
 
       {/* Protected admin routes */}
-      <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        {/* Add more admin routes here as they are implemented */}
-        {/* <Route path="/admin/users" element={<UserManagement />} /> */}
-        {/* <Route path="/admin/stats" element={<StatsPage />} /> */}
-      </Route>
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <AdminRoute>
+            <UsersPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/music"
+        element={
+          <AdminRoute>
+            <MusicPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/stats"
+        element={
+          <AdminRoute>
+            <StatsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/messages"
+        element={
+          <AdminRoute>
+            <MessagesPage />
+          </AdminRoute>
+        }
+      />
+
+      {/* Fallback route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
