@@ -3,6 +3,7 @@ import AppRouter from './AppRouter';
 import Footer from './components/Footer';
 import Navigation from './components/Navigation';
 import { AuthProvider } from './context/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
 
 function App() {
   return (
@@ -24,8 +25,10 @@ function App() {
         <main className="flex-grow z-10 overflow-y-auto">
           <AppRouter />
         </main>
+
         <Footer />
       </div>
+      <Toaster />
     </AuthProvider>
   );
 }
