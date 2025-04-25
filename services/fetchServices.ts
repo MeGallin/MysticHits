@@ -5,7 +5,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Create an axios instance with default config
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -13,7 +13,7 @@ const api = axios.create({
 });
 
 // Generic error handler for API requests
-const handleApiError = (error) => {
+const handleApiError = (error: AxiosError | Error) => {
   if (axios.isAxiosError(error) && error.response) {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
@@ -39,7 +39,7 @@ const handleApiError = (error) => {
 // Authentication services
 export const authServices = {
   // Login user with email and password
-  loginUser: async (email, password) => {
+  loginUser: async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       // Store token in local storage
@@ -94,7 +94,7 @@ export const authServices = {
   },
 
   // Register a new user
-  registerUser: async (userData) => {
+  registerUser: async (userData: { email: string; password: string }) => {
     try {
       const response = await api.post('/auth/signup', userData);
       return {
@@ -107,7 +107,7 @@ export const authServices = {
   },
 
   // Request password reset
-  requestPasswordReset: async (email) => {
+  requestPasswordReset: async (email: string) => {
     try {
       const response = await api.post('/auth/forgot-password', { email });
       return {
@@ -120,7 +120,7 @@ export const authServices = {
   },
 
   // Reset password with token
-  resetPassword: async (token, newPassword) => {
+  resetPassword: async (token: string, newPassword: string) => {
     try {
       const response = await api.post(`/auth/reset-password/${token}`, {
         password: newPassword,
@@ -138,7 +138,7 @@ export const authServices = {
 // Contact form services
 export const contactServices = {
   // Submit contact form data
-  submitContactForm: async (formData) => {
+  submitContactForm: async (formData: { name: string; email: string; message: string }) => {
     try {
       const response = await api.post('/contact', formData);
       return {
@@ -154,7 +154,7 @@ export const contactServices = {
 // Playlist services
 export const playlistServices = {
   // Get playlist from remote URL
-  getPlaylistFromUrl: async (url) => {
+  getPlaylistFromUrl: async (url: string) => {
     try {
       const response = await api.get('/playlist', {
         params: { url },
@@ -201,7 +201,7 @@ export const adminServices = {
   },
 
   // Delete a user
-  deleteUser: async (userId) => {
+  deleteUser: async (userId: string) => {
     try {
       const response = await api.delete(`/admin/users/${userId}`);
       return {
@@ -214,7 +214,7 @@ export const adminServices = {
   },
 
   // Change user role (admin status)
-  changeUserRole: async (userId, isAdmin) => {
+  changeUserRole: async (userId: string, isAdmin: boolean) => {
     try {
       const response = await api.patch(`/admin/users/${userId}/role`, {
         isAdmin,

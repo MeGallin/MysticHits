@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerUser } from '../../../services/fetchServices';
+import { registerUser } from '../../services/fetchServices';
 import {
   FiMail,
   FiLock,

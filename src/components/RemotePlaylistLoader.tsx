@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
 import { useAtom } from 'jotai';
 import { playlistAtom } from '../state/playlistAtom';
-import { playlistServices } from '../../services/fetchServices';
+import { playlistServices } from '@services/fetchServices';
 import { Track } from '../types/audio';
+
+// Define types for API response
+interface PlaylistTrack {
+  title: string;
+  url: string;
+  mime: string;
+}
+
+interface PlaylistResponse {
+  success: boolean;
+  error?: string;
+  data: {
+    success: boolean;
+    data: PlaylistTrack[];
+  };
+}
 
 export const RemotePlaylistLoader: React.FC = () => {
   const [url, setUrl] = useState<string>('');
@@ -35,23 +51,27 @@ export const RemotePlaylistLoader: React.FC = () => {
     setError(null);
 
     try {
-      const response = await playlistServices.getPlaylistFromUrl(url);
+      const response = (await playlistServices.getPlaylistFromUrl(
+        url,
+      )) as PlaylistResponse;
 
       if ('error' in response) {
-        setError(response.error);
+        setError(response.error || 'An error occurred');
         return;
       }
 
       if (response.data.success && response.data.data.length > 0) {
         // Map the API response to our Track type
-        const tracks: Track[] = response.data.data.map((track) => ({
-          title: track.title,
-          url: track.url,
-          mime: track.mime,
-          // Optional fields can be added if available
-          artist: 'Unknown Artist',
-          album: 'Unknown Album',
-        }));
+        const tracks: Track[] = response.data.data.map(
+          (track: PlaylistTrack) => ({
+            title: track.title,
+            url: track.url,
+            mime: track.mime,
+            // Optional fields can be added if available
+            artist: 'Unknown Artist',
+            album: 'Unknown Album',
+          }),
+        );
 
         setPlaylist(tracks);
       } else {

@@ -1,4 +1,45 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios from 'axios';
+
+interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  status?: number;
+}
+
+interface AuthServices {
+  loginUser: (email: string, password: string) => Promise<ApiResponse>;
+  logoutUser: () => Promise<ApiResponse>;
+  registerUser: (userData: any) => Promise<ApiResponse>;
+  requestPasswordReset: (email: string) => Promise<ApiResponse>;
+  resetPassword: (token: string, newPassword: string) => Promise<ApiResponse>;
+}
+
+interface ContactServices {
+  submitContactForm: (formData: any) => Promise<ApiResponse>;
+}
+
+interface PlaylistServices {
+  getPlaylistFromUrl: (url: string) => Promise<ApiResponse>;
+}
+
+interface HitsServices {
+  getPageHits: () => Promise<ApiResponse>;
+}
+
+interface AdminServices {
+  getUsers: () => Promise<ApiResponse>;
+  deleteUser: (userId: string) => Promise<ApiResponse>;
+  changeUserRole: (userId: string, isAdmin: boolean) => Promise<ApiResponse>;
+}
+
+interface Services {
+  authServices: AuthServices;
+  contactServices: ContactServices;
+  playlistServices: PlaylistServices;
+  hitsServices: HitsServices;
+  adminServices: AdminServices;
+}
 
 // Get the API base URL from environment variables
 const API_BASE_URL =
@@ -14,14 +55,14 @@ const api = axios.create({
 
 // Generic error handler for API requests
 const handleApiError = (error) => {
-  if (axios.isAxiosError(error) && error.response) {
+  if (error.response) {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
     return {
       error: error.response.data.error || 'An error occurred',
       status: error.response.status,
     };
-  } else if (axios.isAxiosError(error) && error.request) {
+  } else if (error.request) {
     // The request was made but no response was received
     return {
       error: 'No response from server. Please check your connection.',
@@ -37,7 +78,7 @@ const handleApiError = (error) => {
 };
 
 // Authentication services
-export const authServices = {
+export const authServices: AuthServices = {
   // Login user with email and password
   loginUser: async (email, password) => {
     try {
@@ -136,7 +177,7 @@ export const authServices = {
 };
 
 // Contact form services
-export const contactServices = {
+export const contactServices: ContactServices = {
   // Submit contact form data
   submitContactForm: async (formData) => {
     try {
@@ -152,7 +193,7 @@ export const contactServices = {
 };
 
 // Playlist services
-export const playlistServices = {
+export const playlistServices: PlaylistServices = {
   // Get playlist from remote URL
   getPlaylistFromUrl: async (url) => {
     try {
@@ -170,7 +211,7 @@ export const playlistServices = {
 };
 
 // Hits/visitor count services
-export const hitsServices = {
+export const hitsServices: HitsServices = {
   // Get page hit count
   getPageHits: async () => {
     try {
@@ -186,7 +227,7 @@ export const hitsServices = {
 };
 
 // Admin services
-export const adminServices = {
+export const adminServices: AdminServices = {
   // Get all users
   getUsers: async () => {
     try {
@@ -216,12 +257,10 @@ export const adminServices = {
   // Change user role (admin status)
   changeUserRole: async (userId, isAdmin) => {
     try {
-      const response = await api.patch(`/admin/users/${userId}/role`, {
-        isAdmin,
-      });
+      const response = await api.patch(`/admin/users/${userId}/role`, { isAdmin });
       return {
         success: true,
-        data: response.data,
+        data: response.data
       };
     } catch (error) {
       return handleApiError(error);
@@ -230,7 +269,7 @@ export const adminServices = {
 };
 
 // Export all service groups
-export default {
+const services: Services = {
   authServices,
   contactServices,
   playlistServices,
@@ -239,9 +278,8 @@ export default {
 };
 
 // Export individual functions for direct import
-export const loginUser = authServices.loginUser;
-export const registerUser = authServices.registerUser;
-export const requestPasswordReset = authServices.requestPasswordReset;
-export const resetPassword = authServices.resetPassword;
-export const logoutUser = authServices.logoutUser;
+export const { loginUser, registerUser, requestPasswordReset, resetPassword, logoutUser } = authServices;
 export const { getUsers, deleteUser, changeUserRole } = adminServices;
+
+// Export services object as default
+export default services;
