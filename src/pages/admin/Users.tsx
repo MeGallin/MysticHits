@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { FiUserX, FiUserCheck } from 'react-icons/fi';
+import { FiUserX } from 'react-icons/fi';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +13,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { useToast } from '../../components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { getUsers, deleteUser } from '../../../services/fetchServices';
 
 interface User {
   _id: string;
@@ -29,9 +30,6 @@ const UsersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const API_BASE_URL =
-    import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
   // Fetch users on component mount
   useEffect(() => {
     fetchUsers();
@@ -39,18 +37,11 @@ const UsersPage: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
+      const response = await getUsers();
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch users');
       }
-
-      const data = await response.json();
-      setUsers(data);
+      setUsers(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -60,15 +51,9 @@ const UsersPage: React.FC = () => {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete user');
+      const response = await deleteUser(userId);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to delete user');
       }
 
       // Remove user from local state

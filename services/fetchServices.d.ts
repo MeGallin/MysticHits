@@ -92,6 +92,21 @@ export interface HitsServices {
   >;
 }
 
+// Define admin data structures
+interface User {
+  _id: string;
+  email: string;
+  username: string;
+  isAdmin: boolean;
+  createdAt: string;
+}
+
+// Define admin services
+export interface AdminServices {
+  getUsers(): Promise<ApiSuccessResponse<User[]> | ApiErrorResponse>;
+  deleteUser(userId: string): Promise<ApiSuccessResponse | ApiErrorResponse>;
+}
+
 // Export individual auth functions
 export function loginUser(
   email: string,
@@ -118,6 +133,8 @@ export const authServices: AuthServices;
 export const contactServices: ContactServices;
 export const playlistServices: PlaylistServices;
 export const hitsServices: HitsServices;
+export const getUsers: AdminServices['getUsers'];
+export const deleteUser: AdminServices['deleteUser'];
 
 // Default export
 declare const services: {

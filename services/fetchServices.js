@@ -49,7 +49,7 @@ export const authServices = {
         api.defaults.headers.common[
           'Authorization'
         ] = `Bearer ${response.data.token}`;
-        
+
         // Broadcast login event
         window.dispatchEvent(new Event('auth:login'));
       }
@@ -67,16 +67,16 @@ export const authServices = {
     try {
       // Call backend logout endpoint
       const response = await api.post('/auth/logout');
-      
+
       // Remove token from localStorage
       localStorage.removeItem('token');
-      
+
       // Remove Authorization header from axios
       delete api.defaults.headers.common['Authorization'];
-      
+
       // Broadcast logout event
       window.dispatchEvent(new Event('auth:logout'));
-      
+
       return {
         success: true,
         data: response.data,
@@ -85,10 +85,10 @@ export const authServices = {
       // Still remove token even if backend call fails
       localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
-      
+
       // Still broadcast logout event even if API call fails
       window.dispatchEvent(new Event('auth:logout'));
-      
+
       return handleApiError(error);
     }
   },
@@ -185,12 +185,42 @@ export const hitsServices = {
   },
 };
 
+// Admin services
+export const adminServices = {
+  // Get all users
+  getUsers: async () => {
+    try {
+      const response = await api.get('/admin/users');
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Delete a user
+  deleteUser: async (userId) => {
+    try {
+      const response = await api.delete(`/admin/users/${userId}`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+};
+
 // Export all service groups
 export default {
   authServices,
   contactServices,
   playlistServices,
   hitsServices,
+  adminServices,
 };
 
 // Export individual functions for direct import
@@ -199,3 +229,4 @@ export const registerUser = authServices.registerUser;
 export const requestPasswordReset = authServices.requestPasswordReset;
 export const resetPassword = authServices.resetPassword;
 export const logoutUser = authServices.logoutUser;
+export const { getUsers, deleteUser } = adminServices;
