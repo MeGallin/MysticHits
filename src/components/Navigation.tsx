@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { Menu, User, LogIn, UserPlus, ChevronDown, LogOut } from 'lucide-react';
-import { logoutUser } from '../../services/fetchServices';
+import { logoutUser } from '@services/fetchServices';
 import { AUTH_EVENTS, isAuthenticated } from '../utils/authUtils';
 
 /**

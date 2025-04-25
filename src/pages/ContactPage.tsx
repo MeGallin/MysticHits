@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { contactServices } from '../../services/fetchServices';
+import { contactServices } from '@services/fetchServices';
 import { Button } from '@/components/ui/button';
 
 // Icons

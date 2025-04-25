@@ -71,7 +71,7 @@ export const AudioPlayer: React.FC = () => {
 
     try {
       // Import playlistServices
-      const { playlistServices } = await import('../../services/fetchServices');
+      const { playlistServices } = await import('../services/fetchServices');
       const response = await playlistServices.getPlaylistFromUrl(remoteUrl);
 
       if ('error' in response) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { FiUserX } from 'react-icons/fi';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getUsers, deleteUser } from '../../../services/fetchServices';
+import services from '../../services/fetchServices';
+import { useAuth } from '../../context/AuthContext';
 
 interface User {
   _id: string;
@@ -29,15 +31,20 @@ const UsersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
-  // Fetch users on component mount
+  // Helper function to check if a user is the current user
+  const isCurrentUser = (userId: string): boolean => {
+    return !!currentUser && userId === currentUser.id;
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
     try {
-      const response = await getUsers();
+      const response = await services.adminServices.getUsers();
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch users');
       }
@@ -50,16 +57,22 @@ const UsersPage: React.FC = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    // Prevent deleting yourself
+    if (isCurrentUser(userId)) {
+      toast({
+        title: 'Action not allowed',
+        description: 'You cannot delete your own account.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      const response = await deleteUser(userId);
+      const response = await services.adminServices.deleteUser(userId);
       if (!response.success) {
         throw new Error(response.error || 'Failed to delete user');
       }
-
-      // Remove user from local state
       setUsers(users.filter((user) => user._id !== userId));
-
-      // Show success toast
       toast({
         title: 'User deleted',
         description: 'The user has been successfully deleted.',
@@ -69,6 +82,49 @@ const UsersPage: React.FC = () => {
         title: 'Error',
         description:
           err instanceof Error ? err.message : 'Failed to delete user',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRoleToggle = async (userId: string, newIsAdmin: boolean) => {
+    // Prevent changing your own admin status
+    if (isCurrentUser(userId)) {
+      toast({
+        title: 'Action not allowed',
+        description: 'You cannot modify your own admin rights.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await services.adminServices.changeUserRole(
+        userId,
+        newIsAdmin,
+      );
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to update user role');
+      }
+
+      // Update local state
+      setUsers(
+        users.map((user) =>
+          user._id === userId ? { ...user, isAdmin: newIsAdmin } : user,
+        ),
+      );
+
+      toast({
+        title: 'Role Updated',
+        description: `User role has been ${
+          newIsAdmin ? 'upgraded to admin' : 'changed to regular user'
+        }.`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description:
+          err instanceof Error ? err.message : 'Failed to update role',
         variant: 'destructive',
       });
     }
@@ -115,6 +171,9 @@ const UsersPage: React.FC = () => {
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Admin Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Joined
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -143,40 +202,52 @@ const UsersPage: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <Switch
+                      checked={user.isAdmin}
+                      disabled={isCurrentUser(user._id)}
+                      onCheckedChange={(checked: boolean) =>
+                        handleRoleToggle(user._id, checked)
+                      }
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {!user.isAdmin && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                          >
-                            <FiUserX size={18} />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete User</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete {user.email}? This
-                              action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteUser(user._id)}
-                              className="bg-red-500 hover:bg-red-600"
+                    {!user.isAdmin &&
+                      currentUser &&
+                      user._id !== currentUser.id && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                              <FiUserX size={18} />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {user.email}?
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user._id)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                   </td>
                 </tr>
               ))}
