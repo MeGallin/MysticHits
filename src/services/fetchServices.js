@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios from 'axios';
 
 // Get the API base URL from environment variables
 const API_BASE_URL =
