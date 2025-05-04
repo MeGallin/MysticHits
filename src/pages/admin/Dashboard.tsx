@@ -12,10 +12,14 @@ const AdminDashboard: React.FC = () => {
     unread: 0,
     important: 0,
   });
+  const [userStats, setUserStats] = useState({
+    total: 0,
+    admins: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMessageStats = async () => {
+    const fetchStats = async () => {
       try {
         // Get all messages
         const allMessages = await services.adminServices.getMessages();
@@ -28,6 +32,9 @@ const AdminDashboard: React.FC = () => {
           'important',
         );
 
+        // Get users
+        const usersResponse = await services.adminServices.getUsers();
+
         if (
           allMessages.success &&
           unreadMessages.success &&
@@ -39,14 +46,22 @@ const AdminDashboard: React.FC = () => {
             important: importantMessages.data?.length || 0,
           });
         }
+
+        if (usersResponse.success) {
+          const users = usersResponse.data || [];
+          setUserStats({
+            total: users.length,
+            admins: users.filter((u) => u.isAdmin).length,
+          });
+        }
       } catch (error) {
-        console.error('Error fetching message stats:', error);
+        console.error('Error fetching stats:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMessageStats();
+    fetchStats();
   }, []);
 
   return (
@@ -60,14 +75,29 @@ const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Link
           to="/admin/users"
-          className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 p-6 rounded-lg border border-blue-500/30 flex items-center hover:from-blue-500/30 hover:to-blue-600/30 transition-all group"
+          className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 p-6 rounded-lg border border-blue-500/30 flex items-start hover:from-blue-500/30 hover:to-blue-600/30 transition-all group"
         >
           <FiUsers className="h-10 w-10 text-blue-400 mr-4 group-hover:scale-110 transition-transform" />
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-semibold text-white">
               User Management
             </h2>
-            <p className="text-blue-200">Manage user accounts</p>
+            <p className="text-blue-200 mb-2">Manage user accounts</p>
+
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="bg-blue-600/20 rounded px-2 py-1 text-center">
+                <div className="text-white text-sm font-medium">
+                  {loading ? '...' : userStats.total}
+                </div>
+                <div className="text-blue-200 text-xs">Total Users</div>
+              </div>
+              <div className="bg-blue-600/20 rounded px-2 py-1 text-center">
+                <div className="text-blue-300 text-sm font-medium">
+                  {loading ? '...' : userStats.admins}
+                </div>
+                <div className="text-blue-200 text-xs">Admins</div>
+              </div>
+            </div>
           </div>
         </Link>
 
