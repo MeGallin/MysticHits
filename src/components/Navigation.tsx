@@ -65,11 +65,11 @@ const Navigation: React.FC = () => {
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo/Brand - Acts as home link */}
         <div className="container mx-auto flex items-center">
-          <Link to="/" className="font-bold text-lg uppercase">
-            Mystic Hits
-            <div className="font-normal lowercase text-xs opacity-80">
-              Enjoy the vibes!
-            </div>
+          <Link to="/" className="font-bold text-lg">
+            MYSTIC HITS
+            <span className="mx-2 font-normal text-xs opacity-80">
+              enjoy the vibes!
+            </span>
           </Link>
         </div>
 
