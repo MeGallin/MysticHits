@@ -1,6 +1,13 @@
 import React from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { FiMusic, FiPlus, FiTrash2, FiEdit2 } from 'react-icons/fi';
+import {
+  FiMusic,
+  FiPlus,
+  FiTrash2,
+  FiEdit2,
+  FiArrowLeft,
+} from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 const MusicPage: React.FC = () => {
   // This is a placeholder - in a real implementation, you would fetch music data from the API
@@ -82,7 +89,15 @@ const MusicPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold text-white mb-6">Music Management</h1>
+      <div className="flex items-center mb-6">
+        <Link
+          to="/admin/dashboard"
+          className="flex items-center text-gray-400 hover:text-white mr-4"
+        >
+          <FiArrowLeft className="mr-2" /> Back to Dashboard
+        </Link>
+        <h1 className="text-3xl font-bold text-white">Music Management</h1>
+      </div>
 
       {/* Playlists Section */}
       <div className="mb-10">

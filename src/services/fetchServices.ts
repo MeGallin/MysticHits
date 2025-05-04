@@ -348,7 +348,7 @@ export const {
   resetPassword,
   logoutUser,
 } = authServices;
-// Explicitly export all admin service functions
+// Explicitly export all admin service functions including message-related ones
 export const {
   getUsers,
   deleteUser,
