@@ -54,13 +54,7 @@ const AdminDashboard: React.FC = () => {
       <h1 className="text-3xl font-bold text-white mb-6">Dashboard Overview</h1>
 
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 mb-6">
-        <p className="text-xl text-white mb-2">
-          Welcome, {user?.name || user?.email}
-        </p>
-        <p className="text-gray-300">
-          This is the admin dashboard. From here you can manage users, content,
-          and view statistics.
-        </p>
+        <p className="text-xl text-white mb-2">Welcome, {user?.email}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
