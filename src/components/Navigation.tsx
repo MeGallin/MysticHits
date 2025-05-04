@@ -64,9 +64,14 @@ const Navigation: React.FC = () => {
     <nav className="bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green text-white px-4 py-3 shadow-md border-b-2 border-gray-900">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo/Brand - Acts as home link */}
-        <Link to="/" className="font-bold text-lg uppercase">
-          Mystic Hits
-        </Link>
+        <div className="container mx-auto flex items-center">
+          <Link to="/" className="font-bold text-lg uppercase">
+            Mystic Hits
+            <div className="font-normal lowercase text-xs opacity-80">
+              Enjoy the vibes!
+            </div>
+          </Link>
+        </div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
