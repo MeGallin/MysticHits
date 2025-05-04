@@ -8,9 +8,11 @@ import {
   FiClock,
   FiAlertCircle,
   FiRefreshCw,
+  FiArrowLeft,
 } from 'react-icons/fi';
 import services from '../../services/fetchServices';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 // Use these directly from the services object
 const { getMessages, getMessage, updateMessage, deleteMessage } =
@@ -236,7 +238,15 @@ const MessagesPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold text-white mb-6">Messages</h1>
+      <div className="flex items-center mb-6">
+        <Link
+          to="/admin/dashboard"
+          className="flex items-center text-gray-400 hover:text-white mr-4"
+        >
+          <FiArrowLeft className="mr-2" /> Back to Dashboard
+        </Link>
+        <h1 className="text-3xl font-bold text-white">Messages</h1>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Message List */}

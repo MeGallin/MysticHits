@@ -1,6 +1,13 @@
 import React from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { FiUsers, FiMusic, FiBarChart2, FiEye } from 'react-icons/fi';
+import {
+  FiUsers,
+  FiMusic,
+  FiBarChart2,
+  FiEye,
+  FiArrowLeft,
+} from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 const StatsPage: React.FC = () => {
   // This is a placeholder - in a real implementation, you would fetch stats from the API
@@ -23,7 +30,15 @@ const StatsPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold text-white mb-6">System Statistics</h1>
+      <div className="flex items-center mb-6">
+        <Link
+          to="/admin/dashboard"
+          className="flex items-center text-gray-400 hover:text-white mr-4"
+        >
+          <FiArrowLeft className="mr-2" /> Back to Dashboard
+        </Link>
+        <h1 className="text-3xl font-bold text-white">System Statistics</h1>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Users Stats */}

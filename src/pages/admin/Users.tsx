@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { FiUserX } from 'react-icons/fi';
+import { FiUserX, FiArrowLeft } from 'react-icons/fi';
 import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import services from '../../services/fetchServices';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface User {
   _id: string;
@@ -152,7 +153,13 @@ const UsersPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center mb-6">
+        <Link
+          to="/admin/dashboard"
+          className="flex items-center text-gray-400 hover:text-white mr-4"
+        >
+          <FiArrowLeft className="mr-2" /> Back to Dashboard
+        </Link>
         <h1 className="text-3xl font-bold text-white">User Management</h1>
       </div>
 
