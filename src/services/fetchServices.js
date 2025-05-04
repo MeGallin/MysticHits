@@ -232,7 +232,7 @@ export const adminServices = {
   getMessages: async (filter = 'all') => {
     try {
       const response = await api.get('/admin/messages', {
-        params: filter !== 'all' ? { filter } : undefined
+        params: filter !== 'all' ? { filter } : undefined,
       });
       return {
         success: true,
@@ -298,12 +298,12 @@ export const registerUser = authServices.registerUser;
 export const requestPasswordReset = authServices.requestPasswordReset;
 export const resetPassword = authServices.resetPassword;
 export const logoutUser = authServices.logoutUser;
-export const { 
-  getUsers, 
-  deleteUser, 
+export const {
+  getUsers,
+  deleteUser,
   changeUserRole,
   getMessages,
   getMessage,
   updateMessage,
-  deleteMessage 
+  deleteMessage,
 } = adminServices;
