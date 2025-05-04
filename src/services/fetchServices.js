@@ -227,6 +227,60 @@ export const adminServices = {
       return handleApiError(error);
     }
   },
+
+  // Get all messages with optional filter (all, unread, important)
+  getMessages: async (filter = 'all') => {
+    try {
+      const response = await api.get('/admin/messages', {
+        params: filter !== 'all' ? { filter } : undefined,
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Get a single message by ID
+  getMessage: async (id) => {
+    try {
+      const response = await api.get(`/admin/messages/${id}`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Update message properties (read/important status)
+  updateMessage: async (id, updates) => {
+    try {
+      const response = await api.patch(`/admin/messages/${id}`, updates);
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Delete a message
+  deleteMessage: async (id) => {
+    try {
+      const response = await api.delete(`/admin/messages/${id}`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 };
 
 // Export all service groups
@@ -244,4 +298,12 @@ export const registerUser = authServices.registerUser;
 export const requestPasswordReset = authServices.requestPasswordReset;
 export const resetPassword = authServices.resetPassword;
 export const logoutUser = authServices.logoutUser;
-export const { getUsers, deleteUser, changeUserRole } = adminServices;
+export const {
+  getUsers,
+  deleteUser,
+  changeUserRole,
+  getMessages,
+  getMessage,
+  updateMessage,
+  deleteMessage,
+} = adminServices;

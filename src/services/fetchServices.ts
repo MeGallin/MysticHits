@@ -31,6 +31,13 @@ interface AdminServices {
   getUsers: () => Promise<ApiResponse>;
   deleteUser: (userId: string) => Promise<ApiResponse>;
   changeUserRole: (userId: string, isAdmin: boolean) => Promise<ApiResponse>;
+  getMessages: (filter?: string) => Promise<ApiResponse>;
+  getMessage: (id: string) => Promise<ApiResponse>;
+  updateMessage: (
+    id: string,
+    updates: { read?: boolean; important?: boolean },
+  ) => Promise<ApiResponse>;
+  deleteMessage: (id: string) => Promise<ApiResponse>;
 }
 
 interface Services {
@@ -257,10 +264,66 @@ export const adminServices: AdminServices = {
   // Change user role (admin status)
   changeUserRole: async (userId, isAdmin) => {
     try {
-      const response = await api.patch(`/admin/users/${userId}/role`, { isAdmin });
+      const response = await api.patch(`/admin/users/${userId}/role`, {
+        isAdmin,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Get all messages with optional filter (all, unread, important)
+  getMessages: async (filter = 'all') => {
+    try {
+      const response = await api.get('/admin/messages', {
+        params: filter !== 'all' ? { filter } : undefined,
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Get a single message by ID
+  getMessage: async (id) => {
+    try {
+      const response = await api.get(`/admin/messages/${id}`);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Update message properties (read/important status)
+  updateMessage: async (id, updates) => {
+    try {
+      const response = await api.patch(`/admin/messages/${id}`, updates);
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  // Delete a message
+  deleteMessage: async (id) => {
+    try {
+      const response = await api.delete(`/admin/messages/${id}`);
+      return {
+        success: true,
+        data: response.data,
       };
     } catch (error) {
       return handleApiError(error);
@@ -278,8 +341,23 @@ const services: Services = {
 };
 
 // Export individual functions for direct import
-export const { loginUser, registerUser, requestPasswordReset, resetPassword, logoutUser } = authServices;
-export const { getUsers, deleteUser, changeUserRole } = adminServices;
+export const {
+  loginUser,
+  registerUser,
+  requestPasswordReset,
+  resetPassword,
+  logoutUser,
+} = authServices;
+// Explicitly export all admin service functions
+export const {
+  getUsers,
+  deleteUser,
+  changeUserRole,
+  getMessages,
+  getMessage,
+  updateMessage,
+  deleteMessage,
+} = adminServices;
 
 // Export services object as default
 export default services;
