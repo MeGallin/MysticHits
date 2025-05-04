@@ -131,6 +131,39 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  // Renders a deletion alert dialog for a user
+  const renderDeleteAlert = (user: User) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2"
+        >
+          <FiUserX size={18} />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete User</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete {user.email}? This action cannot be
+            undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => handleDeleteUser(user._id)}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   if (loading) {
     return (
       <AdminLayout>
@@ -153,113 +186,145 @@ const UsersPage: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="flex items-center mb-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-full">
         <Link
           to="/admin/dashboard"
-          className="flex items-center text-gray-400 hover:text-white mr-4"
+          className="flex items-center text-gray-400 hover:text-white mb-4"
         >
           <FiArrowLeft className="mr-2" /> Back to Dashboard
         </Link>
-        <h1 className="text-3xl font-bold text-white">User Management</h1>
-      </div>
 
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-700/50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Username
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Admin Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Joined
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-gray-800/30 divide-y divide-gray-700">
-              {users.map((user) => (
-                <tr key={user._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {user.username}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {user.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {user.isAdmin ? (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                        Admin
-                      </span>
-                    ) : (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        User
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <Switch
-                      checked={user.isAdmin}
-                      disabled={isCurrentUser(user._id)}
-                      onCheckedChange={(checked: boolean) =>
-                        handleRoleToggle(user._id, checked)
-                      }
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {!user.isAdmin &&
-                      currentUser &&
-                      user._id !== currentUser.id && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                            >
-                              <FiUserX size={18} />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete {user.email}?
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteUser(user._id)}
-                                className="bg-red-500 hover:bg-red-600"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                  </td>
+        <div className="flex items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+            User Management
+          </h1>
+        </div>
+
+        {/* Mobile card view (hidden on md and larger screens) */}
+        <div className="block md:hidden space-y-4">
+          {users.map((user) => (
+            <div
+              key={user._id}
+              className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-medium text-white">{user.username}</h3>
+                  <p className="text-sm text-gray-300">{user.email}</p>
+                </div>
+                <div>
+                  {user.isAdmin ? (
+                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                      Admin
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                      User
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-400 mb-3">
+                Joined: {new Date(user.createdAt).toLocaleDateString()}
+              </div>
+
+              <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-700">
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-300 mr-3">
+                    Admin Status:
+                  </span>
+                  <Switch
+                    checked={user.isAdmin}
+                    disabled={isCurrentUser(user._id)}
+                    onCheckedChange={(checked: boolean) =>
+                      handleRoleToggle(user._id, checked)
+                    }
+                    className="data-[state=checked]:bg-purple-600"
+                  />
+                </div>
+
+                <div>
+                  {!user.isAdmin &&
+                    currentUser &&
+                    user._id !== currentUser.id &&
+                    renderDeleteAlert(user)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop table view (hidden on smaller screens) */}
+        <div className="hidden md:block bg-gray-800/50 backdrop-blur-sm rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-700/50">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Admin Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Joined
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-gray-800/30 divide-y divide-gray-700">
+                {users.map((user) => (
+                  <tr key={user._id}>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {user.username}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {user.email}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                      {user.isAdmin ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                          Admin
+                        </span>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          User
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <Switch
+                        checked={user.isAdmin}
+                        disabled={isCurrentUser(user._id)}
+                        onCheckedChange={(checked: boolean) =>
+                          handleRoleToggle(user._id, checked)
+                        }
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {!user.isAdmin &&
+                        currentUser &&
+                        user._id !== currentUser.id &&
+                        renderDeleteAlert(user)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </AdminLayout>

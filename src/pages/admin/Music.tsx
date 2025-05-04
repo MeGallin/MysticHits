@@ -89,13 +89,14 @@ const MusicPage: React.FC = () => {
 
   return (
     <AdminLayout>
+      <Link
+        to="/admin/dashboard"
+        className="flex items-center text-gray-400 hover:text-white mr-4"
+      >
+        <FiArrowLeft className="mr-2" /> Back to Dashboard
+      </Link>
+
       <div className="flex items-center mb-6">
-        <Link
-          to="/admin/dashboard"
-          className="flex items-center text-gray-400 hover:text-white mr-4"
-        >
-          <FiArrowLeft className="mr-2" /> Back to Dashboard
-        </Link>
         <h1 className="text-3xl font-bold text-white">Music Management</h1>
       </div>
 
