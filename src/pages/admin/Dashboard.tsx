@@ -4,6 +4,7 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import { FiUsers, FiMusic, FiBarChart2, FiMessageSquare } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import services from '../../services/fetchServices';
+import HealthCard from '../../components/admin/HealthCard';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -171,25 +172,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">
-            System Status
-          </h2>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-300">API Status:</span>
-              <span className="text-green-400">Online</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-300">Database:</span>
-              <span className="text-green-400">Connected</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-300">Last Backup:</span>
-              <span className="text-blue-400">Today at 03:00 AM</span>
-            </div>
-          </div>
-        </div>
+        <HealthCard />
       </div>
     </AdminLayout>
   );
