@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import ContactPage from './pages/ContactPage';
 import About from './pages/About';
+import ChartsPage from './pages/Charts';
 
 // Auth page imports
 import Login from './pages/auth/Login';
@@ -33,6 +34,7 @@ export default function AppRouter() {
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/about" element={<About />} />
+      <Route path="/charts" element={<ChartsPage />} />
 
       {/* Protected admin routes */}
       <Route
