@@ -89,7 +89,7 @@ const Navigation: React.FC = () => {
               <div className="flex items-center">
                 <span className="h-px w-4 bg-gradient-to-r from-transparent to-yellow-400"></span>
                 <span className="font-normal text-xs text-white/80 tracking-wider mx-1 italic">
-                  enjoy the vibes!
+                  Enjoy the VIBES!
                 </span>
                 <span className="h-px flex-grow bg-gradient-to-r from-yellow-400 to-transparent"></span>
               </div>
