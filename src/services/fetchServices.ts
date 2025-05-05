@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -7,16 +7,31 @@ interface ApiResponse<T = any> {
   status?: number;
 }
 
+// User-related interfaces
+interface UserData {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+// Contact form interface
+interface ContactFormData {
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+}
+
 interface AuthServices {
   loginUser: (email: string, password: string) => Promise<ApiResponse>;
   logoutUser: () => Promise<ApiResponse>;
-  registerUser: (userData: any) => Promise<ApiResponse>;
+  registerUser: (userData: UserData) => Promise<ApiResponse>;
   requestPasswordReset: (email: string) => Promise<ApiResponse>;
   resetPassword: (token: string, newPassword: string) => Promise<ApiResponse>;
 }
 
 interface ContactServices {
-  submitContactForm: (formData: any) => Promise<ApiResponse>;
+  submitContactForm: (formData: ContactFormData) => Promise<ApiResponse>;
 }
 
 interface PlaylistServices {
@@ -40,12 +55,17 @@ interface AdminServices {
   deleteMessage: (id: string) => Promise<ApiResponse>;
 }
 
+interface HealthServices {
+  getHealthStatus: () => Promise<ApiResponse>;
+}
+
 interface Services {
   authServices: AuthServices;
   contactServices: ContactServices;
   playlistServices: PlaylistServices;
   hitsServices: HitsServices;
   adminServices: AdminServices;
+  healthServices: HealthServices;
 }
 
 // Get the API base URL from environment variables
@@ -61,23 +81,26 @@ const api = axios.create({
 });
 
 // Generic error handler for API requests
-const handleApiError = (error) => {
+const handleApiError = (error: AxiosError): ApiResponse => {
   if (error.response) {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
     return {
-      error: error.response.data.error || 'An error occurred',
+      success: false,
+      error: error.response.data?.error || 'An error occurred',
       status: error.response.status,
     };
   } else if (error.request) {
     // The request was made but no response was received
     return {
+      success: false,
       error: 'No response from server. Please check your connection.',
       status: 0,
     };
   } else {
     // Something happened in setting up the request that triggered an Error
     return {
+      success: false,
       error: error.message || 'An unexpected error occurred',
       status: 0,
     };
@@ -89,7 +112,10 @@ export const authServices: AuthServices = {
   // Login user with email and password
   loginUser: async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response: AxiosResponse = await api.post('/auth/login', {
+        email,
+        password,
+      });
       // Store token in local storage
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -106,7 +132,7 @@ export const authServices: AuthServices = {
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
@@ -114,7 +140,7 @@ export const authServices: AuthServices = {
   logoutUser: async () => {
     try {
       // Call backend logout endpoint
-      const response = await api.post('/auth/logout');
+      const response: AxiosResponse = await api.post('/auth/logout');
 
       // Remove token from localStorage
       localStorage.removeItem('token');
@@ -137,48 +163,53 @@ export const authServices: AuthServices = {
       // Still broadcast logout event even if API call fails
       window.dispatchEvent(new Event('auth:logout'));
 
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Register a new user
   registerUser: async (userData) => {
     try {
-      const response = await api.post('/auth/signup', userData);
+      const response: AxiosResponse = await api.post('/auth/signup', userData);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Request password reset
   requestPasswordReset: async (email) => {
     try {
-      const response = await api.post('/auth/forgot-password', { email });
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  // Reset password with token
-  resetPassword: async (token, newPassword) => {
-    try {
-      const response = await api.post(`/auth/reset-password/${token}`, {
-        password: newPassword,
+      const response: AxiosResponse = await api.post('/auth/forgot-password', {
+        email,
       });
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
+    }
+  },
+
+  // Reset password with token
+  resetPassword: async (token, newPassword) => {
+    try {
+      const response: AxiosResponse = await api.post(
+        `/auth/reset-password/${token}`,
+        {
+          password: newPassword,
+        },
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
     }
   },
 };
@@ -188,13 +219,13 @@ export const contactServices: ContactServices = {
   // Submit contact form data
   submitContactForm: async (formData) => {
     try {
-      const response = await api.post('/contact', formData);
+      const response: AxiosResponse = await api.post('/contact', formData);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 };
@@ -204,7 +235,7 @@ export const playlistServices: PlaylistServices = {
   // Get playlist from remote URL
   getPlaylistFromUrl: async (url) => {
     try {
-      const response = await api.get('/playlist', {
+      const response: AxiosResponse = await api.get('/playlist', {
         params: { url },
       });
       return {
@@ -212,7 +243,7 @@ export const playlistServices: PlaylistServices = {
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 };
@@ -222,13 +253,13 @@ export const hitsServices: HitsServices = {
   // Get page hit count
   getPageHits: async () => {
     try {
-      const response = await api.get('/hits/page-hits');
+      const response: AxiosResponse = await api.get('/hits/page-hits');
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 };
@@ -238,48 +269,53 @@ export const adminServices: AdminServices = {
   // Get all users
   getUsers: async () => {
     try {
-      const response = await api.get('/admin/users');
+      const response: AxiosResponse = await api.get('/admin/users');
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Delete a user
   deleteUser: async (userId) => {
     try {
-      const response = await api.delete(`/admin/users/${userId}`);
+      const response: AxiosResponse = await api.delete(
+        `/admin/users/${userId}`,
+      );
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Change user role (admin status)
   changeUserRole: async (userId, isAdmin) => {
     try {
-      const response = await api.patch(`/admin/users/${userId}/role`, {
-        isAdmin,
-      });
+      const response: AxiosResponse = await api.patch(
+        `/admin/users/${userId}/role`,
+        {
+          isAdmin,
+        },
+      );
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Get all messages with optional filter (all, unread, important)
   getMessages: async (filter = 'all') => {
     try {
-      const response = await api.get('/admin/messages', {
+      const response: AxiosResponse = await api.get('/admin/messages', {
         params: filter !== 'all' ? { filter } : undefined,
       });
       return {
@@ -287,46 +323,65 @@ export const adminServices: AdminServices = {
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Get a single message by ID
   getMessage: async (id) => {
     try {
-      const response = await api.get(`/admin/messages/${id}`);
+      const response: AxiosResponse = await api.get(`/admin/messages/${id}`);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Update message properties (read/important status)
   updateMessage: async (id, updates) => {
     try {
-      const response = await api.patch(`/admin/messages/${id}`, updates);
+      const response: AxiosResponse = await api.patch(
+        `/admin/messages/${id}`,
+        updates,
+      );
       return {
         success: true,
         data: response.data.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
     }
   },
 
   // Delete a message
   deleteMessage: async (id) => {
     try {
-      const response = await api.delete(`/admin/messages/${id}`);
+      const response: AxiosResponse = await api.delete(`/admin/messages/${id}`);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      return handleApiError(error);
+      return handleApiError(error as AxiosError);
+    }
+  },
+};
+
+// Health status services
+export const healthServices: HealthServices = {
+  // Get system health status
+  getHealthStatus: async () => {
+    try {
+      const response: AxiosResponse = await api.get('/health');
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
     }
   },
 };
@@ -338,6 +393,7 @@ const services: Services = {
   playlistServices,
   hitsServices,
   adminServices,
+  healthServices,
 };
 
 // Export individual functions for direct import
