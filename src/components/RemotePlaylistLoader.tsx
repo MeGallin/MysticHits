@@ -68,7 +68,7 @@ export const RemotePlaylistLoader: React.FC = () => {
             url: track.url,
             mime: track.mime,
             // Optional fields can be added if available
-            artist: 'Unknown Artist',
+            artist: '',
             album: 'Unknown Album',
           }),
         );
