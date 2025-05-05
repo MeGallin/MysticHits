@@ -37,7 +37,7 @@ const StatsPage: React.FC = () => {
         <FiArrowLeft className="mr-2" /> Back to Dashboard
       </Link>
 
-      <div className="flex items-center mb-6">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-white">System Statistics</h1>
       </div>
 
@@ -183,6 +183,14 @@ const StatsPage: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                   3,125
+                </td>
+              </tr>
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  Charts
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                  2,345
                 </td>
               </tr>
               <tr>

@@ -10,7 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogIn, UserPlus, ChevronDown, LogOut } from 'lucide-react';
+import {
+  Menu,
+  User,
+  LogIn,
+  UserPlus,
+  ChevronDown,
+  LogOut,
+  BarChart,
+} from 'lucide-react';
 import { logoutUser } from '@services/fetchServices';
 import { AUTH_EVENTS, isAuthenticated } from '../utils/authUtils';
 
@@ -100,6 +108,13 @@ const Navigation: React.FC = () => {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
           {/* Home link removed - Logo now serves as home link */}
+          <Link
+            to="/charts"
+            className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
+          >
+            <BarChart className="h-4 w-4 mr-1 text-yellow-300" />
+            Charts
+          </Link>
           <Link
             to="/about"
             className="font-medium hover:text-yellow-400 transition-colors uppercase"
@@ -240,6 +255,14 @@ const Navigation: React.FC = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
+              </Link>
+              <Link
+                to="/charts"
+                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <BarChart className="h-5 w-5 mr-2 text-yellow-400" />
+                Charts
               </Link>
               <Link
                 to="/about"
