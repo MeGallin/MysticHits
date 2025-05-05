@@ -4,6 +4,7 @@ import {
   currentTrackAtom,
   isPlayingAtom,
   volumeAtom,
+  trackDurationsAtom,
 } from '../state/audioAtoms';
 import { Track } from '../types/audio';
 import { advertisements } from '../data/advertisements';
@@ -38,6 +39,7 @@ export const useAudioPlayer = (tracks: Track[]) => {
   const [previousVolume, setPreviousVolume] = useState(volume);
   const [showingAd, setShowingAd] = useState(false);
   const [currentAdId, setCurrentAdId] = useState<number | null>(null);
+  const [trackDurations, setTrackDurations] = useAtom(trackDurationsAtom);
 
   /**
    * Initialize or update shuffled indices when tracks change or shuffle mode changes
@@ -192,23 +194,26 @@ export const useAudioPlayer = (tracks: Track[]) => {
 
       // Update the track's duration if it's not set
       if (currentTrack && currentIndex >= 0 && currentIndex < tracks.length) {
-        const updatedTracks = [...tracks];
-        if (
-          !updatedTracks[currentIndex].duration ||
-          updatedTracks[currentIndex].duration === 0
-        ) {
+        // Store the duration in the trackDurationsAtom using the URL as key
+        if (currentTrack.url) {
+          setTrackDurations((prevDurations) => ({
+            ...prevDurations,
+            [currentTrack.url]: audioDuration,
+          }));
+
+          // Also update the local tracks array for immediate use
+          const updatedTracks = [...tracks];
           updatedTracks[currentIndex] = {
             ...updatedTracks[currentIndex],
             duration: audioDuration,
           };
-          // We don't need to setTracks here as it would cause a re-render loop
-          // This is just updating the duration for display purposes
+          // We don't update the source tracks array as it would cause a re-render loop
         }
       }
 
       setError(null);
     }
-  }, [currentTrack, currentIndex, tracks]);
+  }, [currentTrack, currentIndex, tracks, setTrackDurations]);
 
   /**
    * Toggle repeat mode for the current track

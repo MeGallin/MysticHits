@@ -112,7 +112,7 @@ export const AudioPlayer: React.FC = () => {
             ...track,
             url: cleanUrl,
             mime: track.mime || 'audio/mpeg',
-            artist: track.artist || 'Unknown Artist',
+            artist: track.artist || '',
             album: track.album || 'Unknown Album',
             duration: track.duration || 0,
             cover: track.cover || '/placeholder.svg?height=300&width=300',
@@ -141,7 +141,7 @@ export const AudioPlayer: React.FC = () => {
               ? track.url
               : new URL(track.url, new URL(remoteUrl).origin).toString(),
             mime: track.mime || 'audio/mpeg',
-            artist: track.artist || 'Unknown Artist',
+            artist: track.artist || '',
             album: track.album || 'Unknown Album',
             duration: track.duration || 0,
             cover: track.cover || '/placeholder.svg?height=300&width=300',
@@ -202,7 +202,7 @@ export const AudioPlayer: React.FC = () => {
         const newTracks: Track[] = audioFiles.map((file) => {
           const title = file.name.substring(0, file.name.lastIndexOf('.'));
           // Extract artist from filename if it contains a dash
-          let artist = 'Unknown Artist';
+          let artist = '';
           let trackTitle = title;
           const ext = file.name.split('.').pop()?.toLowerCase() || '';
           const mimeType = getMimeType(ext);
@@ -412,23 +412,48 @@ export const AudioPlayer: React.FC = () => {
         {/* Track Info */}
         <div className="p-6 bg-gradient-to-br from-pink-500/30 to-indigo-500/30 backdrop-blur-sm border-b border-white/10">
           <div className="text-white">
-            <h2 className="text-2xl font-bold tracking-tight">
-              {currentTrack ? currentTrack.title : 'No Track Selected'}
-            </h2>
-            <p className="text-sm opacity-90 mt-1 text-pink-200">
-              {currentTrack?.artist || 'Select a track to play'}
-            </p>
+            <div className="overflow-hidden">
+              <h2
+                className="text-2xl font-bold pb-1"
+                title={currentTrack?.title || 'No Track Selected'}
+              >
+                {currentTrack ? currentTrack.title : 'No Track Selected'}
+              </h2>
+              <p
+                className="text-sm opacity-90 mt-1 text-pink-200 truncate"
+                title={currentTrack?.artist || 'Select a track to play'}
+              >
+                {currentTrack?.artist || 'Select a track to play'}
+              </p>
+            </div>
 
             {/* Next/Previous Track Info */}
             {combinedTracks.length > 0 && currentTrack && (
               <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-4 text-xs">
                 {/* Previous Track */}
                 {combinedTracks.length > 1 && (
-                  <div className="col-span-1">
+                  <div className="col-span-1 overflow-hidden">
                     {currentIndex > 0 || isShuffled ? (
                       <>
                         <p className="text-blue-200 font-medium">Previous:</p>
-                        <p className="text-white/70 truncate">
+                        <p
+                          className="text-white/70 truncate"
+                          title={
+                            isShuffled
+                              ? combinedTracks[
+                                  shuffledIndices[
+                                    (shuffledIndices.indexOf(currentIndex) -
+                                      1 +
+                                      combinedTracks.length) %
+                                      combinedTracks.length
+                                  ]
+                                ]?.title
+                              : combinedTracks[
+                                  (currentIndex - 1 + combinedTracks.length) %
+                                    combinedTracks.length
+                                ]?.title
+                          }
+                        >
                           {isShuffled
                             ? combinedTracks[
                                 shuffledIndices[
@@ -450,11 +475,26 @@ export const AudioPlayer: React.FC = () => {
 
                 {/* Next Track */}
                 {combinedTracks.length > 1 && (
-                  <div className="col-span-1 text-right">
+                  <div className="col-span-1 text-right overflow-hidden">
                     {currentIndex < combinedTracks.length - 1 || isShuffled ? (
                       <>
                         <p className="text-pink-200 font-medium">Next:</p>
-                        <p className="text-white/70 truncate">
+                        <p
+                          className="text-white/70 truncate"
+                          title={
+                            isShuffled
+                              ? combinedTracks[
+                                  shuffledIndices[
+                                    (shuffledIndices.indexOf(currentIndex) +
+                                      1) %
+                                      combinedTracks.length
+                                  ]
+                                ]?.title
+                              : combinedTracks[
+                                  (currentIndex + 1) % combinedTracks.length
+                                ]?.title
+                          }
+                        >
                           {isShuffled
                             ? combinedTracks[
                                 shuffledIndices[

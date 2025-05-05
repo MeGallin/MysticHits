@@ -144,22 +144,23 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
               type="range"
               min="0"
               max="1"
-              step="0.01"
+              step="0.005"
               value={volume}
               onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-4 appearance-none bg-white/20 rounded-full outline-none cursor-pointer z-10 relative opacity-0 volume-range"
+              className="w-full h-8 appearance-none bg-transparent rounded-full outline-none cursor-pointer z-10 relative opacity-70 hover:opacity-100 transition-opacity volume-range"
               aria-label="Volume control"
             />
-            <div className="absolute top-1/2 left-0 w-full h-4 bg-white/20 rounded-full -translate-y-1/2 pointer-events-none">
+            <div className="absolute top-1/2 left-0 w-full h-3 bg-white/20 rounded-full -translate-y-1/2 pointer-events-none">
               <div
-                className="h-full bg-blue-400 rounded-full"
+                className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full"
                 style={{ width: `${volume * 100}%` }}
               ></div>
               <div
-                className="absolute top-1/2 h-5 w-5 rounded-full bg-blue-400 -translate-y-1/2 pointer-events-none"
+                className="absolute top-1/2 h-6 w-6 rounded-full bg-white shadow-lg -translate-y-1/2 pointer-events-none"
                 style={{
                   left: `${volume * 100}%`,
                   transform: 'translateX(-50%) translateY(-50%)',
+                  boxShadow: '0 0 5px rgba(255, 255, 255, 0.5)',
                 }}
               ></div>
             </div>

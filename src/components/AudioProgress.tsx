@@ -142,7 +142,7 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
 
   return (
     <div className="mt-6 space-y-6 px-3 py-4 select-none bg-white rounded-lg shadow-md">
-      {/* Progress Bar */}
+      {/* Progress Bar */}XXX
       <div className="space-y-1">
         <div
           className="relative h-2 bg-gray-700 rounded-full cursor-pointer group"
@@ -181,7 +181,6 @@ export const AudioProgress: React.FC<AudioProgressProps> = ({
           <span>{formatTime(duration)}</span>
         </div>
       </div>
-
       {/* Volume Control */}
       <div className="flex items-center space-x-3">
         <div className="group relative">

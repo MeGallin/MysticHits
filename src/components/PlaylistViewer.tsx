@@ -36,7 +36,7 @@ export const PlaylistViewer: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto p-4 bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-xl shadow-lg text-white">
       <h2 className="text-xl font-bold mb-4">
-        Playlist ({playlist.length} tracks)
+        Playlist ({playlist.length} tracks)XX
       </h2>
 
       <div className="space-y-4">

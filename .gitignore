@@ -30,6 +30,7 @@ dist/
 # Environment variables
 .env
 .env.*
+.htaccess
 
 # OS Files
 .DS_Store
