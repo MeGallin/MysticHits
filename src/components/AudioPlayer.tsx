@@ -9,7 +9,17 @@ import { StaticAdvertisements } from './StaticAdvertisements';
 import { playlistAtom } from '../state/playlistAtom';
 import { Button } from '@/components/ui/button';
 
-export const AudioPlayer: React.FC = () => {
+interface AudioPlayerProps {
+  playlist?: {
+    title: string;
+    src: string;
+    mime: string;
+  }[];
+}
+
+export const AudioPlayer: React.FC<AudioPlayerProps> = ({
+  playlist: propPlaylist = [],
+}) => {
   // Local tracks from file selection
   const [localTracks, setLocalTracks] = useState<Track[]>([]);
   const [musicFolder, setMusicFolder] = useState<string>('');
@@ -24,6 +34,33 @@ export const AudioPlayer: React.FC = () => {
 
   // Get remote tracks from playlist atom
   const [remotePlaylist, setRemotePlaylist] = useAtom(playlistAtom);
+
+  // Process tracks from prop playlist if provided
+  useEffect(() => {
+    if (propPlaylist && propPlaylist.length > 0) {
+      // Convert prop playlist to Track format
+      const propTracks: Track[] = propPlaylist.map((item) => ({
+        title: item.title,
+        url: item.src,
+        mime: item.mime,
+        artist: '',
+        album: 'Unknown Album',
+        duration: 0,
+        cover: '/placeholder.svg?height=300&width=300',
+      }));
+
+      // Update remote playlist with the provided tracks
+      setRemotePlaylist(propTracks);
+
+      // Automatically switch to local tab to show player
+      setActiveTab('local');
+
+      // Show playlist if tracks are provided
+      if (propTracks.length > 0) {
+        setShowPlaylist(true);
+      }
+    }
+  }, [propPlaylist, setRemotePlaylist]);
 
   // Combine local and remote tracks
   const [combinedTracks, setCombinedTracks] = useState<Track[]>([]);

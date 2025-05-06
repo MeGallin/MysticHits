@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import ContactPage from './pages/ContactPage';
 import About from './pages/About';
 import ChartsPage from './pages/Charts';
+import FoldersPage from './pages/FoldersPage';
+import PlayerPage from './pages/PlayerPage';
 
 // Auth page imports
 import Login from './pages/auth/Login';
@@ -22,6 +24,7 @@ import MessagesPage from './pages/admin/Messages';
 
 // Route protection components
 import AdminRoute from './components/AdminRoute';
+import PrivateRoute from './components/PrivateRoute';
 
 export default function AppRouter() {
   return (
@@ -35,6 +38,24 @@ export default function AppRouter() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/charts" element={<ChartsPage />} />
+
+      {/* Protected user routes - Members Area */}
+      <Route
+        path="/folders"
+        element={
+          <PrivateRoute>
+            <FoldersPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/player"
+        element={
+          <PrivateRoute>
+            <PlayerPage />
+          </PrivateRoute>
+        }
+      />
 
       {/* Protected admin routes */}
       <Route
