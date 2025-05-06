@@ -44,21 +44,44 @@ const PlayerPage: React.FC = () => {
       if (response.success && response.data) {
         // Process tracks to ensure they have all required properties
         const processedTracks = response.data.map((track: any) => {
-          // Make sure URL is properly formed
+          // Make sure URL is properly formed and decode any double-encoded characters
           let url = track.url;
 
-          // Clean up URL if needed (handle relative paths, etc.)
-          if (
-            url &&
-            !url.startsWith('http://') &&
-            !url.startsWith('https://') &&
-            !url.startsWith('blob:')
-          ) {
+          try {
+            // Fix double-encoded URLs (converting %2520 to %20)
+            // First check if URL contains encoded percent signs
+            if (url && url.includes('%25')) {
+              // Decode once to fix any double encoding
+              url = decodeURIComponent(url);
+            }
+
+            // Handle special characters in URLs
+            if (url && (url.includes('%') || url.includes(' '))) {
+              // Make sure spaces are properly encoded
+              url = url.replace(/ /g, '%20');
+
+              // Create a valid URL object to ensure proper formatting
+              try {
+                if (url.startsWith('http')) {
+                  const parsedUrl = new URL(url);
+                  url = parsedUrl.toString();
+                }
+              } catch (e) {
+                console.warn('Error parsing URL:', e);
+              }
+            }
+
             // If it's a relative path, convert to absolute
-            if (url.startsWith('/')) {
-              // Assume it's relative to domain
+            if (
+              url &&
+              !url.startsWith('http') &&
+              !url.startsWith('blob:') &&
+              url.startsWith('/')
+            ) {
               url = `${window.location.origin}${url}`;
             }
+          } catch (e) {
+            console.error('Error processing URL:', e, url);
           }
 
           return {

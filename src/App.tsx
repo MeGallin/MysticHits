@@ -1,11 +1,44 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import AppRouter from './AppRouter';
 import Footer from './components/Footer';
 import Navigation from './components/Navigation';
 import { AuthProvider } from './context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
+import { useAtom } from 'jotai';
+import { playlistAtom } from './state/playlistAtom';
+import { 
+  currentTrackAtom, 
+  isPlayingAtom, 
+  trackDurationsAtom 
+} from './state/audioAtoms';
 
 function App() {
+  // Get setters for all audio-related atoms
+  const [, setPlaylist] = useAtom(playlistAtom);
+  const [, setCurrentTrack] = useAtom(currentTrackAtom);
+  const [, setIsPlaying] = useAtom(isPlayingAtom);
+  const [, setTrackDurations] = useAtom(trackDurationsAtom);
+
+  // Add event listener to clear all audio state on logout
+  useEffect(() => {
+    const handleLogout = () => {
+      // Reset all audio-related state
+      setPlaylist([]);
+      setCurrentTrack(null);
+      setIsPlaying(false);
+      setTrackDurations({});
+      console.log('Audio player state cleared after logout');
+    };
+
+    // Listen for the auth:logout event
+    window.addEventListener('auth:logout', handleLogout);
+
+    // Cleanup the event listener when component unmounts
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+    };
+  }, [setPlaylist, setCurrentTrack, setIsPlaying, setTrackDurations]);
+
   return (
     <AuthProvider>
       <div className="flex flex-col h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">

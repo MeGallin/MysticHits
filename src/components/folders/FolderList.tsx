@@ -174,7 +174,8 @@ const FolderList: React.FC = () => {
 
   const handlePlayFolder = (folderId: string) => {
     setSelectedFolderId(folderId);
-    navigate(`/player?fid=${folderId}`);
+    // Redirect to home page with folder ID instead of player page
+    navigate(`/?fid=${folderId}`);
   };
 
   if (isLoading && folders.length === 0) {

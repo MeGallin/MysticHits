@@ -39,11 +39,11 @@ export const TrackList: React.FC<TrackListProps> = ({
             }`}
           >
             <div className="flex-1 min-w-0 overflow-hidden">
-              <p className="truncate" title={track.title}>
+              <p className="break-words" title={track.title}>
                 {track.title}
               </p>
               <p
-                className="text-xs text-muted-foreground truncate"
+                className="text-xs text-muted-foreground break-words"
                 title={track.artist || ''}
               >
                 {track.artist || ''}

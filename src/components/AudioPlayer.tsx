@@ -8,6 +8,18 @@ import { Advertisement } from './Advertisement';
 import { StaticAdvertisements } from './StaticAdvertisements';
 import { playlistAtom } from '../state/playlistAtom';
 import { Button } from '@/components/ui/button';
+import { isAuthenticated } from '@/utils/authUtils';
+import {
+  currentTrackAtom,
+  isPlayingAtom,
+} from '../state/audioAtoms';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { LockIcon } from 'lucide-react';
 
 interface AudioPlayerProps {
   playlist?: {
@@ -20,6 +32,45 @@ interface AudioPlayerProps {
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   playlist: propPlaylist = [],
 }) => {
+  // Import atoms directly for resetting
+  const [, setCurrentTrackState] = useAtom(currentTrackAtom);
+  const [, setIsPlayingState] = useAtom(isPlayingAtom);
+  
+  // Check if user is logged in
+  const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
+  
+  // Update auth state on change and explicitly handle logout
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsLoggedIn(isAuthenticated());
+    };
+    
+    // Handle explicit logout to reset the player view
+    const handleLogout = () => {
+      // Reset local state
+      setLocalTracks([]);
+      setMusicFolder('');
+      setShowPlaylist(false);
+      
+      // Reset combined tracks
+      setCombinedTracks([]);
+      
+      // Reset atoms directly to ensure view updates
+      setCurrentTrackState(null);
+      setIsPlayingState(false);
+      
+      console.log("AudioPlayer: Cleared player state after logout");
+    };
+    
+    window.addEventListener('auth-changed', checkAuth);
+    window.addEventListener('auth:logout', handleLogout);
+    
+    return () => {
+      window.removeEventListener('auth-changed', checkAuth);
+      window.removeEventListener('auth:logout', handleLogout);
+    };
+  }, [setCurrentTrackState, setIsPlayingState]);
+  
   // Local tracks from file selection
   const [localTracks, setLocalTracks] = useState<Track[]>([]);
   const [musicFolder, setMusicFolder] = useState<string>('');
@@ -34,6 +85,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Get remote tracks from playlist atom
   const [remotePlaylist, setRemotePlaylist] = useAtom(playlistAtom);
+  
+  // Handle tab click with authentication check
+  const handleTabClick = (tab: 'local' | 'remote') => {
+    // If trying to access remote tab without being logged in, don't change tabs
+    if (tab === 'remote' && !isLoggedIn) {
+      return;
+    }
+    setActiveTab(tab);
+  };
 
   // Process tracks from prop playlist if provided
   useEffect(() => {
@@ -334,7 +394,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         {/* Music Source Selection Tabs */}
         <div className="flex border-b border-white/20">
           <Button
-            onClick={() => setActiveTab('local')}
+            onClick={() => handleTabClick('local')}
             variant={activeTab === 'local' ? 'default' : 'ghost'}
             className={`flex-1 rounded-none border-0 ${
               activeTab === 'local'
@@ -344,17 +404,47 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           >
             Local Files
           </Button>
-          <Button
-            onClick={() => setActiveTab('remote')}
-            variant={activeTab === 'remote' ? 'default' : 'ghost'}
-            className={`flex-1 rounded-none border-0 ${
-              activeTab === 'remote'
+          
+          {/* Mobile-friendly tooltip implementation */}
+          {isLoggedIn ? (
+            <Button
+              onClick={() => handleTabClick('remote')}
+              variant={activeTab === 'remote' ? 'default' : 'ghost'}
+              className={`flex-1 rounded-none border-0 ${
+                activeTab === 'remote'
                 ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500 shadow-none hover:bg-white/15'
                 : 'bg-transparent text-white/70 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Remote URL
-          </Button>
+              }`}
+            >
+              Remote URL
+            </Button>
+          ) : (
+            <TooltipProvider>
+              <Tooltip defaultOpen={false}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex-1 rounded-none border-0 opacity-50 cursor-not-allowed bg-transparent text-white/70 flex items-center justify-center"
+                  >
+                    Remote URL
+                    <LockIcon className="w-3.5 h-3.5 ml-1.5 text-yellow-300" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="bottom"
+                  align="center"
+                  className="bg-gray-900/95 border-white/10 text-white p-2"
+                >
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Premium Feature</p>
+                    <p className="text-xs text-white/80 mt-1">
+                      Sign in to access remote streaming.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
 
         {/* Source Selection UI */}
@@ -396,7 +486,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   onChange={handleRemoteUrlChange}
                   placeholder="https://example.com/music/"
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  disabled={isLoadingRemote}
+                  disabled={isLoadingRemote || !isLoggedIn}
                 />
                 <p className="mt-1 text-xs text-white/70">
                   Enter a URL to a folder containing audio files
@@ -405,7 +495,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
               <Button
                 onClick={handleRemoteLoad}
-                disabled={isLoadingRemote || !remoteUrl.trim()}
+                disabled={isLoadingRemote || !remoteUrl.trim() || !isLoggedIn}
                 className="w-full px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-md hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-pink-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoadingRemote ? (
@@ -432,10 +522,27 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     </svg>
                     Loading...
                   </span>
+                ) : !isLoggedIn ? (
+                  <span className="flex items-center">
+                    <LockIcon className="w-4 h-4 mr-2" />
+                    Sign in to Access
+                  </span>
                 ) : (
                   'Load Remote Playlist'
                 )}
               </Button>
+
+              {!isLoggedIn && (
+                <div className="mt-2 p-3 bg-blue-500/20 border border-blue-500/30 rounded-md">
+                  <p className="text-sm font-medium flex items-center">
+                    <LockIcon className="w-4 h-4 mr-2 text-yellow-300" />
+                    <span>Premium Feature</span>
+                  </p>
+                  <p className="text-xs text-white/80 mt-1">
+                    Sign in to access the remote URL streaming feature and enjoy music from any web source.
+                  </p>
+                </div>
+              )}
 
               {remoteError && (
                 <div className="mt-2 p-3 bg-red-500/30 border border-red-500/50 rounded-md text-white">
@@ -457,7 +564,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 {currentTrack ? currentTrack.title : 'No Track Selected'}
               </h2>
               <p
-                className="text-sm opacity-90 mt-1 text-pink-200 truncate"
+                className="text-sm opacity-90 mt-1 text-pink-200"
                 title={currentTrack?.artist || 'Select a track to play'}
               >
                 {currentTrack?.artist || 'Select a track to play'}
@@ -474,7 +581,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       <>
                         <p className="text-blue-200 font-medium">Previous:</p>
                         <p
-                          className="text-white/70 truncate"
+                          className="text-white/70 break-words"
                           title={
                             isShuffled
                               ? combinedTracks[
@@ -517,7 +624,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       <>
                         <p className="text-pink-200 font-medium">Next:</p>
                         <p
-                          className="text-white/70 truncate"
+                          className="text-white/70 break-words"
                           title={
                             isShuffled
                               ? combinedTracks[
