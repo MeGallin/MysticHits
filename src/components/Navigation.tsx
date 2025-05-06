@@ -98,7 +98,7 @@ const Navigation: React.FC = () => {
               <div className="flex items-center">
                 <span className="h-px w-4 bg-gradient-to-r from-transparent to-yellow-400"></span>
                 <span className="font-normal text-xs text-white/80 tracking-wider mx-1 italic">
-                  Enjoy the VIBES!
+                  Feel the VIBES!
                 </span>
                 <span className="h-px flex-grow bg-gradient-to-r from-yellow-400 to-transparent"></span>
               </div>
@@ -136,7 +136,7 @@ const Navigation: React.FC = () => {
               className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
             >
               <FolderIcon className="h-4 w-4 mr-1 text-yellow-300" />
-              My Folders
+              Folders
             </Link>
           )}
 
