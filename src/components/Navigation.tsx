@@ -18,6 +18,7 @@ import {
   ChevronDown,
   LogOut,
   BarChart,
+  FolderIcon,
 } from 'lucide-react';
 import { logoutUser } from '@services/fetchServices';
 import { AUTH_EVENTS, isAuthenticated } from '../utils/authUtils';
@@ -127,6 +128,17 @@ const Navigation: React.FC = () => {
           >
             Contact
           </Link>
+
+          {/* Show Folders link for authenticated users */}
+          {isLoggedIn && (
+            <Link
+              to="/folders"
+              className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
+            >
+              <FolderIcon className="h-4 w-4 mr-1 text-yellow-300" />
+              My Folders
+            </Link>
+          )}
 
           {/* Conditionally render logout button or auth dropdown */}
           {isLoggedIn ? (
@@ -278,6 +290,18 @@ const Navigation: React.FC = () => {
               >
                 Contact
               </Link>
+
+              {/* Show Folders link for authenticated users in mobile menu */}
+              {isLoggedIn && (
+                <Link
+                  to="/folders"
+                  className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <FolderIcon className="h-5 w-5 mr-2 text-yellow-400" />
+                  My Folders
+                </Link>
+              )}
 
               <div className="h-px bg-gray-700 my-2"></div>
 
