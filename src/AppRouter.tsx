@@ -21,6 +21,7 @@ import UsersPage from './pages/admin/Users';
 import MusicPage from './pages/admin/Music';
 import StatsPage from './pages/admin/Stats';
 import MessagesPage from './pages/admin/Messages';
+import InsightsPage from './pages/admin/Insights';
 
 // Route protection components
 import AdminRoute from './components/AdminRoute';
@@ -103,6 +104,14 @@ export default function AppRouter() {
         element={
           <AdminRoute>
             <MessagesPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/insights"
+        element={
+          <AdminRoute>
+            <InsightsPage />
           </AdminRoute>
         }
       />

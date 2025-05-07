@@ -44,6 +44,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <FiMusic className="mr-3 h-5 w-5" />,
     },
     {
+      name: 'Insights',
+      path: '/admin/insights',
+      icon: <FiBarChart2 className="mr-3 h-5 w-5 text-green-400" />,
+    },
+    {
       name: 'Stats',
       path: '/admin/stats',
       icon: <FiBarChart2 className="mr-3 h-5 w-5" />,
