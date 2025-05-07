@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -260,6 +267,12 @@ const Navigation: React.FC = () => {
             side="right"
             className="bg-gray-900 text-white border-gray-800"
           >
+            <SheetHeader className="text-left border-b border-gray-800 pb-4">
+              <SheetTitle className="text-white">Navigation Menu</SheetTitle>
+              <SheetDescription className="text-gray-400">
+                Access site navigation and account options
+              </SheetDescription>
+            </SheetHeader>
             <div className="flex flex-col space-y-4 mt-8">
               <Link
                 to="/"

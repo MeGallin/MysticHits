@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -146,6 +147,11 @@ const FolderFormDialog: React.FC<FolderFormDialogProps> = ({
             <DialogTitle>
               {isEditMode ? 'Edit Folder' : 'Add New Folder'}
             </DialogTitle>
+            <DialogDescription>
+              {isEditMode
+                ? 'Update the details of your music folder.'
+                : 'Enter the details to create a new music folder.'}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
