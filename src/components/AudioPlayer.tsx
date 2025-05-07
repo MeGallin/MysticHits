@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { LockIcon } from 'lucide-react';
+import { logPlay } from '../services/trackingService';
 
 interface AudioPlayerProps {
   playlist?: {
@@ -663,6 +664,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           src={currentTrack ? currentTrack.url : undefined}
           onTimeUpdate={controls.handleTimeUpdate}
           onLoadedMetadata={controls.handleLoadedMetadata}
+          onPlay={() => {
+            if (currentTrack) {
+              // Log play event when track starts playing
+              logPlay({
+                trackUrl: currentTrack.url,
+                title: currentTrack.title,
+                duration: audioRef.current?.duration || undefined,
+              });
+            }
+          }}
           onError={(e) => {
             console.error('Audio error:', e);
             if (currentTrack) {
