@@ -26,6 +26,9 @@ import {
   LogOut,
   BarChart,
   FolderIcon,
+  Home,
+  Info,
+  MessageSquare,
 } from 'lucide-react';
 import { logoutUser } from '@services/fetchServices';
 import { AUTH_EVENTS, isAuthenticated } from '../utils/authUtils';
@@ -125,14 +128,16 @@ const Navigation: React.FC = () => {
           </Link>
           <Link
             to="/about"
-            className="font-medium hover:text-yellow-400 transition-colors uppercase"
+            className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
           >
+            <Info className="h-4 w-4 mr-1 text-yellow-300" />
             About
           </Link>
           <Link
             to="/contact"
-            className="font-medium hover:text-yellow-400 transition-colors uppercase"
+            className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
           >
+            <MessageSquare className="h-4 w-4 mr-1 text-yellow-300" />
             Contact
           </Link>
 
@@ -267,18 +272,13 @@ const Navigation: React.FC = () => {
             side="right"
             className="bg-gray-900 text-white border-gray-800"
           >
-            <SheetHeader className="text-left border-b border-gray-800 pb-4">
-              <SheetTitle className="text-white">Navigation Menu</SheetTitle>
-              <SheetDescription className="text-gray-400">
-                Access site navigation and account options
-              </SheetDescription>
-            </SheetHeader>
             <div className="flex flex-col space-y-4 mt-8">
               <Link
                 to="/"
-                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase"
+                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
+                <Home className="h-5 w-5 mr-2 text-yellow-400" />
                 Home
               </Link>
               <Link
@@ -291,16 +291,18 @@ const Navigation: React.FC = () => {
               </Link>
               <Link
                 to="/about"
-                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase"
+                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
+                <Info className="h-5 w-5 mr-2 text-yellow-400" />
                 About
               </Link>
               <Link
                 to="/contact"
-                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase"
+                className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
                 onClick={() => setIsMenuOpen(false)}
               >
+                <MessageSquare className="h-5 w-5 mr-2 text-yellow-400" />
                 Contact
               </Link>
 

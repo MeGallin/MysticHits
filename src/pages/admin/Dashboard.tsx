@@ -73,13 +73,50 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-bold text-white mb-6">Dashboard Overview</h1>
-
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 mb-6">
-        <p className="text-xl text-white mb-2">Welcome, {user?.email}</p>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
+          <p className="text-gray-300">
+            Welcome,{' '}
+            <span className="text-white font-medium">{user?.email}</span>
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <Link
+          to="/admin/messages"
+          className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-6 rounded-lg border border-amber-500/30 flex items-start hover:from-amber-500/30 hover:to-amber-600/30 transition-all group col-span-1 lg:col-span-2"
+        >
+          <FiMessageSquare className="h-10 w-10 text-amber-400 mr-4 group-hover:scale-110 transition-transform" />
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-white flex items-center">
+              Messages
+              {messageStats.unread > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                  {messageStats.unread} new
+                </span>
+              )}
+            </h2>
+            <p className="text-amber-200 mb-2">Manage contact messages</p>
+
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="bg-amber-600/20 rounded px-2 py-1 text-center">
+                <div className="text-white text-sm font-medium">
+                  {messageStats.total}
+                </div>
+                <div className="text-amber-200 text-xs">Total</div>
+              </div>
+              <div className="bg-amber-600/20 rounded px-2 py-1 text-center">
+                <div className="text-yellow-400 text-sm font-medium">
+                  {messageStats.important}
+                </div>
+                <div className="text-amber-200 text-xs">Important</div>
+              </div>
+            </div>
+          </div>
+        </Link>
+
         <Link
           to="/admin/users"
           className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 p-6 rounded-lg border border-blue-500/30 flex items-start hover:from-blue-500/30 hover:to-blue-600/30 transition-all group"
@@ -140,39 +177,6 @@ const AdminDashboard: React.FC = () => {
           <div>
             <h2 className="text-lg font-semibold text-white">Statistics</h2>
             <p className="text-green-200">View site analytics</p>
-          </div>
-        </Link>
-
-        <Link
-          to="/admin/messages"
-          className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-6 rounded-lg border border-amber-500/30 flex items-start hover:from-amber-500/30 hover:to-amber-600/30 transition-all group col-span-1 lg:col-span-2"
-        >
-          <FiMessageSquare className="h-10 w-10 text-amber-400 mr-4 group-hover:scale-110 transition-transform" />
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-white flex items-center">
-              Messages
-              {messageStats.unread > 0 && (
-                <span className="ml-2 bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                  {messageStats.unread} new
-                </span>
-              )}
-            </h2>
-            <p className="text-amber-200 mb-2">Manage contact messages</p>
-
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              <div className="bg-amber-600/20 rounded px-2 py-1 text-center">
-                <div className="text-white text-sm font-medium">
-                  {messageStats.total}
-                </div>
-                <div className="text-amber-200 text-xs">Total</div>
-              </div>
-              <div className="bg-amber-600/20 rounded px-2 py-1 text-center">
-                <div className="text-yellow-400 text-sm font-medium">
-                  {messageStats.important}
-                </div>
-                <div className="text-amber-200 text-xs">Important</div>
-              </div>
-            </div>
           </div>
         </Link>
       </div>
