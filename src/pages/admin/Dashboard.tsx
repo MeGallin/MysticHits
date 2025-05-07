@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { FiUsers, FiMusic, FiBarChart2, FiMessageSquare } from 'react-icons/fi';
+import {
+  FiUsers,
+  FiMusic,
+  FiBarChart2,
+  FiMessageSquare,
+  FiActivity,
+} from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import services from '../../services/fetchServices';
 import HealthCard from '../../components/admin/HealthCard';
@@ -116,6 +122,17 @@ const AdminDashboard: React.FC = () => {
         </Link>
 
         <Link
+          to="/admin/insights"
+          className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 p-6 rounded-lg border border-emerald-500/30 flex items-center hover:from-emerald-500/30 hover:to-emerald-600/30 transition-all group"
+        >
+          <FiActivity className="h-10 w-10 text-emerald-400 mr-4 group-hover:scale-110 transition-transform" />
+          <div>
+            <h2 className="text-lg font-semibold text-white">User Insights</h2>
+            <p className="text-emerald-200">Active users & top tracks</p>
+          </div>
+        </Link>
+
+        <Link
           to="/admin/stats"
           className="bg-gradient-to-br from-green-500/20 to-green-600/20 p-6 rounded-lg border border-green-500/30 flex items-center hover:from-green-500/30 hover:to-green-600/30 transition-all group"
         >
@@ -128,7 +145,7 @@ const AdminDashboard: React.FC = () => {
 
         <Link
           to="/admin/messages"
-          className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-6 rounded-lg border border-amber-500/30 flex items-start hover:from-amber-500/30 hover:to-amber-600/30 transition-all group"
+          className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-6 rounded-lg border border-amber-500/30 flex items-start hover:from-amber-500/30 hover:to-amber-600/30 transition-all group col-span-1 lg:col-span-2"
         >
           <FiMessageSquare className="h-10 w-10 text-amber-400 mr-4 group-hover:scale-110 transition-transform" />
           <div className="flex-1">
