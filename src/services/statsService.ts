@@ -1,8 +1,5 @@
 import axios from 'axios';
 
-// API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
 // Types
 export interface DAUStats {
   dau: number;
@@ -22,6 +19,9 @@ export interface ApiResponse<T = any> {
   error?: string;
   status?: number;
 }
+
+// API base URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Get authentication headers
 const getAuthHeaders = () => {
@@ -54,7 +54,7 @@ const handleApiError = (error: any): ApiResponse => {
 };
 
 /**
- * StatsService - Service for fetching user activity statistics and top tracks
+ * Service for fetching user activity statistics and top tracks
  */
 const statsService = {
   /**
