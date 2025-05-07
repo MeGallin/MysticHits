@@ -9,10 +9,7 @@ import { StaticAdvertisements } from './StaticAdvertisements';
 import { playlistAtom } from '../state/playlistAtom';
 import { Button } from '@/components/ui/button';
 import { isAuthenticated } from '@/utils/authUtils';
-import {
-  currentTrackAtom,
-  isPlayingAtom,
-} from '../state/audioAtoms';
+import { currentTrackAtom, isPlayingAtom } from '../state/audioAtoms';
 import {
   Tooltip,
   TooltipContent,
@@ -35,42 +32,42 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   // Import atoms directly for resetting
   const [, setCurrentTrackState] = useAtom(currentTrackAtom);
   const [, setIsPlayingState] = useAtom(isPlayingAtom);
-  
+
   // Check if user is logged in
   const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
-  
+
   // Update auth state on change and explicitly handle logout
   useEffect(() => {
     const checkAuth = () => {
       setIsLoggedIn(isAuthenticated());
     };
-    
+
     // Handle explicit logout to reset the player view
     const handleLogout = () => {
       // Reset local state
       setLocalTracks([]);
       setMusicFolder('');
       setShowPlaylist(false);
-      
+
       // Reset combined tracks
       setCombinedTracks([]);
-      
+
       // Reset atoms directly to ensure view updates
       setCurrentTrackState(null);
       setIsPlayingState(false);
-      
-      console.log("AudioPlayer: Cleared player state after logout");
+
+      console.log('AudioPlayer: Cleared player state after logout');
     };
-    
+
     window.addEventListener('auth-changed', checkAuth);
     window.addEventListener('auth:logout', handleLogout);
-    
+
     return () => {
       window.removeEventListener('auth-changed', checkAuth);
       window.removeEventListener('auth:logout', handleLogout);
     };
   }, [setCurrentTrackState, setIsPlayingState]);
-  
+
   // Local tracks from file selection
   const [localTracks, setLocalTracks] = useState<Track[]>([]);
   const [musicFolder, setMusicFolder] = useState<string>('');
@@ -85,7 +82,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Get remote tracks from playlist atom
   const [remotePlaylist, setRemotePlaylist] = useAtom(playlistAtom);
-  
+
   // Handle tab click with authentication check
   const handleTabClick = (tab: 'local' | 'remote') => {
     // If trying to access remote tab without being logged in, don't change tabs
@@ -404,7 +401,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           >
             Local Files
           </Button>
-          
+
           {/* Mobile-friendly tooltip implementation */}
           {isLoggedIn ? (
             <Button
@@ -412,8 +409,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               variant={activeTab === 'remote' ? 'default' : 'ghost'}
               className={`flex-1 rounded-none border-0 ${
                 activeTab === 'remote'
-                ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500 shadow-none hover:bg-white/15'
-                : 'bg-transparent text-white/70 hover:text-white hover:bg-white/5'
+                  ? 'bg-white/10 text-pink-300 border-b-2 border-pink-500 shadow-none hover:bg-white/15'
+                  : 'bg-transparent text-white/70 hover:text-white hover:bg-white/5'
               }`}
             >
               Remote URL
@@ -430,7 +427,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     <LockIcon className="w-3.5 h-3.5 ml-1.5 text-yellow-300" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent 
+                <TooltipContent
                   side="bottom"
                   align="center"
                   className="bg-gray-900/95 border-white/10 text-white p-2"
@@ -539,7 +536,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     <span>Premium Feature</span>
                   </p>
                   <p className="text-xs text-white/80 mt-1">
-                    Sign in to access the remote URL streaming feature and enjoy music from any web source.
+                    Sign in to access the remote URL streaming feature and enjoy
+                    music from any web source.
                   </p>
                 </div>
               )}
