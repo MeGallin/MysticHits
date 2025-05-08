@@ -8,6 +8,8 @@ import {
   FiArrowLeft,
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import ApiLatencyWidget from '../../components/admin/ApiLatencyWidget';
+import AdminErrorsWidget from '../../components/admin/AdminErrorsWidget';
 
 const StatsPage: React.FC = () => {
   // This is a placeholder - in a real implementation, you would fetch stats from the API
@@ -134,6 +136,15 @@ const StatsPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* API Performance Metrics and Errors Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* API Latency Widget */}
+          <ApiLatencyWidget />
+
+          {/* Errors Widget */}
+          <AdminErrorsWidget />
         </div>
 
         {/* Analytics graph placeholder */}

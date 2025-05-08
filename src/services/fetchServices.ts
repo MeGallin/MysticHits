@@ -22,6 +22,27 @@ interface ContactFormData {
   message: string;
 }
 
+// API Metrics interface
+interface MetricsData {
+  requestCount: number;
+  averageLatency: string;
+  routes: {
+    route: string;
+    requestCount: number;
+    averageLatency: string;
+  }[];
+}
+
+// Error event interface
+interface ErrorData {
+  _id: string;
+  route: string;
+  status: number;
+  msg: string;
+  method: string;
+  at: string;
+}
+
 interface AuthServices {
   loginUser: (email: string, password: string) => Promise<ApiResponse>;
   logoutUser: () => Promise<ApiResponse>;
@@ -53,6 +74,11 @@ interface AdminServices {
     updates: { read?: boolean; important?: boolean },
   ) => Promise<ApiResponse>;
   deleteMessage: (id: string) => Promise<ApiResponse>;
+  getApiMetrics: () => Promise<ApiResponse<MetricsData>>;
+  getErrorLogs: (
+    hours?: number,
+    limit?: number,
+  ) => Promise<ApiResponse<ErrorData[]>>;
 }
 
 interface HealthServices {
@@ -368,6 +394,41 @@ export const adminServices: AdminServices = {
       return handleApiError(error as AxiosError);
     }
   },
+
+  // Get API performance metrics
+  getApiMetrics: async () => {
+    try {
+      const response: AxiosResponse = await api.get('/health/metrics', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return {
+        success: true,
+        data: response.data.metrics,
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
+  },
+
+  // Get error logs
+  getErrorLogs: async (hours = 1, limit = 10) => {
+    try {
+      const response: AxiosResponse = await api.get('/admin/errors', {
+        params: { hours, limit },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return {
+        success: true,
+        data: response.data.errors || [],
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
+  },
 };
 
 // Health status services
@@ -413,6 +474,8 @@ export const {
   getMessage,
   updateMessage,
   deleteMessage,
+  getApiMetrics,
+  getErrorLogs,
 } = adminServices;
 
 // Export services object as default
