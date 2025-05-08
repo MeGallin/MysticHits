@@ -6,11 +6,17 @@ import { AuthProvider } from './context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { useAtom } from 'jotai';
 import { playlistAtom } from './state/playlistAtom';
-import { 
-  currentTrackAtom, 
-  isPlayingAtom, 
-  trackDurationsAtom 
+import {
+  currentTrackAtom,
+  isPlayingAtom,
+  trackDurationsAtom,
 } from './state/audioAtoms';
+import ErrorBoundary from './components/ErrorBoundary';
+import RateLimitBanner from './components/RateLimitBanner';
+import { setupApiErrorHandlers } from './utils/apiErrorHandler';
+
+// Initialize API error handlers
+setupApiErrorHandlers();
 
 function App() {
   // Get setters for all audio-related atoms
@@ -40,29 +46,34 @@ function App() {
   }, [setPlaylist, setCurrentTrack, setIsPlaying, setTrackDurations]);
 
   return (
-    <AuthProvider>
-      <div className="flex flex-col h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,50,255,0.15),transparent_70%)] pointer-events-none"></div>
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/5 rounded-full filter blur-3xl animate-pulse pointer-events-none"></div>
-        <div
-          className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-pink-500/5 rounded-full filter blur-3xl animate-pulse pointer-events-none"
-          style={{ animationDelay: '1s' }}
-        ></div>
+    <ErrorBoundary>
+      <AuthProvider>
+        <div className="flex flex-col h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
+          {/* Rate limiting banner */}
+          <RateLimitBanner />
 
-        {/* Navigation Header */}
-        <header className="w-full z-10">
-          <Navigation />
-        </header>
+          {/* Background elements */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(120,50,255,0.15),transparent_70%)] pointer-events-none"></div>
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/5 rounded-full filter blur-3xl animate-pulse pointer-events-none"></div>
+          <div
+            className="absolute bottom-1/3 right-1/3 w-96 h-96 bg-pink-500/5 rounded-full filter blur-3xl animate-pulse pointer-events-none"
+            style={{ animationDelay: '1s' }}
+          ></div>
 
-        <main className="flex-grow z-10 overflow-y-auto">
-          <AppRouter />
-        </main>
+          {/* Navigation Header */}
+          <header className="w-full z-10">
+            <Navigation />
+          </header>
 
-        <Footer />
-      </div>
-      <Toaster />
-    </AuthProvider>
+          <main className="flex-grow z-10 overflow-y-auto">
+            <AppRouter />
+          </main>
+
+          <Footer />
+        </div>
+        <Toaster />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
