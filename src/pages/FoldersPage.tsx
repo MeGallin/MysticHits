@@ -1,10 +1,11 @@
 import React from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAtom } from 'jotai';
+import { isAuthenticatedAtom } from '@/state/authAtoms';
 import FolderList from '@/components/folders/FolderList';
 import { Navigate } from 'react-router-dom';
 
 const FoldersPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
 
   // If user is not authenticated, redirect to login page
   if (!isAuthenticated) {

@@ -9,7 +9,7 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiRefreshCw } from 'react-icons/fi';
 import { useToast } from '@/hooks/use-toast';
 import {
   foldersAtom,
@@ -21,6 +21,7 @@ import {
 import folderServices, { Folder } from '@/services/folderServices';
 import FolderCard from './FolderCard';
 import FolderFormDialog from './FolderFormDialog';
+import { logout } from '@/state/authAtoms';
 
 const FolderList: React.FC = () => {
   const [folders, setFolders] = useAtom(foldersAtom);
@@ -49,11 +50,29 @@ const FolderList: React.FC = () => {
         setFolders(response.data);
       } else {
         setError(response.error || 'Failed to fetch folders');
-        toast({
-          title: 'Error',
-          description: response.error || 'Failed to fetch folders',
-          variant: 'destructive',
-        });
+
+        // Check if the error is related to authentication
+        if (
+          response.error?.includes('Authentication token is invalid or expired')
+        ) {
+          toast({
+            title: 'Authentication Error',
+            description: 'Your session has expired. Please log in again.',
+            variant: 'destructive',
+          });
+
+          // Log the user out and redirect to login page
+          setTimeout(() => {
+            logout();
+            navigate('/login');
+          }, 2000);
+        } else {
+          toast({
+            title: 'Error',
+            description: response.error || 'Failed to fetch folders',
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error) {
       setError('An unexpected error occurred');
@@ -191,14 +210,35 @@ const FolderList: React.FC = () => {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white">My Folders</h1>
-        <Button onClick={handleAddFolder} className="flex items-center gap-1">
-          <FiPlus /> Add Folder
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleAddFolder} className="flex items-center gap-1">
+            <FiPlus /> Add Folder
+          </Button>
+        </div>
       </div>
 
       {error && (
-        <div className="bg-red-500/20 text-red-200 p-4 rounded-md mb-6">
-          {error}
+        <div className="bg-red-500/20 text-red-200 p-4 rounded-md mb-6 flex flex-col">
+          <div className="flex justify-between items-center">
+            <div>{error}</div>
+            {!error.includes('Authentication token is invalid or expired') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchFolders}
+                className="text-white border-white hover:bg-red-500/30"
+                disabled={isLoading}
+              >
+                <FiRefreshCw
+                  className={`mr-2 ${isLoading ? 'animate-spin' : ''}`}
+                />
+                Retry
+              </Button>
+            )}
+          </div>
+          {error.includes('Authentication token is invalid or expired') && (
+            <p className="text-sm mt-2">Redirecting to login page...</p>
+          )}
         </div>
       )}
 

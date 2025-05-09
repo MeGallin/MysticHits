@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { checkAndFixToken } from '@/utils/tokenFixer';
 
 // Types
 export interface DAUStats {
@@ -21,11 +22,17 @@ export interface ApiResponse<T = any> {
 }
 
 // API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Get authentication headers
 const getAuthHeaders = () => {
+  // Check and fix token format if needed
+  checkAndFixToken();
+
+  // Get the (potentially fixed) token
   const token = localStorage.getItem('token');
+
   return {
     headers: {
       'Content-Type': 'application/json',
@@ -41,15 +48,26 @@ const handleApiError = (error: any): ApiResponse => {
     // that falls out of the range of 2xx
     return {
       success: false,
-      error: error.response.data.error || 'An error occurred',
+      error:
+        error.response.data?.error ||
+        error.response.data?.message ||
+        'An error occurred',
       status: error.response.status,
     };
   } else if (error.request) {
     // The request was made but no response was received
-    return { success: false, error: 'No response from server' };
+    return {
+      success: false,
+      error: 'No response from server',
+      status: 0,
+    };
   } else {
     // Something happened in setting up the request that triggered an Error
-    return { success: false, error: error.message || 'Unknown error' };
+    return {
+      success: false,
+      error: error.message || 'Unknown error',
+      status: 0,
+    };
   }
 };
 
@@ -65,7 +83,7 @@ const statsService = {
     try {
       const response = await axios.get(
         `${API_BASE_URL}/admin/stats/dau`,
-        getAuthHeaders()
+        getAuthHeaders(),
       );
       return {
         success: true,
@@ -84,12 +102,12 @@ const statsService = {
    */
   fetchTopTracks: async (
     days: number = 7,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<ApiResponse<TopTrack[]>> => {
     try {
       const response = await axios.get(
         `${API_BASE_URL}/admin/stats/top-tracks?days=${days}&limit=${limit}`,
-        getAuthHeaders()
+        getAuthHeaders(),
       );
       return {
         success: true,

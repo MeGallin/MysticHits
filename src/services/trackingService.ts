@@ -16,7 +16,7 @@ export interface PlayEventPayload {
 let offlinePlayEvents: PlayEventPayload[] = [];
 let isRetrying = false;
 
-// Get authentication headers
+// Get authentication headers - retrieve token at call time, not initialization time
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -24,6 +24,7 @@ const getAuthHeaders = () => {
       'Content-Type': 'application/json',
       Authorization: token ? `Bearer ${token}` : '',
     },
+    withCredentials: true, // Include credentials for cross-origin requests
   };
 };
 
@@ -34,6 +35,14 @@ const getAuthHeaders = () => {
  */
 export const logPlay = async (payload: PlayEventPayload): Promise<void> => {
   try {
+    // Check if we are authenticated before making the request
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('Not authenticated, adding play event to queue');
+      offlinePlayEvents.push(payload);
+      return;
+    }
+
     // Attempt to send the event immediately
     await axios.post(
       `${API_BASE_URL}/playlist/plays`,
@@ -60,6 +69,14 @@ export const logPlay = async (payload: PlayEventPayload): Promise<void> => {
  */
 const retryQueuedEvents = async (): Promise<void> => {
   if (offlinePlayEvents.length === 0 || isRetrying) return;
+
+  // Check if we are authenticated before retrying
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.warn('Not authenticated, postponing retry of play events');
+    isRetrying = false;
+    return;
+  }
 
   isRetrying = true;
   let retryCount = 0;

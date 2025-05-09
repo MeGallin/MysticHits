@@ -16,7 +16,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import services from '../../services/fetchServices';
-import { useAuth } from '../../context/AuthContext';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../state/authAtoms';
 import { Link } from 'react-router-dom';
 
 interface User {
@@ -32,7 +33,7 @@ const UsersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
+  const [currentUser] = useAtom(userAtom);
 
   // Helper function to check if a user is the current user
   const isCurrentUser = (userId: string): boolean => {

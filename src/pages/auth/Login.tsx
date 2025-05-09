@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../../services/fetchServices';
-import { useAuth } from '../../context/AuthContext';
 import {
   FiMail,
   FiLock,
@@ -12,23 +11,27 @@ import {
   FiLogIn,
 } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
+import { useAtom } from 'jotai';
+import {
+  isAuthenticatedAtom,
+  login as jotaiLogin,
+} from '../../state/authAtoms';
 
 // Email validation regex
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 // Type for the JWT payload
 type JwtPayload = {
-  id: string;
+  userId: string;
   email: string;
   isAdmin: boolean;
-  name?: string;
   iat: number;
   exp: number;
 };
 
 export default function Login() {
-  // Get auth context
-  const { login } = useAuth();
+  // Direct access to Jotai state
+  const [isAuthenticated, setIsAuthenticated] = useAtom(isAuthenticatedAtom);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -146,32 +149,35 @@ export default function Login() {
       const response = await loginUser(formData.email, formData.password);
 
       if (response.success && response.data.token) {
-        // Decode token to get user info directly
         try {
+          // Decode token to get user info directly
           const decodedToken = jwtDecode<JwtPayload>(response.data.token);
           console.log(
             'Token decoded successfully. Admin status:',
-            decodedToken.isAdmin,
+            !!decodedToken.isAdmin,
           );
 
-          // First update the auth context
-          login(response.data.token);
+          // Update Jotai state
+          jotaiLogin(response.data.token);
 
-          // Wait for a moment to ensure auth context is updated
-          setTimeout(() => {
-            // Redirect based on admin status
-            if (decodedToken.isAdmin) {
-              console.log('Redirecting to admin dashboard');
-              navigate('/admin');
-            } else {
-              console.log('Redirecting to home page');
-              navigate('/');
-            }
-          }, 1000);
+          // Directly set isAuthenticated atom for immediate effect
+          setIsAuthenticated(true);
+
+          console.log('Authentication state updated - redirecting');
+
+          // Redirect based on admin status
+          if (decodedToken.isAdmin) {
+            console.log('Redirecting to admin dashboard');
+            navigate('/admin');
+          } else {
+            console.log('Redirecting to home page');
+            navigate('/');
+          }
         } catch (error) {
           console.error('Error decoding token:', error);
-          // Fallback to home if we can't decode
-          login(response.data.token);
+          // Still update auth state even if we can't decode token details
+          jotaiLogin(response.data.token);
+          setIsAuthenticated(true);
           navigate('/');
         }
       } else {
