@@ -30,10 +30,10 @@ export default function Home() {
         setPlaylist([]);
       }
     };
-    
+
     window.addEventListener('auth:login', handleAuthChange);
     window.addEventListener('auth:logout', handleAuthChange);
-    
+
     return () => {
       window.removeEventListener('auth:login', handleAuthChange);
       window.removeEventListener('auth:logout', handleAuthChange);
@@ -52,7 +52,7 @@ export default function Home() {
     if (!isAuthenticated()) {
       return;
     }
-    
+
     setIsLoading(true);
 
     try {

@@ -158,7 +158,6 @@ export function logout() {
     setTimeout(() => {
       broadcastLogout();
     }, 0);
-    
   } catch (error) {
     console.error('Error during logout:', error);
   }
