@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { broadcastLogin, broadcastLogout } from '../utils/authUtils';
+import axios from 'axios'; // Add axios import
 
 // Define the shape of the JWT payload
 interface JwtPayload {
@@ -48,6 +49,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
+  // Helper function to set auth token in axios defaults
+  const setAuthToken = (token: string | null) => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log('Set axios default Authorization header with token');
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+      console.log('Removed axios default Authorization header');
+    }
+  };
+
   // Check for token in localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -67,6 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           setIsAdmin(false);
           setUser(null);
           setToken(null);
+          setAuthToken(null); // Clear axios auth header
           return;
         }
 
@@ -82,6 +95,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           email: decodedToken.email,
         });
         setToken(storedToken);
+        setAuthToken(storedToken); // Set axios auth header
       } catch (error) {
         // Invalid token
         console.error('Error decoding token:', error);
@@ -90,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         setIsAdmin(false);
         setUser(null);
         setToken(null);
+        setAuthToken(null); // Clear axios auth header
       }
     }
   }, []);
@@ -113,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         email: decodedToken.email,
       });
       setToken(newToken);
+      setAuthToken(newToken); // Set axios auth header
 
       // Broadcast login event to update Navigation component
       broadcastLogin();
@@ -132,6 +148,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     setIsAdmin(false);
     setUser(null);
     setToken(null);
+    setAuthToken(null); // Clear axios auth header
 
     // Broadcast logout event to update Navigation component
     broadcastLogout();

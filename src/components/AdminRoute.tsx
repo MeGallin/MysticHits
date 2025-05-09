@@ -1,36 +1,41 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAtom } from 'jotai';
+import { isAuthenticatedAtom, isAdminAtom } from '../state/authAtoms';
 
 interface AdminRouteProps {
   children: React.ReactNode;
-  redirectPath?: string;
 }
 
-/**
- * A wrapper for admin routes that requires admin privileges
- * If user is not admin or not authenticated, redirects to login or specified path
- */
-const AdminRoute: React.FC<AdminRouteProps> = ({
-  children,
-  redirectPath = '/login',
-}) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+  // Get authentication and admin state from Jotai
+  const [isAuthenticated] = useAtom(isAuthenticatedAtom);
+  const [isAdmin] = useAtom(isAdminAtom);
 
+  // Debug info
   console.log(
-    'AdminRoute check - isAuthenticated:',
+    'AdminRoute auth check - isAuthenticated:',
     isAuthenticated,
     'isAdmin:',
     isAdmin,
   );
 
-  // If user is not authenticated or not an admin, redirect
-  if (!isAuthenticated || !isAdmin) {
-    console.log('Redirecting non-admin user to', redirectPath);
-    return <Navigate to={redirectPath} replace />;
+  if (!isAuthenticated) {
+    // Redirect to login if user is not authenticated at all
+    console.log('AdminRoute: User not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
   }
 
-  // If user is authenticated and is an admin, render the children
+  if (!isAdmin) {
+    // Redirect to home if user is authenticated but not an admin
+    console.log('AdminRoute: User not an admin, redirecting to home');
+    return <Navigate to="/" replace />;
+  }
+
+  // User is authenticated and is an admin, render the protected content
+  console.log(
+    'AdminRoute: User is authenticated and is an admin, rendering content',
+  );
   return <>{children}</>;
 };
 

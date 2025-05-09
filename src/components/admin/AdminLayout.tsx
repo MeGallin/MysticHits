@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAtom } from 'jotai';
+import { userAtom, logout } from '../../state/authAtoms';
 import {
   FiUsers,
   FiMusic,
@@ -24,7 +25,7 @@ interface NavigationItem {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Sidebar closed by default when navigating to the page
-  const { logout, user } = useAuth();
+  const [user] = useAtom(userAtom);
   const location = useLocation();
 
   const navigationItems: NavigationItem[] = [

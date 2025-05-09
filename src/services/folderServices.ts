@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { validateToken, setAxiosAuthHeader } from '@/utils/authUtils';
+import { checkAndFixToken } from '@/utils/tokenFixer';
 
 // Define the folder interface
 export interface Folder {
@@ -33,37 +35,104 @@ export interface PlaylistResponse {
 }
 
 // API base URL from environment variables (or default if not set)
-const API_BASE_URL = 'http://localhost:8000/api';
-const FOLDERS_ENDPOINT = `${API_BASE_URL}/user/folders`;
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const FOLDERS_ENDPOINT = `${API_BASE_URL}/user/folders`; // This matches the server.js route
 
-// Helper function to get auth token from localStorage
+// Helper function to get auth headers with the current token
 const getAuthHeaders = () => {
+  // Check and fix token format if needed
+  checkAndFixToken();
+
+  // Get the (potentially fixed) token
   const token = localStorage.getItem('token');
-  console.log('Current auth token:', token ? 'Token exists' : 'No token found');
+
   return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-    },
-    withCredentials: true,
+    'Content-Type': 'application/json',
+    Authorization: token ? `Bearer ${token}` : '',
   };
 };
+
+// Set up axios instance with auth headers
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor to always include the latest token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Check and fix token format if needed
+    checkAndFixToken();
+
+    // Get the (potentially fixed) token
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
+// Add response interceptor to handle 401 errors
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Could trigger logout here if needed
+    }
+    return Promise.reject(error);
+  },
+);
 
 // Create the folder service
 const folderServices = {
   // Get all folders for the authenticated user
   getFolders: async (): Promise<ApiResponse<Folder[]>> => {
     try {
-      console.log('Fetching folders from:', FOLDERS_ENDPOINT);
-      const headers = getAuthHeaders();
+      // Check and fix token format if needed
+      checkAndFixToken();
 
-      const response = await axios.get(FOLDERS_ENDPOINT, headers);
-      console.log('Folders API response:', response.data);
+      // Get the (potentially fixed) token
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found. Please log in again.',
+        };
+      }
+
+      // Create a new axios instance with the token
+      const folderAxios = axios.create({
+        baseURL: API_BASE_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Make the request with the direct token
+      const response = await folderAxios.get('/user/folders');
       return response.data;
     } catch (error: any) {
-      console.error('Folder fetch error details:', error);
+      if (error.response?.status === 401) {
+        // Authentication error
+      }
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to fetch folders',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to fetch folders',
       };
     }
   },
@@ -74,16 +143,15 @@ const folderServices = {
     path: string;
   }): Promise<ApiResponse<Folder>> => {
     try {
-      const response = await axios.post(
-        FOLDERS_ENDPOINT,
-        folderData,
-        getAuthHeaders(),
-      );
+      const response = await axiosInstance.post(FOLDERS_ENDPOINT, folderData);
       return response.data;
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to add folder',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to add folder',
       };
     }
   },
@@ -97,16 +165,18 @@ const folderServices = {
     },
   ): Promise<ApiResponse<Folder>> => {
     try {
-      const response = await axios.patch(
+      const response = await axiosInstance.patch(
         `${FOLDERS_ENDPOINT}/${folderId}`,
         folderData,
-        getAuthHeaders(),
       );
       return response.data;
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to update folder',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to update folder',
       };
     }
   },
@@ -114,15 +184,17 @@ const folderServices = {
   // Delete a folder
   deleteFolder: async (folderId: string): Promise<ApiResponse<null>> => {
     try {
-      const response = await axios.delete(
+      const response = await axiosInstance.delete(
         `${FOLDERS_ENDPOINT}/${folderId}`,
-        getAuthHeaders(),
       );
       return response.data;
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to delete folder',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to delete folder',
       };
     }
   },
@@ -130,15 +202,17 @@ const folderServices = {
   // Get the playlist for a folder
   getFolderPlaylist: async (folderId: string): Promise<PlaylistResponse> => {
     try {
-      const response = await axios.get(
+      const response = await axiosInstance.get(
         `${FOLDERS_ENDPOINT}/${folderId}/playlist`,
-        getAuthHeaders(),
       );
       return response.data;
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to load playlist',
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to load playlist',
       };
     }
   },

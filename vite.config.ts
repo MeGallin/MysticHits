@@ -10,4 +10,11 @@ export default defineConfig({
       '@services': path.resolve(__dirname, './src/services'),
     },
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    force: true,
+  },
+  build: {
+    sourcemap: true,
+  },
 });

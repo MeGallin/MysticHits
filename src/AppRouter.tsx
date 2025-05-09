@@ -27,6 +27,9 @@ import InsightsPage from './pages/admin/Insights';
 import AdminRoute from './components/AdminRoute';
 import PrivateRoute from './components/PrivateRoute';
 
+// Tell Vite about these modules explicitly for pre-bundling
+const modules = import.meta.glob('./pages/**/*.tsx');
+
 export default function AppRouter() {
   return (
     <Routes>

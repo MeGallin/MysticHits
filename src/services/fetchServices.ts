@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import { checkAndFixToken } from '../utils/tokenFixer';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -398,11 +399,31 @@ export const adminServices: AdminServices = {
   // Get API performance metrics
   getApiMetrics: async () => {
     try {
-      const response: AxiosResponse = await api.get('/health/metrics', {
+      // Check and fix token format if needed
+      checkAndFixToken();
+
+      // Get the (potentially fixed) token
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found. Please log in again.',
+          status: 401,
+        } as ApiResponse;
+      }
+
+      // Create a dedicated axios instance with the token
+      const metricsAxios = axios.create({
+        baseURL: API_BASE_URL,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
+
+      const response: AxiosResponse = await metricsAxios.get('/health/metrics');
+
       return {
         success: true,
         data: response.data.metrics,
@@ -415,12 +436,33 @@ export const adminServices: AdminServices = {
   // Get error logs
   getErrorLogs: async (hours = 1, limit = 10) => {
     try {
-      const response: AxiosResponse = await api.get('/admin/errors', {
-        params: { hours, limit },
+      // Check and fix token format if needed
+      checkAndFixToken();
+
+      // Get the (potentially fixed) token
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found. Please log in again.',
+          status: 401,
+        } as ApiResponse;
+      }
+
+      // Create a dedicated axios instance with the token
+      const errorsAxios = axios.create({
+        baseURL: API_BASE_URL,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
+
+      const response: AxiosResponse = await errorsAxios.get('/admin/errors', {
+        params: { hours, limit },
+      });
+
       return {
         success: true,
         data: response.data.errors || [],

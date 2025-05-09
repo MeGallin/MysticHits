@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAtom } from 'jotai';
+import { userAtom } from '../../state/authAtoms';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
   FiUsers,
@@ -13,7 +14,7 @@ import services from '../../services/fetchServices';
 import HealthCard from '../../components/admin/HealthCard';
 
 const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const [user] = useAtom(userAtom);
   const [messageStats, setMessageStats] = useState({
     total: 0,
     unread: 0,
