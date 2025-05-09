@@ -53,10 +53,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const setAuthToken = (token: string | null) => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      console.log('Set axios default Authorization header with token');
     } else {
       delete axios.defaults.headers.common['Authorization'];
-      console.log('Removed axios default Authorization header');
     }
   };
 
@@ -73,7 +71,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         const currentTime = Date.now() / 1000;
         if (decodedToken.exp < currentTime) {
           // Token expired, remove from storage
-          console.log('Token expired, logging out');
           localStorage.removeItem('token');
           setIsAuthenticated(false);
           setIsAdmin(false);
@@ -84,10 +81,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         // Token is valid, set auth state
-        console.log(
-          'Valid token found, setting auth state. Admin:',
-          !!decodedToken.isAdmin,
-        );
         setIsAuthenticated(true);
         setIsAdmin(!!decodedToken.isAdmin);
         setUser({
@@ -117,8 +110,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
       // Decode the token
       const decodedToken = jwtDecode<JwtPayload>(newToken);
-
-      console.log('Login successful. Admin status:', !!decodedToken.isAdmin);
 
       // Set auth state
       setIsAuthenticated(true);
@@ -152,8 +143,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     // Broadcast logout event to update Navigation component
     broadcastLogout();
-
-    console.log('User logged out');
   };
 
   // Provide the auth context to children

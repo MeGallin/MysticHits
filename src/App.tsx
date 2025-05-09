@@ -44,7 +44,6 @@ function App() {
       setCurrentTrack(null);
       setIsPlaying(false);
       setTrackDurations({});
-      console.log('Audio player state cleared after logout');
     };
 
     // Listen for the auth:logout event

@@ -37,9 +37,7 @@ const PlayerPage: React.FC = () => {
     setError(null);
 
     try {
-      console.log('Loading playlist for folder ID:', id);
       const response = await folderServices.getFolderPlaylist(id);
-      console.log('Playlist response:', response);
 
       if (response.success && response.data) {
         // Process tracks to ensure they have all required properties
@@ -91,7 +89,6 @@ const PlayerPage: React.FC = () => {
           };
         });
 
-        console.log('Processed tracks for player:', processedTracks);
         setPlaylist(processedTracks);
 
         // Try to extract folder name from first track or use generic name

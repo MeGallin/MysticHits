@@ -49,10 +49,8 @@ export const userAtom = atom<User | null>(null);
 const setAuthToken = (token: string | null) => {
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.log('Set axios default Authorization header with token from Jotai');
   } else {
     delete axios.defaults.headers.common['Authorization'];
-    console.log('Removed axios default Authorization header from Jotai');
   }
 };
 
@@ -92,16 +90,11 @@ export const authStateAtom = atom(
     try {
       // Decode the token
       const decodedToken = jwtDecode<JwtPayload>(newToken);
-      console.log(
-        'Token decoded successfully. Admin status:',
-        !!decodedToken.isAdmin,
-      );
 
       // Check if token is expired
       const currentTime = Date.now() / 1000;
       if (decodedToken.exp < currentTime) {
         // Token expired
-        console.log('Token expired');
         set(tokenAtom, null);
         set(isAuthenticatedAtom, false);
         set(isAdminAtom, false);
@@ -121,7 +114,6 @@ export const authStateAtom = atom(
 
       // Always broadcast login event for any non-Jotai components
       broadcastLogin();
-      console.log('Login event broadcast from authStateAtom');
     } catch (error) {
       // Invalid token
       console.error('Error decoding token:', error);
@@ -151,10 +143,7 @@ export function login(token: string) {
     // This ensures navigation updates even if the Jotai store update doesn't trigger a re-render
     setTimeout(() => {
       broadcastLogin();
-      console.log('Extra login event broadcast to ensure UI updates');
     }, 0);
-
-    console.log('Login successful via Jotai');
   } catch (error) {
     console.error('Error during login:', error);
   }
@@ -168,10 +157,8 @@ export function logout() {
     // Explicitly broadcast logout event again to ensure UI updates
     setTimeout(() => {
       broadcastLogout();
-      console.log('Extra logout event broadcast to ensure UI updates');
     }, 0);
-
-    console.log('User logged out via Jotai');
+    
   } catch (error) {
     console.error('Error during logout:', error);
   }
@@ -184,10 +171,7 @@ export function initializeAuth() {
 
     // Only proceed if we have a token and it's not empty
     if (storedToken && storedToken.trim() !== '') {
-      console.log('Found token in localStorage, initializing auth');
       store.set(authStateAtom, storedToken);
-    } else {
-      console.log('No valid token in localStorage');
     }
   } catch (error) {
     console.error('Error initializing auth:', error);

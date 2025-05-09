@@ -50,14 +50,12 @@ export default function Home() {
   const loadPlaylist = async (id: string) => {
     // Double-check authentication before making API call
     if (!isAuthenticated()) {
-      console.log('User not authenticated, skipping playlist load');
       return;
     }
     
     setIsLoading(true);
 
     try {
-      console.log('Loading playlist for folder ID:', id);
       const response = await folderServices.getFolderPlaylist(id);
 
       if (response.success && response.data) {
@@ -106,7 +104,6 @@ export default function Home() {
           };
         });
 
-        console.log('Processed tracks for player:', processedTracks);
         setPlaylist(processedTracks);
 
         // Extract folder name for toast notification

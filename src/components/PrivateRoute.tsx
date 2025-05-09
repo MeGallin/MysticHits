@@ -42,10 +42,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
     checkToken();
   }, [isAuthenticated, toast]);
 
-  // Debug info
-  console.log('PrivateRoute auth check - isAuthenticated:', isAuthenticated);
-  console.log('PrivateRoute token validation - isTokenValid:', isTokenValid);
-
   // Show loading state while validating token
   if (isValidatingToken) {
     return (
@@ -57,9 +53,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
 
   if (!isAuthenticated || !isTokenValid) {
     // Redirect to login if user is not authenticated or token is invalid
-    console.log(
-      'PrivateRoute: User not authenticated or token invalid, redirecting to login',
-    );
     return <Navigate to="/login" replace />;
   }
 

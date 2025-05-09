@@ -50,7 +50,6 @@ const Navigation: React.FC = () => {
   // Force re-render when location changes
   useEffect(() => {
     // This effect runs when route changes, helping ensure nav reflects current auth state
-    console.log('Navigation updated on route change');
   }, [location.pathname]);
 
   // Function to close dropdown menu
@@ -72,7 +71,6 @@ const Navigation: React.FC = () => {
   // Listen for auth events to ensure UI updates
   useEffect(() => {
     const handleAuthChange = () => {
-      console.log('Auth event detected in Navigation');
       // Force re-render
       setIsDropdownOpen(false);
     };
@@ -90,9 +88,6 @@ const Navigation: React.FC = () => {
 
   return (
     <nav className="main-navigation bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green !text-white px-4 py-3 shadow-md border-b-2 border-gray-900">
-      {/* Debug info - remove in production */}
-      {console.log('Navigation render - Auth state:', isAuthenticated)}
-
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo/Brand - Acts as home link */}
         <div className="container mx-auto flex items-center">

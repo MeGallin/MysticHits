@@ -56,8 +56,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       // Reset atoms directly to ensure view updates
       setCurrentTrackState(null);
       setIsPlayingState(false);
-
-      console.log('AudioPlayer: Cleared player state after logout');
     };
 
     window.addEventListener('auth-changed', checkAuth);

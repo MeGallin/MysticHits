@@ -152,10 +152,6 @@ export default function Login() {
         try {
           // Decode token to get user info directly
           const decodedToken = jwtDecode<JwtPayload>(response.data.token);
-          console.log(
-            'Token decoded successfully. Admin status:',
-            !!decodedToken.isAdmin,
-          );
 
           // Update Jotai state
           jotaiLogin(response.data.token);
@@ -163,14 +159,10 @@ export default function Login() {
           // Directly set isAuthenticated atom for immediate effect
           setIsAuthenticated(true);
 
-          console.log('Authentication state updated - redirecting');
-
           // Redirect based on admin status
           if (decodedToken.isAdmin) {
-            console.log('Redirecting to admin dashboard');
             navigate('/admin');
           } else {
-            console.log('Redirecting to home page');
             navigate('/');
           }
         } catch (error) {

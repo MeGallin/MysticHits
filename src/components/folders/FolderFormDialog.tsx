@@ -38,7 +38,6 @@ const FolderFormDialog: React.FC<FolderFormDialogProps> = ({
   // Reset form when dialog opens/closes or the folder to edit changes
   React.useEffect(() => {
     if (open) {
-      console.log('Editing folder:', folderToEdit);
       setLabel(folderToEdit?.label || '');
       setPath(folderToEdit?.path || '');
       setErrors({});

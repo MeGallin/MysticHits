@@ -62,42 +62,19 @@ export const logTokenDetails = (): void => {
   const token = localStorage.getItem('token');
 
   if (!token) {
-    console.log('DEBUG: No token found in localStorage');
     return;
   }
-
-  console.log('DEBUG: Token exists in localStorage');
-  console.log('DEBUG: Token length:', token.length);
-  console.log('DEBUG: Token first 10 chars:', token.substring(0, 10) + '...');
 
   try {
     // Try to decode the token
     const decoded = jwtDecode<JwtPayload>(token);
-    console.log('DEBUG: Token decoded successfully');
-    console.log('DEBUG: Token payload:', {
-      userId: decoded.userId,
-      email: decoded.email,
-      isAdmin: decoded.isAdmin,
-      exp: new Date(decoded.exp * 1000).toISOString(),
-      now: new Date().toISOString(),
-      isExpired: decoded.exp < Date.now() / 1000,
-    });
+    // Token decoded successfully
   } catch (error) {
     console.error('DEBUG: Failed to decode token:', error);
   }
 
   // Check if token is in Authorization header
   const authHeader = axios.defaults.headers.common['Authorization'];
-  console.log(
-    'DEBUG: Authorization header:',
-    authHeader ? 'exists' : 'missing',
-  );
-  if (authHeader) {
-    console.log(
-      'DEBUG: Header matches localStorage token:',
-      authHeader === `Bearer ${token}`,
-    );
-  }
 };
 
 /**
@@ -108,15 +85,11 @@ export const logTokenDetails = (): void => {
 export const validateToken = (): boolean => {
   // First, check and fix token format if needed
   const wasFixed = checkAndFixToken();
-  if (wasFixed) {
-    console.log('Token format was fixed during validation');
-  }
 
   // Get the (potentially fixed) token
   const token = localStorage.getItem('token');
 
   if (!token) {
-    console.log('No token found in localStorage');
     return false;
   }
 
@@ -130,18 +103,15 @@ export const validateToken = (): boolean => {
     // Check if token is expired
     const currentTime = Date.now() / 1000;
     if (decodedToken.exp < currentTime) {
-      console.log('Token is expired, removing from storage');
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
       return false;
     }
 
     // Token is valid
-    console.log('Token is valid');
 
     // Ensure the token is set in axios headers
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.log('Ensured axios Authorization header is set with token');
 
     return true;
   } catch (error) {
@@ -158,18 +128,13 @@ export const validateToken = (): boolean => {
 export const setAxiosAuthHeader = (): void => {
   // First, check and fix token format if needed
   const wasFixed = checkAndFixToken();
-  if (wasFixed) {
-    console.log('Token format was fixed before setting axios header');
-  }
 
   // Get the (potentially fixed) token
   const token = localStorage.getItem('token');
 
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.log('Set axios Authorization header with token from authUtils');
   } else {
     delete axios.defaults.headers.common['Authorization'];
-    console.log('Removed axios Authorization header from authUtils');
   }
 };
