@@ -29,6 +29,10 @@ import {
   Home,
   Info,
   MessageSquare,
+  Music,
+  Headphones,
+  Radio,
+  Mic2,
 } from 'lucide-react';
 import { logoutUser } from '@services/fetchServices';
 import { useAtom } from 'jotai';
@@ -87,132 +91,140 @@ const Navigation: React.FC = () => {
   }, []);
 
   return (
-    <nav className="main-navigation bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green !text-white px-4 py-3 shadow-md border-b-2 border-gray-900">
+    <nav className="main-navigation bg-gradient-to-r from-indigo-900 via-purple-800 to-pink-900 text-white px-4 py-3 shadow-lg border-b-2 border-gray-900">
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo/Brand - Acts as home link */}
-        <div className="container mx-auto flex items-center">
+        <div className="flex items-center">
           <Link
             to="/"
-            className="group flex items-center transition-all duration-300 hover:scale-105"
+            className="group flex items-center transition-all duration-300 hover:scale-105 logo-hover"
           >
-            <span className="text-xl md:text-2xl font-bold tracking-tight">
-              <span className="text-yellow-300">Mystic</span> Hits
-            </span>
+            <Headphones
+              className="h-8 w-8 mr-2 text-pink-400 animate-pulse filter drop-shadow-lg text-shadow-lg"
+              style={{
+                filter: 'drop-shadow(0 0 0.5rem rgba(236, 72, 153, 0.7))',
+              }}
+            />
+            <div className="flex flex-col items-center">
+              <span className="text-xl md:text-2xl font-bold tracking-tight font-logo">
+                <span className="text-pink-400 bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
+                  Mystic
+                </span>
+                <span className="text-yellow-300"> Hits</span>
+              </span>
+              <span className="text-[12px] font-slogan bg-gradient-to-r from-pink-300 via-yellow-200 to-purple-300 text-transparent bg-clip-text -mt-1 tracking-[0.2em] uppercase animate-pulse slogan-text">
+                ★ Feel the Vibes ★
+              </span>
+            </div>
           </Link>
-
-          {/* Navigation links - Desktop */}
-          <div className="hidden md:flex space-x-6 ml-10">
-            <Link
-              to="/"
-              className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
-            >
-              <Home className="h-4 w-4 mr-1 text-yellow-300" />
-              Home
-            </Link>
-            <Link
-              to="/charts"
-              className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
-            >
-              <BarChart className="h-4 w-4 mr-1 text-yellow-300" />
-              Charts
-            </Link>
-            <Link
-              to="/about"
-              className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
-            >
-              <Info className="h-4 w-4 mr-1 text-yellow-300" />
-              About
-            </Link>
-            <Link
-              to="/contact"
-              className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
-            >
-              <MessageSquare className="h-4 w-4 mr-1 text-yellow-300" />
-              Contact
-            </Link>
-
-            {/* Show Folders link for authenticated users */}
-            {isAuthenticated && (
-              <Link
-                to="/folders"
-                className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
-              >
-                <FolderIcon className="h-4 w-4 mr-1 text-yellow-300" />
-                Folders
-              </Link>
-            )}
-
-            {/* Show Admin link for admin users */}
-            {isAuthenticated && isAdmin && (
-              <Link
-                to="/admin"
-                className="font-medium hover:text-yellow-400 transition-colors uppercase flex items-center"
-              >
-                <User className="h-4 w-4 mr-1 text-yellow-300" />
-                Admin
-              </Link>
-            )}
-          </div>
         </div>
 
-        {/* Auth buttons - Desktop */}
-        <div className="hidden md:flex items-center space-x-2">
-          {/* Conditionally render logout button or auth dropdown */}
-          {isAuthenticated ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="bg-transparent border-white text-white hover:bg-white hover:text-gray-900 uppercase"
+        {/* Right side container - Navigation links + Auth buttons */}
+        <div className="hidden md:flex items-center space-x-6">
+          {/* Navigation links - Desktop */}
+          <Link
+            to="/charts"
+            className="font-medium font-sans hover:text-pink-400 transition-colors uppercase flex items-center"
+          >
+            <BarChart className="h-4 w-4 mr-1 text-pink-400" />
+            Charts
+          </Link>
+          <Link
+            to="/about"
+            className="font-medium font-sans hover:text-pink-400 transition-colors uppercase flex items-center"
+          >
+            <Info className="h-4 w-4 mr-1 text-pink-400" />
+            About
+          </Link>
+          <Link
+            to="/contact"
+            className="font-medium font-sans hover:text-pink-400 transition-colors uppercase flex items-center"
+          >
+            <MessageSquare className="h-4 w-4 mr-1 text-pink-400" />
+            Contact
+          </Link>
+
+          {/* Show Folders link for authenticated users */}
+          {isAuthenticated && (
+            <Link
+              to="/folders"
+              className="font-medium font-sans hover:text-pink-400 transition-colors uppercase flex items-center"
             >
-              <LogOut className="h-4 w-4 mr-1" /> Logout
-            </Button>
-          ) : (
-            <DropdownMenu
-              open={isDropdownOpen}
-              onOpenChange={setIsDropdownOpen}
-            >
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-transparent border-white text-white hover:bg-white hover:text-gray-900"
-                >
-                  <User className="h-4 w-4 mr-1" />
-                  Account <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-48 bg-gray-800 border-gray-700 !shadow-lg !border !border-gray-700"
-              >
-                <DropdownMenuLabel className="text-gray-300">
-                  Account
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-700" />
-                <DropdownMenuItem
-                  className="text-gray-200 focus:bg-gray-700 focus:text-white"
-                  onSelect={() => {
-                    closeDropdown();
-                    navigate('/login');
-                  }}
-                >
-                  <LogIn className="mr-2 h-4 w-4" />
-                  <span>Login</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-gray-200 focus:bg-gray-700 focus:text-white"
-                  onSelect={() => {
-                    closeDropdown();
-                    navigate('/register');
-                  }}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  <span>Register</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <FolderIcon className="h-4 w-4 mr-1 text-pink-400" />
+              Folders
+            </Link>
           )}
+
+          {/* Show Admin link for admin users */}
+          {isAuthenticated && isAdmin && (
+            <Link
+              to="/admin"
+              className="font-medium font-sans hover:text-pink-400 transition-colors uppercase flex items-center"
+            >
+              <User className="h-4 w-4 mr-1 text-pink-400" />
+              Admin
+            </Link>
+          )}
+
+          {/* Auth buttons */}
+          <div className="flex items-center ml-4 pl-4 border-l border-gray-700">
+            {/* Conditionally render logout button or auth dropdown */}
+            {isAuthenticated ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="bg-transparent border-pink-400 text-white hover:bg-gray-800 hover:text-pink-400 uppercase"
+              >
+                <LogOut className="h-4 w-4 mr-1" /> Logout
+              </Button>
+            ) : (
+              <DropdownMenu
+                open={isDropdownOpen}
+                onOpenChange={setIsDropdownOpen}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-transparent border-pink-400 text-white hover:bg-gray-800 hover:text-pink-400"
+                  >
+                    <User className="h-4 w-4 mr-1" />
+                    Account <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 bg-gray-800 !shadow-lg !border border-gray-700"
+                >
+                  <DropdownMenuLabel className="text-pink-400">
+                    Account
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem
+                    className="text-gray-200 focus:bg-gray-700 focus:text-pink-400"
+                    onSelect={() => {
+                      closeDropdown();
+                      navigate('/login');
+                    }}
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    <span>Login</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-gray-200 focus:bg-gray-700 focus:text-pink-400"
+                    onSelect={() => {
+                      closeDropdown();
+                      navigate('/register');
+                    }}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    <span>Register</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {/* Mobile menu button */}
@@ -232,11 +244,26 @@ const Navigation: React.FC = () => {
                   <Link
                     to="/"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center"
+                    className="flex items-center logo-hover"
                   >
-                    <span className="text-xl font-bold tracking-tight">
-                      <span className="text-yellow-300">Mystic</span> Hits
-                    </span>
+                    <Headphones
+                      className="h-6 w-6 mr-2 text-pink-400 animate-pulse filter drop-shadow-lg"
+                      style={{
+                        filter:
+                          'drop-shadow(0 0 0.5rem rgba(236, 72, 153, 0.7))',
+                      }}
+                    />
+                    <div className="flex flex-col items-center">
+                      <span className="text-xl font-bold tracking-tight font-logo">
+                        <span className="text-pink-400 bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
+                          Mystic
+                        </span>
+                        <span className="text-yellow-300"> Hits</span>
+                      </span>
+                      <span className="text-[12px] font-slogan bg-gradient-to-r from-pink-300 via-yellow-200 to-purple-300 text-transparent bg-clip-text -mt-1 tracking-[0.2em] uppercase animate-pulse slogan-text">
+                        ★ Feel the Vibes ★
+                      </span>
+                    </div>
                   </Link>
                 </SheetTitle>
                 <SheetDescription className="text-gray-400">
@@ -247,35 +274,27 @@ const Navigation: React.FC = () => {
               {/* Mobile navigation links */}
               <div className="flex flex-col space-y-4">
                 <Link
-                  to="/"
-                  className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Home className="h-5 w-5 mr-2 text-yellow-400" />
-                  Home
-                </Link>
-                <Link
                   to="/charts"
-                  className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                  className="font-medium font-sans text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <BarChart className="h-5 w-5 mr-2 text-yellow-400" />
+                  <BarChart className="h-5 w-5 mr-2 text-pink-400" />
                   Charts
                 </Link>
                 <Link
                   to="/about"
-                  className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                  className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <Info className="h-5 w-5 mr-2 text-yellow-400" />
+                  <Info className="h-5 w-5 mr-2 text-pink-400" />
                   About
                 </Link>
                 <Link
                   to="/contact"
-                  className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                  className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <MessageSquare className="h-5 w-5 mr-2 text-yellow-400" />
+                  <MessageSquare className="h-5 w-5 mr-2 text-pink-400" />
                   Contact
                 </Link>
 
@@ -285,10 +304,10 @@ const Navigation: React.FC = () => {
                     <div className="h-px bg-gray-700 my-2"></div>
                     <Link
                       to="/folders"
-                      className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                      className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <FolderIcon className="h-5 w-5 mr-2 text-yellow-400" />
+                      <FolderIcon className="h-5 w-5 mr-2 text-pink-400" />
                       Folders
                     </Link>
 
@@ -296,10 +315,10 @@ const Navigation: React.FC = () => {
                     {isAdmin && (
                       <Link
                         to="/admin"
-                        className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                        className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <User className="h-5 w-5 mr-2 text-yellow-400" />
+                        <User className="h-5 w-5 mr-2 text-pink-400" />
                         Admin
                       </Link>
                     )}
@@ -310,35 +329,57 @@ const Navigation: React.FC = () => {
 
                 {isAuthenticated ? (
                   <button
-                    className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                    className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                     onClick={() => {
                       handleLogout();
                       setIsMenuOpen(false);
                     }}
                   >
-                    <LogOut className="h-5 w-5 mr-2 text-yellow-400" />
+                    <LogOut className="h-5 w-5 mr-2 text-pink-400" />
                     Logout
                   </button>
                 ) : (
                   <>
                     <Link
                       to="/login"
-                      className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                      className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <LogIn className="h-5 w-5 mr-2 text-yellow-400" />
+                      <LogIn className="h-5 w-5 mr-2 text-pink-400" />
                       Login
                     </Link>
                     <Link
                       to="/register"
-                      className="font-medium text-lg hover:text-yellow-400 transition-colors uppercase flex items-center"
+                      className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <UserPlus className="h-5 w-5 mr-2 text-yellow-400" />
+                      <UserPlus className="h-5 w-5 mr-2 text-pink-400" />
                       Register
                     </Link>
                   </>
                 )}
+              </div>
+
+              {/* Music-themed decorative elements */}
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-8 opacity-80">
+                <Music
+                  className="h-8 w-8 text-pink-400 transform hover:scale-110 transition-transform duration-300"
+                  style={{
+                    filter: 'drop-shadow(0 0 0.3rem rgba(236, 72, 153, 0.7))',
+                  }}
+                />
+                <Radio
+                  className="h-8 w-8 text-yellow-300 transform hover:scale-110 transition-transform duration-300"
+                  style={{
+                    filter: 'drop-shadow(0 0 0.3rem rgba(252, 211, 77, 0.7))',
+                  }}
+                />
+                <Mic2
+                  className="h-8 w-8 text-purple-400 transform hover:scale-110 transition-transform duration-300"
+                  style={{
+                    filter: 'drop-shadow(0 0 0.3rem rgba(192, 132, 252, 0.7))',
+                  }}
+                />
               </div>
             </SheetContent>
           </Sheet>

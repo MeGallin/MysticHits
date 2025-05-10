@@ -3,6 +3,49 @@
 @tailwind utilities;
 
 /**
+ * Global font styles
+ */
+@layer base {
+  html {
+    font-family: 'Quicksand', ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', ui-sans-serif, system-ui;
+  }
+
+  button,
+  a.btn,
+  .btn {
+    font-family: 'Outfit', ui-sans-serif, system-ui;
+  }
+}
+
+/**
+ * Custom font classes for the music app
+ */
+.font-logo {
+  font-family: 'Rubik Moonrocks', 'Audiowide', cursive, system-ui;
+}
+
+.font-slogan {
+  font-family: 'Audiowide', cursive, system-ui;
+  text-shadow: 0 0 5px rgba(236, 72, 153, 0.3);
+  transition: all 0.3s ease;
+}
+
+.logo-hover:hover .slogan-text {
+  text-shadow: 0 0 10px rgba(236, 72, 153, 0.7);
+  letter-spacing: 0.25em;
+}
+
+/**
  * Custom styles for the volume range slider
  * Consistent styling across different browsers
  */
