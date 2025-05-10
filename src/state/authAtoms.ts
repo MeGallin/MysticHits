@@ -24,15 +24,26 @@ interface User {
  * This helps prevent decoding errors from malformed tokens
  */
 function isValidTokenFormat(token: string): boolean {
+  // Check if token is undefined, null, or empty
+  if (!token || typeof token !== 'string') {
+    return false;
+  }
+
   // JWT tokens should have 3 parts separated by dots
   const parts = token.split('.');
   if (parts.length !== 3) {
     return false;
   }
 
-  // Each part should be base64url encoded
+  // Check that each part is base64url encoded
+  // Base64url uses only alphanumeric characters plus "-" and "_"
+  const base64UrlRegex = /^[A-Za-z0-9\-_]*$/;
   try {
-    // Just check if we can decode the parts
+    for (const part of parts) {
+      if (!base64UrlRegex.test(part)) {
+        return false;
+      }
+    }
     return true;
   } catch (e) {
     return false;
