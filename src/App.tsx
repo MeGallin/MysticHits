@@ -10,23 +10,59 @@ import {
   isPlayingAtom,
   trackDurationsAtom,
 } from './state/audioAtoms';
+import { debugTokenFromStorage } from './utils/tokenDebugger';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitBanner from './components/RateLimitBanner';
 import { setupApiErrorHandlers } from './utils/apiErrorHandler';
 import { initializeAuth, logout } from './state/authAtoms';
 import axios from 'axios';
 import { fixTokenAndUpdateHeaders } from './utils/tokenFixer';
+import { addAuthResetButton } from './utils/authReset';
 
 // Initialize API error handlers
 setupApiErrorHandlers();
 
-// Check for and fix token format issues, then set up axios default authorization header
-const fixedToken = fixTokenAndUpdateHeaders();
-if (fixedToken) {
-  axios.defaults.headers.common['Authorization'] = `Bearer ${fixedToken}`;
+// First, debug token state before any operations
+debugTokenFromStorage();
+
+// Force clean any token in localStorage
+try {
+  const token = localStorage.getItem('token');
+  if (token) {
+    // Clean the token of quotes and whitespace
+    let cleanedToken = token;
+    if (token.startsWith('"') && token.endsWith('"')) {
+      cleanedToken = token.substring(1, token.length - 1);
+    }
+    cleanedToken = cleanedToken.trim();
+
+    // Handle any padding characters that might cause validation issues
+    // Some tokens might have padding characters that need to be fixed
+    cleanedToken = cleanedToken.replace(/=+$/, '');
+
+    // Only update if we actually cleaned something
+    if (cleanedToken !== token) {
+      localStorage.setItem('token', cleanedToken);
+      console.debug('Token was cleaned during App initialization');
+
+      // Debug after cleaning
+      debugTokenFromStorage();
+    }
+  }
+} catch (e) {
+  console.error('Error cleaning token:', e);
 }
 
-// Initialize auth from stored token
+// Now run the standard token fixer
+const fixedToken = fixTokenAndUpdateHeaders();
+if (fixedToken) {
+  // Set up axios default authorization header with the fixed token
+  axios.defaults.headers.common['Authorization'] = `Bearer ${fixedToken}`;
+  console.debug('Token fixed and axios headers updated');
+}
+
+// Then initialize auth from stored token
+// This function now includes additional token format fixing
 initializeAuth();
 
 function App() {
@@ -48,6 +84,9 @@ function App() {
 
     // Listen for the auth:logout event
     window.addEventListener('auth:logout', handleLogout);
+
+    // Add the auth reset button (the function internally checks for development mode)
+    addAuthResetButton();
 
     // Cleanup the event listener when component unmounts
     return () => {

@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import { broadcastLogin, broadcastLogout } from '../utils/authUtils';
 import { getDefaultStore } from 'jotai';
 import axios from 'axios';
+import { inspectToken } from '../utils/tokenDebugger';
 
 // Define the shape of the JWT payload
 interface JwtPayload {
@@ -26,26 +27,77 @@ interface User {
 function isValidTokenFormat(token: string): boolean {
   // Check if token is undefined, null, or empty
   if (!token || typeof token !== 'string') {
+    console.debug(
+      'Token validation failed: token is null, undefined, or not a string',
+    );
     return false;
   }
 
-  // JWT tokens should have 3 parts separated by dots
-  const parts = token.split('.');
-  if (parts.length !== 3) {
-    return false;
-  }
-
-  // Check that each part is base64url encoded
-  // Base64url uses only alphanumeric characters plus "-" and "_"
-  const base64UrlRegex = /^[A-Za-z0-9\-_]*$/;
   try {
-    for (const part of parts) {
-      if (!base64UrlRegex.test(part)) {
-        return false;
-      }
+    // Clean any quotes and whitespace that might have been accidentally included
+    const cleanToken = token.replace(/^["']|["']$/g, '').trim();
+
+    // Handle any unusual characters that might be in the token
+    // Some JWT implementations add padding characters that should be removed
+    const normalizedToken = cleanToken.replace(/=+$/, '');
+
+    // JWT tokens should have 3 parts separated by dots
+    const parts = normalizedToken.split('.');
+    if (parts.length !== 3) {
+      console.debug(
+        `Token validation failed: expected 3 parts, got ${parts.length}`,
+      );
+      return false;
     }
+
+    // Check that each part is base64url encoded
+    // Base64url uses only alphanumeric characters plus "-" and "_"
+    const base64UrlRegex = /^[A-Za-z0-9\-_]*$/;
+
+    // Check header (part 0)
+    if (!base64UrlRegex.test(parts[0])) {
+      console.debug('Token validation failed: header part failed regex test');
+      // Log the first invalid character found
+      const invalidChar = Array.from(parts[0]).find(
+        (char) => !base64UrlRegex.test(char),
+      );
+      console.debug(
+        `First invalid char in header: ${JSON.stringify(invalidChar)}`,
+      );
+      return false;
+    }
+
+    // Check payload (part 1)
+    if (!base64UrlRegex.test(parts[1])) {
+      console.debug('Token validation failed: payload part failed regex test');
+      // Log the first invalid character found
+      const invalidChar = Array.from(parts[1]).find(
+        (char) => !base64UrlRegex.test(char),
+      );
+      console.debug(
+        `First invalid char in payload: ${JSON.stringify(invalidChar)}`,
+      );
+      return false;
+    }
+
+    // Check signature (part 2)
+    if (!base64UrlRegex.test(parts[2])) {
+      console.debug(
+        'Token validation failed: signature part failed regex test',
+      );
+      // Log the first invalid character found
+      const invalidChar = Array.from(parts[2]).find(
+        (char) => !base64UrlRegex.test(char),
+      );
+      console.debug(
+        `First invalid char in signature: ${JSON.stringify(invalidChar)}`,
+      );
+      return false;
+    }
+
     return true;
   } catch (e) {
+    console.debug('Token validation failed with exception:', e);
     return false;
   }
 }
@@ -87,8 +139,22 @@ export const authStateAtom = atom(
       return;
     }
 
+    // Inspect original token
+    inspectToken(newToken, 'authStateAtom - before cleaning');
+
+    // First, try to clean the token of any potential quotes and whitespace
+    let cleanedToken = newToken;
+    if (newToken.startsWith('"') && newToken.endsWith('"')) {
+      cleanedToken = newToken.substring(1, newToken.length - 1);
+      console.debug('Cleaned quotes from token in authStateAtom');
+    }
+    cleanedToken = cleanedToken.trim();
+
+    // Inspect cleaned token
+    inspectToken(cleanedToken, 'authStateAtom - after cleaning');
+
     // Validate token format before trying to decode
-    if (!isValidTokenFormat(newToken)) {
+    if (!isValidTokenFormat(cleanedToken)) {
       console.error('Invalid token format');
       set(tokenAtom, null);
       set(isAuthenticatedAtom, false);
@@ -99,8 +165,8 @@ export const authStateAtom = atom(
 
     // We're logging in with a new token
     try {
-      // Decode the token
-      const decodedToken = jwtDecode<JwtPayload>(newToken);
+      // Decode the cleaned token
+      const decodedToken = jwtDecode<JwtPayload>(cleanedToken);
 
       // Check if token is expired
       const currentTime = Date.now() / 1000;
@@ -114,14 +180,14 @@ export const authStateAtom = atom(
       }
 
       // Token is valid, set auth state
-      set(tokenAtom, newToken);
+      set(tokenAtom, cleanedToken);
       set(isAuthenticatedAtom, true);
       set(isAdminAtom, !!decodedToken.isAdmin);
       set(userAtom, {
         id: decodedToken.userId,
         email: decodedToken.email,
       });
-      setAuthToken(newToken); // Set axios auth header
+      setAuthToken(cleanedToken); // Set axios auth header
 
       // Always broadcast login event for any non-Jotai components
       broadcastLogin();
@@ -177,11 +243,48 @@ export function logout() {
 // Initialize authentication from stored token
 export function initializeAuth() {
   try {
+    // Check if there's a token in localStorage
     const storedToken = localStorage.getItem('token');
+
+    // Log for debugging
+    console.debug('Initializing auth, token exists:', !!storedToken);
+
+    if (storedToken) {
+      // Use the token debugger to inspect the token in detail
+      inspectToken(storedToken, 'initializeAuth');
+    }
 
     // Only proceed if we have a token and it's not empty
     if (storedToken && storedToken.trim() !== '') {
-      store.set(authStateAtom, storedToken);
+      // Check if the token has quotes around it and fix if needed
+      let tokenToUse = storedToken;
+      if (storedToken.startsWith('"') && storedToken.endsWith('"')) {
+        // Remove quotes and update localStorage
+        tokenToUse = storedToken.substring(1, storedToken.length - 1);
+        localStorage.setItem('token', tokenToUse);
+        console.debug('Fixed quoted token in initializeAuth');
+      }
+
+      // Remove any additional whitespace
+      tokenToUse = tokenToUse.trim();
+
+      if (tokenToUse !== storedToken) {
+        localStorage.setItem('token', tokenToUse);
+      }
+
+      // Check token format before attempting to use it
+      if (isValidTokenFormat(tokenToUse)) {
+        // Update auth state using the default store
+        store.set(authStateAtom, tokenToUse);
+      } else {
+        console.error('Token format validation failed during initialization');
+        console.debug(
+          'Token preview:',
+          tokenToUse.substring(0, Math.min(10, tokenToUse.length)) + '...',
+        );
+        // Clear invalid token
+        localStorage.removeItem('token');
+      }
     }
   } catch (error) {
     console.error('Error initializing auth:', error);

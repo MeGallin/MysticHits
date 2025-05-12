@@ -20,14 +20,28 @@ export function checkAndFixToken(): boolean {
       return false;
     }
 
+    // First, check for and remove surrounding quotes
+    let fixedToken = token;
+    let wasFixed = false;
+
     // Check if the token starts with a quote
     if (token.startsWith('"') && token.endsWith('"')) {
       // Remove the quotes
-      const fixedToken = token.substring(1, token.length - 1);
+      fixedToken = token.substring(1, token.length - 1);
+      wasFixed = true;
+    }
 
+    // Clean up any extra whitespace
+    const trimmedToken = fixedToken.trim();
+    if (trimmedToken !== fixedToken) {
+      fixedToken = trimmedToken;
+      wasFixed = true;
+    }
+
+    if (wasFixed) {
       // Store the fixed token back in localStorage
       localStorage.setItem('token', fixedToken);
-
+      console.debug('Token was fixed in checkAndFixToken');
       return true;
     }
 
