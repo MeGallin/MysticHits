@@ -75,17 +75,6 @@ const MediaPlayer = forwardRef<
       }))
     : [];
 
-  // Log media type for debugging
-  useEffect(() => {
-    if (src) {
-      console.log(
-        `MediaPlayer: Playing ${
-          isVideo ? 'video' : 'audio'
-        } content (${mime}) from ${src}`,
-      );
-    }
-  }, [src, mime, isVideo]);
-
   // Handle media errors with better UX
   const handleMediaError = (e: React.SyntheticEvent<HTMLMediaElement>) => {
     console.error('Media error:', e);

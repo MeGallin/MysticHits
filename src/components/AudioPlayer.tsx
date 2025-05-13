@@ -812,7 +812,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <StaticAdvertisements />
           </div>
         ) : (
-          <div className="p-1 space-y-1 flex-grow flex flex-col justify-center">
+          <div className="border border-pink-500 p-1 space-y-1 flex-grow flex flex-col justify-center">
             {/* Progress Bar */}
             <div className="space-y-0.5">
               <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
