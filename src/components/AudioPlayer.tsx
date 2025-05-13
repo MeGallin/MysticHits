@@ -812,9 +812,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <StaticAdvertisements />
           </div>
         ) : (
-          <div className="p-6 space-y-4 flex-grow flex flex-col justify-center">
+          <div className="p-1 space-y-1 flex-grow flex flex-col justify-center">
             {/* Progress Bar */}
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
                 <input
                   type="range"
@@ -875,7 +875,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
         {/* Playlist */}
         {showPlaylist && combinedTracks.length > 0 && (
-          <div className="border-t border-white/10 p-4 max-h-[30vh] overflow-y-auto bg-gradient-to-br from-indigo-900/80 to-purple-800/80 backdrop-blur-sm">
+          <div className="border-t border-white/10 p-1 max-h-[30vh] overflow-y-auto bg-gradient-to-br from-indigo-900/80 to-purple-800/80 backdrop-blur-sm">
             <h3 className="font-medium mb-2 text-pink-200 flex items-center">
               <span className="mr-2">
                 <svg
@@ -889,14 +889,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               </span>
               Up Next
             </h3>
-            <div className="mt-3 space-y-1">
-              <TrackList
-                tracks={combinedTracks}
-                currentTrack={currentTrack}
-                onTrackSelect={controls.handleTrackSelect}
-                formatTime={formatTime}
-              />
-            </div>
+
+            <TrackList
+              tracks={combinedTracks}
+              currentTrack={currentTrack}
+              onTrackSelect={controls.handleTrackSelect}
+              formatTime={formatTime}
+            />
           </div>
         )}
       </div>
