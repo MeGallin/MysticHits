@@ -10,6 +10,7 @@ import { playlistAtom } from '../state/playlistAtom';
 import { Button } from '@/components/ui/button';
 import { isAuthenticated } from '@/utils/authUtils';
 import { currentTrackAtom, isPlayingAtom } from '../state/audioAtoms';
+import MediaPlayer from './MediaPlayer';
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/tooltip';
 import { LockIcon } from 'lucide-react';
 import { logPlay } from '../services/trackingService';
+import { VideoIcon } from './icons/VideoIcon';
 
 interface AudioPlayerProps {
   playlist?: {
@@ -168,7 +170,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       const response = await playlistServices.getPlaylistFromUrl(remoteUrl);
 
       if ('error' in response) {
-        setRemoteError(response.error);
+        setRemoteError(response.error || 'An error occurred');
         return;
       }
 
@@ -267,7 +269,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       input.onchange = (e) => {
         if (!e.target) return;
         const files = Array.from((e.target as HTMLInputElement).files || []);
-        const audioExtensions = [
+        const mediaExtensions = [
+          // Audio formats
           '.mp3',
           '.wav',
           '.m4a',
@@ -275,13 +278,22 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           '.ogg',
           '.flac',
           '.wma',
+          // Video formats
+          '.mp4',
+          '.webm',
+          '.ogv',
+          '.mov',
+          '.avi',
+          '.mkv',
         ];
-        const audioFiles = files.filter((file) =>
-          audioExtensions.some((ext) => file.name.toLowerCase().endsWith(ext)),
+        const mediaFiles = files.filter((file) =>
+          mediaExtensions.some((ext) => file.name.toLowerCase().endsWith(ext)),
         );
 
-        if (audioFiles.length === 0) {
-          setFolderError('No audio files found in the selected folder');
+        if (mediaFiles.length === 0) {
+          setFolderError(
+            'No media files (audio/video) found in the selected folder',
+          );
           return;
         }
 
@@ -292,7 +304,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           }
         });
 
-        const newTracks: Track[] = audioFiles.map((file) => {
+        const newTracks: Track[] = mediaFiles.map((file) => {
           const title = file.name.substring(0, file.name.lastIndexOf('.'));
           // Extract artist from filename if it contains a dash
           let artist = '';
@@ -324,6 +336,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         // Helper function to get MIME type from file extension
         function getMimeType(extension: string): string {
           const mimeTypes: Record<string, string> = {
+            // Audio formats
             mp3: 'audio/mpeg',
             wav: 'audio/wav',
             m4a: 'audio/mp4',
@@ -331,6 +344,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             ogg: 'audio/ogg',
             flac: 'audio/flac',
             wma: 'audio/x-ms-wma',
+            // Video formats
+            mp4: 'video/mp4',
+            webm: 'video/webm',
+            ogv: 'video/ogg',
+            mov: 'video/quicktime',
+            avi: 'video/x-msvideo',
+            mkv: 'video/x-matroska',
           };
 
           return mimeTypes[extension] || 'audio/mpeg'; // Default to audio/mpeg if unknown
@@ -370,6 +390,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
+
+  // Check if current track is a video
+  const isVideoTrack =
+    currentTrack?.mime && currentTrack.mime.startsWith('video');
 
   if (error) {
     return (
@@ -463,7 +487,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     clipRule="evenodd"
                   />
                 </svg>
-                Select Music Folder
+                Select Media Folder
               </Button>
               {folderError && (
                 <p className="mt-2 text-red-300 text-sm">{folderError}</p>
@@ -555,16 +579,25 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <div className="text-white">
             <div className="overflow-hidden">
               <h2
-                className="text-2xl font-bold pb-1"
+                className="text-2xl font-bold pb-1 flex items-center"
                 title={currentTrack?.title || 'No Track Selected'}
               >
                 {currentTrack ? currentTrack.title : 'No Track Selected'}
+                {isVideoTrack && (
+                  <VideoIcon
+                    className="inline-block ml-2 text-blue-400"
+                    size={18}
+                  />
+                )}
               </h2>
               <p
                 className="text-sm opacity-90 mt-1 text-pink-200"
                 title={currentTrack?.artist || 'Select a track to play'}
               >
                 {currentTrack?.artist || 'Select a track to play'}
+                {isVideoTrack && (
+                  <span className="ml-2 text-blue-300">(Video)</span>
+                )}
               </p>
             </div>
 
@@ -656,78 +689,123 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
         </div>
 
-        {/* Audio element with enhanced error handling */}
-        <audio
-          ref={audioRef}
-          src={currentTrack ? currentTrack.url : undefined}
-          onTimeUpdate={controls.handleTimeUpdate}
-          onLoadedMetadata={controls.handleLoadedMetadata}
-          onPlay={() => {
-            if (currentTrack) {
-              // Log play event when track starts playing
-              logPlay({
-                trackUrl: currentTrack.url,
-                title: currentTrack.title,
-                duration: audioRef.current?.duration || undefined,
-              });
-            }
-          }}
-          onError={(e) => {
-            console.error('Audio error:', e);
-            if (currentTrack) {
-              console.error('Failed to load track:', currentTrack);
+        {/* Media element with enhanced error handling */}
+        {currentTrack && (
+          <>
+            {isVideoTrack ? (
+              <div
+                className={`video-container relative w-full ${
+                  isVideoTrack ? 'bg-black' : ''
+                }`}
+              >
+                <MediaPlayer
+                  ref={audioRef}
+                  src={currentTrack.url}
+                  mime={currentTrack.mime || 'video/mp4'}
+                  className="w-full max-h-[300px]"
+                  showControls={false}
+                  onTimeUpdate={controls.handleTimeUpdate}
+                  onLoadedMetadata={controls.handleLoadedMetadata}
+                  onPlay={() => {
+                    logPlay({
+                      trackUrl: currentTrack.url,
+                      title: currentTrack.title,
+                      duration: audioRef.current?.duration || undefined,
+                    });
+                  }}
+                  onError={(e) => {
+                    console.error('Media error:', e);
+                    console.error('Failed to load track:', currentTrack);
 
-              // Try to create a fallback audio element to test the source
-              const testAudio = new Audio();
-              testAudio.src = currentTrack.url;
-              testAudio.onerror = () => {
-                console.error(
-                  'Fallback audio test failed for URL:',
-                  currentTrack.url,
-                );
+                    // Try with a different MIME type if the current one fails
+                    if (currentTrack.mime !== 'video/mp4') {
+                      const updatedTracks = combinedTracks.map((track, idx) =>
+                        idx === currentIndex
+                          ? { ...track, mime: 'video/mp4' }
+                          : track,
+                      );
+                      setCombinedTracks(updatedTracks);
 
-                // Try with a different MIME type if the current one fails
-                if (currentTrack.mime !== 'audio/mpeg') {
-                  // Try with audio/mpeg MIME type as fallback
+                      if (
+                        remotePlaylist.some(
+                          (track) => track.url === currentTrack.url,
+                        )
+                      ) {
+                        const updatedRemotePlaylist = remotePlaylist.map(
+                          (track) =>
+                            track.url === currentTrack.url
+                              ? { ...track, mime: 'video/mp4' }
+                              : track,
+                        );
+                        setRemotePlaylist(updatedRemotePlaylist);
+                      }
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <MediaPlayer
+                ref={audioRef}
+                src={currentTrack.url}
+                mime={currentTrack.mime || 'audio/mpeg'}
+                showControls={false}
+                onTimeUpdate={controls.handleTimeUpdate}
+                onLoadedMetadata={controls.handleLoadedMetadata}
+                onPlay={() => {
+                  // Log play event when track starts playing
+                  logPlay({
+                    trackUrl: currentTrack.url,
+                    title: currentTrack.title,
+                    duration: audioRef.current?.duration || undefined,
+                  });
+                }}
+                onError={(e) => {
+                  console.error('Media error:', e);
+                  console.error('Failed to load track:', currentTrack);
 
-                  // Update the track in the combined tracks array with audio/mpeg MIME type
-                  const updatedTracks = combinedTracks.map((track, idx) =>
-                    idx === currentIndex
-                      ? { ...track, mime: 'audio/mpeg' }
-                      : track,
-                  );
-
-                  setCombinedTracks(updatedTracks);
-
-                  // If this is a remote track, also update it in the remote playlist
-                  if (
-                    remotePlaylist.some(
-                      (track) => track.url === currentTrack.url,
-                    )
-                  ) {
-                    const updatedRemotePlaylist = remotePlaylist.map((track) =>
-                      track.url === currentTrack.url
-                        ? { ...track, mime: 'audio/mpeg' }
-                        : track,
+                  // Try to create a fallback audio element to test the source
+                  const testAudio = new Audio();
+                  testAudio.src = currentTrack.url;
+                  testAudio.onerror = () => {
+                    console.error(
+                      'Fallback audio test failed for URL:',
+                      currentTrack.url,
                     );
-                    setRemotePlaylist(updatedRemotePlaylist);
-                  }
-                }
-              };
-            }
-          }}
-        >
-          {/* Add source elements as fallback */}
-          {currentTrack && (
-            <>
-              <source src={currentTrack.url} type={currentTrack.mime} />
-              <source src={currentTrack.url} type="audio/mpeg" />
-              <source src={currentTrack.url} type="audio/wav" />
-              <source src={currentTrack.url} type="audio/mp4" />
-              <p>Your browser does not support the audio element.</p>
-            </>
-          )}
-        </audio>
+
+                    // Try with a different MIME type if the current one fails
+                    if (currentTrack.mime !== 'audio/mpeg') {
+                      // Try with audio/mpeg MIME type as fallback
+
+                      // Update the track in the combined tracks array with audio/mpeg MIME type
+                      const updatedTracks = combinedTracks.map((track, idx) =>
+                        idx === currentIndex
+                          ? { ...track, mime: 'audio/mpeg' }
+                          : track,
+                      );
+
+                      setCombinedTracks(updatedTracks);
+
+                      // If this is a remote track, also update it in the remote playlist
+                      if (
+                        remotePlaylist.some(
+                          (track) => track.url === currentTrack.url,
+                        )
+                      ) {
+                        const updatedRemotePlaylist = remotePlaylist.map(
+                          (track) =>
+                            track.url === currentTrack.url
+                              ? { ...track, mime: 'audio/mpeg' }
+                              : track,
+                        );
+                        setRemotePlaylist(updatedRemotePlaylist);
+                      }
+                    }
+                  };
+                }}
+              />
+            )}
+          </>
+        )}
 
         {combinedTracks.length === 0 ? (
           <div className="p-6 space-y-4 flex-grow flex items-center justify-center">

@@ -2,6 +2,7 @@ import React from 'react';
 import { useAtom } from 'jotai';
 import { Track } from '../types/audio';
 import { trackDurationsAtom } from '../state/audioAtoms';
+import { VideoIcon } from './icons/VideoIcon';
 
 interface TrackListProps {
   tracks: Track[];
@@ -41,6 +42,9 @@ export const TrackList: React.FC<TrackListProps> = ({
             <div className="flex-1 min-w-0 overflow-hidden">
               <p className="break-words" title={track.title}>
                 {track.title}
+                {track.mime && track.mime.startsWith('video') && (
+                  <VideoIcon className="inline-block ml-1 text-blue-500" />
+                )}
               </p>
               <p
                 className="text-xs text-muted-foreground break-words"

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAtom } from 'jotai';
 import { playlistAtom } from '../state/playlistAtom';
+import MediaPlayer from './MediaPlayer';
 
 export const PlaylistViewer: React.FC = () => {
   const [playlist] = useAtom(playlistAtom);
@@ -50,14 +51,12 @@ export const PlaylistViewer: React.FC = () => {
               <p className="text-xs text-white/70">MIME Type: {track.mime}</p>
             </div>
 
-            <audio
-              controls
+            <MediaPlayer
               src={track.url}
+              mime={track.mime || 'audio/mpeg'}
               className="w-full"
-              preload="metadata"
-            >
-              Your browser does not support the audio element.
-            </audio>
+              onError={(e) => console.error(`Error playing ${track.title}:`, e)}
+            />
           </div>
         ))}
       </div>

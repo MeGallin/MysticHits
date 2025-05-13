@@ -1,18 +1,18 @@
 /**
- * Audio-related type definitions
+ * Audio and video related type definitions
  */
 
 /**
- * Represents an audio track in the application
+ * Represents an audio or video track in the application
  */
 export interface Track {
   /** The title of the track */
   title: string;
 
-  /** The URL to the audio file (can be a remote URL or a blob URL) */
+  /** The URL to the media file (can be a remote URL or a blob URL) */
   url: string;
 
-  /** MIME type of the audio file (e.g., 'audio/mpeg', 'audio/wav') */
+  /** MIME type of the media file (e.g., 'audio/mpeg', 'audio/wav', 'video/mp4') */
   mime: string;
 
   /** The artist name (optional) */
