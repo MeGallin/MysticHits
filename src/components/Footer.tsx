@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
         // Fetch unique hit count from API
         const response = await hitsServices.getPageHits();
         if (response.success) {
-          setUniqueHitCount(response.data.uniqueHitCount);
+          setUniqueHitCount(response.data?.uniqueHitCount);
         } else {
           setError('Could not load visitor stats');
         }
