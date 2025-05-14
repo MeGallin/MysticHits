@@ -36,7 +36,12 @@ import {
 } from 'lucide-react';
 import { logoutUser } from '@services/fetchServices';
 import { useAtom } from 'jotai';
-import { isAuthenticatedAtom, isAdminAtom, logout } from '../state/authAtoms';
+import {
+  isAuthenticatedAtom,
+  isAdminAtom,
+  logout,
+  userAtom,
+} from '../state/authAtoms';
 import { AUTH_EVENTS } from '../utils/authUtils';
 
 /**
@@ -48,6 +53,7 @@ const Navigation: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthenticated] = useAtom(isAuthenticatedAtom);
   const [isAdmin] = useAtom(isAdminAtom);
+  const [currentUser] = useAtom(userAtom);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -70,6 +76,74 @@ const Navigation: React.FC = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  // Format user display name - use email or extract username from email
+  const getUserDisplayName = () => {
+    if (!currentUser || !currentUser.email) {
+      return 'User';
+    }
+
+    // Extract username from email (before the @)
+    // This creates a more personalized display name from the email address
+    const username = currentUser.email.split('@')[0];
+
+    // Replace dots and underscores with spaces for a more natural name
+    const formattedName = username
+      .replace(/\./g, ' ')
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    return formattedName;
+  };
+
+  // User profile UI component for consistent display
+  const UserProfileDisplay = ({ compact = false }) => {
+    if (!currentUser || !currentUser.email) return null;
+
+    const displayName = getUserDisplayName();
+
+    if (compact) {
+      // Compact version for mobile menu
+      return (
+        <div className="flex items-center mb-3 px-2 py-2 bg-gray-800 rounded-md">
+          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold mr-2">
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium text-gradient bg-gradient-to-r from-pink-300 via-yellow-200 to-purple-300 text-transparent bg-clip-text">
+              Hello, {displayName}!
+            </span>
+            <span
+              className="text-xs text-gray-400 truncate"
+              title={currentUser.email}
+            >
+              {currentUser.email}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Full version for dropdown
+    return (
+      <div className="px-3 py-2 flex items-center bg-gray-700 rounded mx-2 my-1">
+        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold mr-2">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-white">{displayName}</span>
+          <span
+            className="text-xs text-gray-300 truncate"
+            title={currentUser.email}
+          >
+            {currentUser.email}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   // Listen for auth events to ensure UI updates
@@ -170,14 +244,56 @@ const Navigation: React.FC = () => {
           <div className="flex items-center ml-4 pl-4 border-l border-gray-700">
             {/* Conditionally render logout button or auth dropdown */}
             {isAuthenticated ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="bg-transparent border-pink-400 text-white hover:bg-gray-800 hover:text-pink-400 uppercase"
+              <DropdownMenu
+                open={isDropdownOpen}
+                onOpenChange={setIsDropdownOpen}
               >
-                <LogOut className="h-4 w-4 mr-1" /> Logout
-              </Button>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 border-pink-400 text-white hover:from-pink-600 hover:to-purple-600 transition-all duration-300"
+                  >
+                    <User className="h-4 w-4 mr-2 text-yellow-300" />
+                    <span className="font-semibold">
+                      {getUserDisplayName()}
+                    </span>{' '}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-60 bg-gray-800 !shadow-lg !border border-gray-700"
+                >
+                  <DropdownMenuLabel className="text-pink-400">
+                    Account
+                  </DropdownMenuLabel>
+                  <UserProfileDisplay />{' '}
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  {/* Profile settings option */}
+                  <DropdownMenuItem
+                    className="text-gray-200 focus:bg-gray-700 focus:text-pink-400"
+                    onSelect={() => {
+                      closeDropdown();
+                      navigate('/profile');
+                    }}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile Settings</span>
+                  </DropdownMenuItem>
+                  {/* Only Logout option for authenticated users */}
+                  <DropdownMenuItem
+                    className="text-gray-200 focus:bg-gray-700 focus:text-pink-400"
+                    onSelect={() => {
+                      handleLogout();
+                      closeDropdown();
+                    }}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <DropdownMenu
                 open={isDropdownOpen}
@@ -187,15 +303,16 @@ const Navigation: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="bg-transparent border-pink-400 text-white hover:bg-gray-800 hover:text-pink-400"
+                    className="bg-gradient-to-r from-gray-600 to-gray-700 border-gray-500 text-white hover:bg-gray-800 hover:text-pink-400 transition-all duration-300"
                   >
-                    <User className="h-4 w-4 mr-1" />
-                    Account <ChevronDown className="h-3 w-3 ml-1" />
+                    <User className="h-4 w-4 mr-2 text-gray-300" />
+                    <span>Account</span>{' '}
+                    <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-48 bg-gray-800 !shadow-lg !border border-gray-700"
+                  className="w-60 bg-gray-800 !shadow-lg !border border-gray-700"
                 >
                   <DropdownMenuLabel className="text-pink-400">
                     Account
@@ -328,16 +445,19 @@ const Navigation: React.FC = () => {
                 <div className="h-px bg-gray-700 my-2"></div>
 
                 {isAuthenticated ? (
-                  <button
-                    className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    <LogOut className="h-5 w-5 mr-2 text-pink-400" />
-                    Logout
-                  </button>
+                  <>
+                    <UserProfileDisplay compact />
+                    <button
+                      className="font-medium text-lg hover:text-pink-400 transition-colors uppercase flex items-center"
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-5 w-5 mr-2 text-pink-400" />
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link
