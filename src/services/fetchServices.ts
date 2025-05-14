@@ -281,12 +281,28 @@ export const hitsServices: HitsServices = {
   getPageHits: async () => {
     try {
       const response: AxiosResponse = await api.get('/hits/page-hits');
-      return {
-        success: true,
-        data: response.data,
-      };
+
+      // Validate response structure
+      if (response?.data?.uniqueHitCount !== undefined) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        // Handle valid response with missing data
+        return {
+          success: false,
+          error: 'Invalid response format',
+          data: { uniqueHitCount: 0 }, // Provide fallback data
+        };
+      }
     } catch (error) {
-      return handleApiError(error as AxiosError);
+      // Add fallback data to error response
+      const errorResponse = handleApiError(error as AxiosError);
+      return {
+        ...errorResponse,
+        data: { uniqueHitCount: 0 }, // Provide fallback data
+      };
     }
   },
 };
