@@ -11,13 +11,18 @@ const Footer: React.FC = () => {
       try {
         // Fetch unique hit count from API
         const response = await hitsServices.getPageHits();
-        if (response.success) {
-          setUniqueHitCount(response.data?.uniqueHitCount);
+        if (response.success && response.data?.uniqueHitCount !== undefined) {
+          setUniqueHitCount(response.data.uniqueHitCount);
+          setError(null);
         } else {
-          setError('Could not load visitor stats');
+          // Set a fallback value if the API doesn't return a count
+          setUniqueHitCount(0);
+          setError('Stats unavailable');
         }
       } catch (err: any) {
-        setError('Could not load visitor stats');
+        // Set a default value on error
+        setUniqueHitCount(0);
+        setError('Stats unavailable');
         console.error('Error fetching visitor stats:', err);
       }
     };
