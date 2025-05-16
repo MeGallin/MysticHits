@@ -61,7 +61,7 @@ interface PlaylistServices {
 }
 
 interface HitsServices {
-  getPageHits: () => Promise<ApiResponse>;
+  getPageHits: (readonly?: boolean) => Promise<ApiResponse>;
 }
 
 interface AdminServices {
@@ -278,12 +278,17 @@ export const playlistServices: PlaylistServices = {
 // Hits/visitor count services
 export const hitsServices: HitsServices = {
   // Get page hit count
-  getPageHits: async () => {
+  getPageHits: async (readonly = false) => {
     try {
-      const response: AxiosResponse = await api.get('/hits/page-hits');
+      const response: AxiosResponse = await api.get('/hits/page-hits', {
+        params: { readonly: readonly ? 'true' : undefined },
+      });
 
       // Validate response structure
-      if (response?.data?.uniqueHitCount !== undefined) {
+      if (
+        response?.data?.uniqueHitCount !== undefined ||
+        response?.data?.totalHitCount !== undefined
+      ) {
         return {
           success: true,
           data: response.data,
@@ -293,7 +298,7 @@ export const hitsServices: HitsServices = {
         return {
           success: false,
           error: 'Invalid response format',
-          data: { uniqueHitCount: 0 }, // Provide fallback data
+          data: { uniqueHitCount: 0, totalHitCount: 0 }, // Provide fallback data
         };
       }
     } catch (error) {
@@ -301,7 +306,7 @@ export const hitsServices: HitsServices = {
       const errorResponse = handleApiError(error as AxiosError);
       return {
         ...errorResponse,
-        data: { uniqueHitCount: 0 }, // Provide fallback data
+        data: { uniqueHitCount: 0, totalHitCount: 0 }, // Provide fallback data with both fields
       };
     }
   },
