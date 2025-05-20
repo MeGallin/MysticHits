@@ -97,15 +97,27 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   useEffect(() => {
     if (propPlaylist && propPlaylist.length > 0) {
       // Convert prop playlist to Track format
-      const propTracks: Track[] = propPlaylist.map((item) => ({
-        title: item.title,
-        url: item.src,
-        mime: item.mime,
-        artist: '',
-        album: 'Unknown Album',
-        duration: 0,
-        cover: '/placeholder.svg?height=300&width=300',
-      }));
+      const propTracks: Track[] = propPlaylist.map((item) => {
+        let title = item.title;
+        if (!title || title.endsWith('..>')) {
+          // Try to extract filename from URL
+          try {
+            const urlParts = decodeURIComponent(item.src).split('/');
+            title = urlParts[urlParts.length - 1].replace(/\.[^/.]+$/, '');
+          } catch {
+            // fallback to original title
+          }
+        }
+        return {
+          title,
+          url: item.src,
+          mime: item.mime,
+          artist: '',
+          album: 'Unknown Album',
+          duration: 0,
+          cover: '/placeholder.svg?height=300&width=300',
+        };
+      });
 
       // Update remote playlist with the provided tracks
       setRemotePlaylist(propTracks);
@@ -383,6 +395,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     controls,
   } = useAudioPlayer(combinedTracks);
 
+  console.log('Current Track:', currentTrack?.title);
+
   // Format time helper function
   const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return '0:00';
@@ -589,7 +603,24 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 className="text-2xl font-bold pb-1 flex items-center"
                 title={currentTrack?.title || 'No Track Selected'}
               >
-                {currentTrack ? currentTrack.title : 'No Track Selected'}
+                {currentTrack
+                  ? // If the title ends with '..>', try to extract from URL
+                    currentTrack.title && currentTrack.title.endsWith('..>')
+                    ? (() => {
+                        try {
+                          const urlParts = decodeURIComponent(
+                            currentTrack.url,
+                          ).split('/');
+                          return urlParts[urlParts.length - 1].replace(
+                            /\.[^/.]+$/,
+                            '',
+                          );
+                        } catch {
+                          return currentTrack.title;
+                        }
+                      })()
+                    : currentTrack.title
+                  : 'No Track Selected'}
                 {typeof VideoIcon === 'function' && isVideoTrack && (
                   <VideoIcon
                     className="inline-block ml-2 text-blue-400"
