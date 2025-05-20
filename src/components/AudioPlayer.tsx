@@ -391,9 +391,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // Check if current track is a video
+  // Helper function to detect video by extension
+  function isVideoFile(url: string, mime?: string) {
+    const videoExts = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+    if (mime && mime.startsWith('video')) return true;
+    return videoExts.some((ext) => url.toLowerCase().endsWith(ext));
+  }
+
+  // Check if current track is a video (by extension or mime)
   const isVideoTrack =
-    currentTrack?.mime && currentTrack.mime.startsWith('video');
+    currentTrack?.url && isVideoFile(currentTrack.url, currentTrack?.mime);
 
   if (error) {
     return (
@@ -583,7 +590,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 title={currentTrack?.title || 'No Track Selected'}
               >
                 {currentTrack ? currentTrack.title : 'No Track Selected'}
-                {isVideoTrack && (
+                {typeof VideoIcon === 'function' && isVideoTrack && (
                   <VideoIcon
                     className="inline-block ml-2 text-blue-400"
                     size={18}
@@ -595,7 +602,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 title={currentTrack?.artist || 'Select a track to play'}
               >
                 {currentTrack?.artist || 'Select a track to play'}
-                {isVideoTrack && (
+                {typeof VideoIcon === 'function' && isVideoTrack && (
                   <span className="ml-2 text-blue-300">(Video)</span>
                 )}
               </p>
@@ -717,11 +724,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     console.error('Media error:', e);
                     console.error('Failed to load track:', currentTrack);
 
-                    // Try with a different MIME type if the current one fails
-                    if (currentTrack.mime !== 'video/mp4') {
+                    // Fallback: If video fails, try to play as audio
+                    if (isVideoTrack) {
                       const updatedTracks = combinedTracks.map((track, idx) =>
                         idx === currentIndex
-                          ? { ...track, mime: 'video/mp4' }
+                          ? { ...track, mime: 'audio/mpeg' }
                           : track,
                       );
                       setCombinedTracks(updatedTracks);
@@ -734,7 +741,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                         const updatedRemotePlaylist = remotePlaylist.map(
                           (track) =>
                             track.url === currentTrack.url
-                              ? { ...track, mime: 'video/mp4' }
+                              ? { ...track, mime: 'audio/mpeg' }
                               : track,
                         );
                         setRemotePlaylist(updatedRemotePlaylist);

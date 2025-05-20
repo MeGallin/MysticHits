@@ -6,6 +6,8 @@ import MediaPlayer from './MediaPlayer';
 export const PlaylistViewer: React.FC = () => {
   const [playlist] = useAtom(playlistAtom);
 
+  console.log('Playlist:', playlist);
+
   // If playlist is empty, show a message
   if (!playlist || playlist.length === 0) {
     return (
