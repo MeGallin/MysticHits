@@ -118,6 +118,14 @@ export default function AppRouter() {
           </AdminRoute>
         }
       />
+      <Route
+        path="/music"
+        element={
+          <AdminRoute>
+            <MusicPage />
+          </AdminRoute>
+        }
+      />
 
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />
