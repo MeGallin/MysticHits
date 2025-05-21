@@ -10,6 +10,7 @@ import { playlistAtom } from '../state/playlistAtom';
 import { Button } from '@/components/ui/button';
 import { isAuthenticated } from '@/utils/authUtils';
 import { currentTrackAtom, isPlayingAtom } from '../state/audioAtoms';
+import { selectedFolderAtom } from '../state/folderAtoms';
 import MediaPlayer from './MediaPlayer';
 import {
   Tooltip,
@@ -35,6 +36,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   // Import atoms directly for resetting
   const [, setCurrentTrackState] = useAtom(currentTrackAtom);
   const [, setIsPlayingState] = useAtom(isPlayingAtom);
+  const [selectedFolder] = useAtom(selectedFolderAtom);
 
   // Check if user is logged in
   const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
@@ -597,13 +599,32 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         <div className="p-6 bg-gradient-to-br from-pink-500/30 to-indigo-500/30 backdrop-blur-sm border-b border-white/10">
           <div className="text-white">
             <div className="overflow-hidden">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="bg-pink-500/30 px-2 py-0.5 rounded-md flex items-center">
+                  <span className="animate-pulse mr-1.5">●</span>
+                  <span className="text-xs font-medium text-pink-200">
+                    PLAYING
+                  </span>
+                  {typeof VideoIcon === 'function' && isVideoTrack && (
+                    <span className="ml-2 bg-blue-500/20 px-1.5 py-0.5 rounded text-blue-300 text-xs font-medium">
+                      VIDEO
+                    </span>
+                  )}
+                </div>
+                {selectedFolder?.label && (
+                  <div className="bg-blue-900/30 px-2 py-2 rounded-md flex items-center">
+                    <span className="text-xs font-medium text-blue-300 uppercase">
+                      {selectedFolder.label}
+                    </span>
+                  </div>
+                )}
+              </div>
               <h2
-                className="text-2xl font-bold pb-1 flex items-center"
+                className="text-xl font-bold pb-1"
                 title={currentTrack?.title || 'No Track Selected'}
               >
                 {currentTrack
-                  ? // If the title ends with '..>', try to extract from URL
-                    currentTrack.title && currentTrack.title.endsWith('..>')
+                  ? currentTrack.title && currentTrack.title.endsWith('..>')
                     ? (() => {
                         try {
                           const urlParts = decodeURIComponent(
@@ -619,22 +640,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                       })()
                     : currentTrack.title
                   : 'No Track Selected'}
-                {typeof VideoIcon === 'function' && isVideoTrack && (
-                  <VideoIcon
-                    className="inline-block ml-2 text-blue-400"
-                    size={18}
-                  />
-                )}
               </h2>
-              <p
-                className="text-sm opacity-90 mt-1 text-pink-200"
-                title={currentTrack?.artist || 'Select a track to play'}
-              >
-                {currentTrack?.artist || 'Select a track to play'}
-                {typeof VideoIcon === 'function' && isVideoTrack && (
-                  <span className="ml-2 text-blue-300">(Video)</span>
-                )}
-              </p>
             </div>
 
             {/* Next/Previous Track Info */}
