@@ -395,8 +395,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     controls,
   } = useAudioPlayer(combinedTracks);
 
-  console.log('Current Track:', currentTrack?.title);
-
   // Format time helper function
   const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return '0:00';
@@ -431,7 +429,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         <Advertisement adId={currentAdId} onClose={closeAdvertisement} />
       )}
 
-      <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-none shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm flex-grow">
+      <div className="flex flex-col w-full h-full max-w-md mx-auto bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-none shadow-2xl overflow-hidden text-white border-2 border-pink-500/30 backdrop-blur-sm flex-grow overflow-y-auto">
         {/* Music Source Selection Tabs */}
         <div className="flex border-b border-white/20">
           <Button
@@ -732,7 +730,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <>
             {isVideoTrack ? (
               <div
-                className={`video-container relative w-full ${
+                className={`video-container sticky top-0 z-40 w-full ${
                   isVideoTrack ? 'bg-black' : ''
                 }`}
               >
@@ -913,7 +911,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
         {/* Playlist */}
         {showPlaylist && combinedTracks.length > 0 && (
-          <div className="border-t border-white/10 p-1 max-h-[30vh] overflow-y-auto bg-gradient-to-br from-indigo-900/80 to-purple-800/80 backdrop-blur-sm">
+          <div className="border-t border-white/10 p-1 max-h-[30vh] bg-gradient-to-br from-indigo-900/80 to-purple-800/80 backdrop-blur-sm">
             <h3 className="font-medium mb-2 text-pink-200 flex items-center">
               <span className="mr-2">
                 <svg

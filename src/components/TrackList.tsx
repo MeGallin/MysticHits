@@ -33,7 +33,7 @@ export const TrackList: React.FC<TrackListProps> = ({
           <li
             key={index}
             onClick={() => onTrackSelect(index)}
-            className={`flex items-center p-2 rounded-md cursor-pointer ${
+            className={` flex items-center p-2 rounded-md cursor-pointer border border-red-500 ${
               currentTrack && currentTrack.title === track.title
                 ? 'bg-gradient-to-r from-pink-500/30 to-purple-500/30 font-medium'
                 : 'hover:bg-white/10'

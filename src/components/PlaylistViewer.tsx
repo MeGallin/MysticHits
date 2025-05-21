@@ -39,7 +39,7 @@ export const PlaylistViewer: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto p-4 bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900 rounded-xl shadow-lg text-white">
       <h2 className="text-xl font-bold mb-4">
-        Playlist ({playlist.length} tracks)XX
+        Playlist ({playlist.length} tracks)
       </h2>
 
       <div className="space-y-4">
@@ -48,7 +48,7 @@ export const PlaylistViewer: React.FC = () => {
             key={`${track.url}-${index}`}
             className="p-3 bg-white/10 rounded-lg border border-white/20"
           >
-            <div className="mb-2">
+            <div className="mb-2 ">
               <h3 className="font-medium text-lg">{track.title}</h3>
               <p className="text-xs text-white/70">MIME Type: {track.mime}</p>
             </div>
