@@ -24,7 +24,7 @@ const FoldersPage: React.FC = () => {
       ></div>
 
       <div className="flex-grow flex flex-col z-10 overflow-y-auto">
-        <div className="container mx-auto py-8 px-4">
+        <div className="container mx-auto py-8 px-4 max-w-7xl">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Members Area</h1>
             <p className="text-gray-400">

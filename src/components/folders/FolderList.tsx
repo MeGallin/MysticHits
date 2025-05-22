@@ -22,6 +22,7 @@ import folderServices, { Folder } from '@/services/folderServices';
 import FolderCard from './FolderCard';
 import FolderFormDialog from './FolderFormDialog';
 import { logout } from '@/state/authAtoms';
+import FolderGrid from './FolderGrid';
 
 const FolderList: React.FC = () => {
   const [folders, setFolders] = useAtom(foldersAtom);
@@ -255,28 +256,34 @@ const FolderList: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {folders.map((folder) => (
-            <FolderCard
-              key={folder._id}
-              folder={folder}
-              onEdit={handleEditFolder}
-              onDelete={handleDeleteFolder}
-              onPlay={handlePlayFolder}
-            />
-          ))}
-
-          <Card
-            className="flex items-center justify-center bg-gray-800/50 border-dashed border-gray-700 hover:border-gray-500 transition-colors cursor-pointer h-full min-h-[180px]"
-            onClick={handleAddFolder}
-          >
-            <div className="flex flex-col items-center p-6">
-              <div className="h-12 w-12 bg-gray-700/50 rounded-full flex items-center justify-center mb-2">
-                <FiPlus className="h-6 w-6 text-blue-400" />
-              </div>
-              <p className="text-gray-400 font-medium">Add Folder</p>
+        <div>
+          <div className="grid grid-cols-1 gap-8">
+            {/* Folders Grid with DND */}
+            <div className="col-span-full">
+              <FolderGrid
+                folders={folders}
+                onEdit={handleEditFolder}
+                onDelete={handleDeleteFolder}
+                onPlay={handlePlayFolder}
+                onReorder={(newFolders) => setFolders(newFolders)}
+              />
             </div>
-          </Card>
+
+            {/* Add Folder Card - rendered separately to avoid DnD context issues */}
+            <div className="flex flex-col w-full max-w-md mx-auto md:mx-0">
+              <Card
+                className="w-full flex items-center justify-center bg-gray-800/50 border-dashed border-gray-700 hover:border-gray-500 transition-colors cursor-pointer h-[180px]"
+                onClick={handleAddFolder}
+              >
+                <div className="flex flex-col items-center p-6">
+                  <div className="h-12 w-12 bg-gray-700/50 rounded-full flex items-center justify-center mb-2">
+                    <FiPlus className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <p className="text-gray-400 font-medium">Add Folder</p>
+                </div>
+              </Card>
+            </div>
+          </div>
         </div>
       )}
 

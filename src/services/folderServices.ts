@@ -10,6 +10,7 @@ export interface Folder {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  order?: number; // Optional order property for sorting
 }
 
 // Define the API response interfaces
@@ -213,6 +214,26 @@ const folderServices = {
           error.response?.data?.message ||
           error.response?.data?.error ||
           'Failed to load playlist',
+      };
+    }
+  },
+
+  // Reorder folders
+  reorderFolders: async (
+    folderIds: string[],
+  ): Promise<ApiResponse<Folder[]>> => {
+    try {
+      const response = await axiosInstance.put(`${FOLDERS_ENDPOINT}/reorder`, {
+        folderIds,
+      });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to reorder folders',
       };
     }
   },
