@@ -1,145 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { FiActivity, FiRefreshCw } from 'react-icons/fi';
-import { getApiMetrics } from '../../services/fetchServices';
-
-interface MetricsData {
-  requestCount: number;
-  averageLatency: string;
-  routes: {
-    route: string;
-    requestCount: number;
-    averageLatency: string;
-  }[];
-}
+import { BarChart2, Clock } from 'lucide-react';
+import healthService from '@/services/healthService';
+import { ApiMetrics } from '@/services/healthService';
 
 const ApiLatencyWidget: React.FC = () => {
-  const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  const [metrics, setMetrics] = useState<ApiMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  const fetchMetrics = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await getApiMetrics();
-
-      if (response.success && response.data) {
-        setMetrics(response.data);
-        setLastUpdated(new Date());
-      } else {
-        setError(response.error || 'Failed to load API metrics');
-      }
-    } catch (err) {
-      console.error('Failed to fetch API metrics:', err);
-      setError('Failed to load API metrics');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setLoading(true);
+        const response = await healthService.fetchApiMetrics();
+
+        if (response.success && response.data) {
+          setMetrics(response.data);
+          setError(null);
+        } else {
+          setError(response.error || 'Failed to fetch API metrics');
+        }
+      } catch (err) {
+        setError('An unexpected error occurred');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchMetrics();
-
-    // Set up auto-refresh every 5 minutes
-    const intervalId = setInterval(fetchMetrics, 5 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchMetrics, 30 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
+  // Helper to determine color based on latency
+  const getLatencyColorClass = (latency: number) => {
+    if (latency < 100) return 'bg-green-500';
+    if (latency < 300) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  // Helper to determine color based on error rate
+  const getErrorColorClass = (rate: number) => {
+    if (rate < 0.1) return 'text-green-500';
+    if (rate < 0.5) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
   return (
-    <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center">
-          <FiActivity className="mr-2 text-blue-400" size={24} />
-          <h2 className="text-xl font-semibold text-white">API Performance</h2>
-        </div>
-        <button
-          onClick={fetchMetrics}
-          disabled={loading}
-          className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors"
-          aria-label="Refresh metrics"
-        >
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
-        </button>
+    <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
+      <div className="flex justify-between items-start">
+        <h2 className="text-xl font-semibold text-white flex items-center">
+          <BarChart2 className="mr-2" /> API Performance
+        </h2>
+        {loading && (
+          <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        )}
       </div>
 
-      {error && (
-        <div className="bg-red-900/20 text-red-200 p-3 rounded-md mb-4">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="bg-gray-700/30 rounded-lg p-4">
-          <div className="text-sm text-gray-400 mb-1">
-            Average Latency (15m)
+      {error ? (
+        <div className="mt-4 text-red-400">{error}</div>
+      ) : !metrics ? (
+        <div className="mt-4 text-gray-400">Loading API metrics...</div>
+      ) : (
+        <div className="space-y-6 mt-4">
+          {/* Average Latency */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Average Latency:</span>
+              <span className="font-medium text-white">
+                {metrics.apiLatency.avg}ms
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div
+                className={`h-2.5 rounded-full ${getLatencyColorClass(
+                  metrics.apiLatency.avg,
+                )}`}
+                style={{
+                  width: `${Math.min(100, metrics.apiLatency.avg / 5)}%`,
+                }}
+              ></div>
+            </div>
           </div>
-          <div className="text-3xl font-bold text-white">
-            {loading ? '...' : metrics?.averageLatency || 'N/A'}{' '}
-            <span className="text-gray-400 text-lg">ms</span>
-          </div>
-        </div>
-        <div className="bg-gray-700/30 rounded-lg p-4">
-          <div className="text-sm text-gray-400 mb-1">Total Requests</div>
-          <div className="text-3xl font-bold text-white">
-            {loading ? '...' : metrics?.requestCount.toLocaleString() || 'N/A'}
-          </div>
-        </div>
-      </div>
 
-      <h3 className="text-lg font-medium text-white mb-2">Route Performance</h3>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-gray-700/20 rounded-lg">
-          <thead>
-            <tr className="border-b border-gray-700">
-              <th className="py-2 px-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Route
-              </th>
-              <th className="py-2 px-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Requests
-              </th>
-              <th className="py-2 px-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Avg. Latency
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            {loading ? (
-              <tr>
-                <td colSpan={3} className="py-4 px-4 text-center text-gray-400">
-                  Loading metrics...
-                </td>
-              </tr>
-            ) : !metrics || metrics.routes.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="py-4 px-4 text-center text-gray-400">
-                  No route data available
-                </td>
-              </tr>
-            ) : (
-              metrics.routes.slice(0, 5).map((route, index) => (
-                <tr key={index}>
-                  <td className="py-2 px-4 text-sm text-gray-300 truncate max-w-[200px]">
-                    {route.route}
-                  </td>
-                  <td className="py-2 px-4 text-right text-sm text-gray-300">
-                    {route.requestCount}
-                  </td>
-                  <td className="py-2 px-4 text-right text-sm text-gray-300">
-                    {route.averageLatency} ms
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+          {/* P95 Latency */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">P95 Latency:</span>
+              <span className="font-medium text-white">
+                {metrics.apiLatency.p95}ms
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <div
+                className={`h-2.5 rounded-full ${getLatencyColorClass(
+                  metrics.apiLatency.p95,
+                )}`}
+                style={{
+                  width: `${Math.min(100, metrics.apiLatency.p95 / 10)}%`,
+                }}
+              ></div>
+            </div>
+          </div>
 
-      {lastUpdated && (
-        <div className="text-xs text-gray-400 mt-4 text-right">
-          Last updated: {lastUpdated.toLocaleTimeString()}
+          {/* Additional Metrics */}
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="bg-gray-700/30 rounded-lg p-3">
+              <div className="text-sm text-gray-400">Error Rate</div>
+              <div
+                className={`text-lg font-bold ${getErrorColorClass(
+                  metrics.errorRate,
+                )}`}
+              >
+                {(metrics.errorRate * 100).toFixed(2)}%
+              </div>
+            </div>
+
+            <div className="bg-gray-700/30 rounded-lg p-3">
+              <div className="text-sm text-gray-400">Requests/Min</div>
+              <div className="text-lg font-bold text-white">
+                {metrics.requestsPerMinute}
+              </div>
+            </div>
+          </div>
+
+          {/* Last Updated */}
+          <div className="text-xs text-gray-400 flex items-center justify-end mt-2">
+            <Clock className="h-3 w-3 mr-1" />
+            Last updated: {new Date(metrics.timestamp).toLocaleString()}
+          </div>
         </div>
       )}
     </div>
