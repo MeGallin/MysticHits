@@ -1,155 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
-import { getErrorLogs } from '../../services/fetchServices';
+import { AlertTriangle, RefreshCw, Clock } from 'lucide-react';
 
-interface ErrorData {
-  _id: string;
-  route: string;
-  status: number;
-  msg: string;
-  method: string;
-  at: string;
+interface ErrorEvent {
+  id: string;
+  message: string;
+  stack?: string;
+  timestamp: string;
+  path: string;
+  severity: 'error' | 'warning' | 'info';
 }
 
+// This is a placeholder component. In a real implementation,
+// you would fetch error data from the API
 const AdminErrorsWidget: React.FC = () => {
-  const [errors, setErrors] = useState<ErrorData[]>([]);
+  const [errors, setErrors] = useState<ErrorEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  const fetchErrors = async () => {
+  // Mock data for demonstration
+  const mockErrors: ErrorEvent[] = [
+    {
+      id: 'err-001',
+      message: 'API rate limit exceeded',
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      path: '/api/views',
+      severity: 'error',
+    },
+    {
+      id: 'err-002',
+      message: 'Database connection timeout',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      path: '/api/playlist',
+      severity: 'error',
+    },
+    {
+      id: 'err-003',
+      message: 'Invalid authentication token',
+      timestamp: new Date(Date.now() - 10800000).toISOString(),
+      path: '/api/auth/refresh',
+      severity: 'warning',
+    },
+  ];
+
+  useEffect(() => {
+    // Simulate API call
+    const fetchErrors = () => {
+      setLoading(true);
+      // Simulate network delay
+      setTimeout(() => {
+        setErrors(mockErrors);
+        setLastUpdated(new Date().toISOString());
+        setLoading(false);
+      }, 800);
+    };
+
+    fetchErrors();
+    // Refresh every 2 minutes
+    const interval = setInterval(fetchErrors, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRefresh = () => {
     setLoading(true);
-    setError(null);
-
-    try {
-      const response = await getErrorLogs(1, 10);
-
-      if (response.success && response.data) {
-        setErrors(response.data);
-        setLastUpdated(new Date());
-      } else {
-        setError(response.error || 'Failed to load error logs');
-      }
-    } catch (err) {
-      console.error('Failed to fetch error logs:', err);
-      setError('Failed to load error logs');
-    } finally {
+    // Simulate API call
+    setTimeout(() => {
+      setErrors(mockErrors);
+      setLastUpdated(new Date().toISOString());
       setLoading(false);
+    }, 800);
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'error':
+        return 'bg-red-500';
+      case 'warning':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-blue-500';
     }
   };
 
-  useEffect(() => {
-    fetchErrors();
-
-    // Set up auto-refresh every 2 minutes
-    const intervalId = setInterval(fetchErrors, 2 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Function to format date strings
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  // Function to get status color
-  const getStatusColor = (status: number) => {
-    if (status >= 500) return 'text-red-400';
-    if (status >= 400) return 'text-amber-400';
-    return 'text-green-400';
-  };
-
   return (
-    <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+    <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
       <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center">
-          <FiAlertCircle className="mr-2 text-red-400" size={24} />
-          <h2 className="text-xl font-semibold text-white">Recent Errors</h2>
-        </div>
+        <h2 className="text-xl font-semibold text-white flex items-center">
+          <AlertTriangle className="mr-2" /> Recent Errors
+        </h2>
         <button
-          onClick={fetchErrors}
+          onClick={handleRefresh}
           disabled={loading}
-          className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors"
-          aria-label="Refresh errors"
+          className="p-2 rounded-full hover:bg-gray-700/50 transition-colors disabled:opacity-50"
         >
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+          <RefreshCw
+            className={`h-4 w-4 text-gray-400 ${loading ? 'animate-spin' : ''}`}
+          />
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-900/20 text-red-200 p-3 rounded-md mb-4">
-          {error}
+      {errors.length === 0 ? (
+        <div className="text-center py-8 text-gray-400">
+          No errors recorded in the last 24 hours.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {errors.map((error) => (
+            <div key={error.id} className="bg-gray-700/30 rounded-lg p-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`${getSeverityColor(
+                    error.severity,
+                  )} h-3 w-3 rounded-full mt-1.5`}
+                ></div>
+                <div className="flex-1">
+                  <div className="font-medium text-white">{error.message}</div>
+                  <div className="text-sm text-gray-400 mt-1">
+                    Path: {error.path}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {new Date(error.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-gray-700/20 rounded-lg">
-          <thead>
-            <tr className="border-b border-gray-700">
-              <th className="py-2 px-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Time
-              </th>
-              <th className="py-2 px-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Route
-              </th>
-              <th className="py-2 px-4 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="py-2 px-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Message
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            {loading ? (
-              <tr>
-                <td colSpan={4} className="py-4 px-4 text-center text-gray-400">
-                  Loading error logs...
-                </td>
-              </tr>
-            ) : errors.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-4 px-4 text-center text-gray-400">
-                  No errors in the last hour
-                </td>
-              </tr>
-            ) : (
-              errors.map((err) => (
-                <tr key={err._id}>
-                  <td className="py-2 px-4 text-sm text-gray-400">
-                    {formatDate(err.at)}
-                  </td>
-                  <td className="py-2 px-4 text-sm text-gray-300">
-                    <div className="flex items-center">
-                      <span className="bg-gray-700 text-gray-300 px-1 rounded text-xs mr-2">
-                        {err.method}
-                      </span>
-                      <span className="truncate max-w-[150px]">
-                        {err.route}
-                      </span>
-                    </div>
-                  </td>
-                  <td
-                    className={`py-2 px-4 text-sm text-center font-medium ${getStatusColor(
-                      err.status,
-                    )}`}
-                  >
-                    {err.status}
-                  </td>
-                  <td className="py-2 px-4 text-sm text-gray-300 truncate max-w-[250px]">
-                    {err.msg}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
       {lastUpdated && (
-        <div className="text-xs text-gray-400 mt-4 text-right">
-          Last updated: {lastUpdated.toLocaleTimeString()}
+        <div className="text-xs text-gray-400 flex items-center justify-end mt-4">
+          <Clock className="h-3 w-3 mr-1" />
+          Last updated: {new Date(lastUpdated).toLocaleString()}
         </div>
       )}
     </div>
