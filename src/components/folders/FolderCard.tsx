@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiEdit2, FiTrash2, FiPlay } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlay, FiMove } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,12 +10,15 @@ import {
 } from '@/components/ui/card';
 import { formatDateRelative } from '@/utils/dateFormatter';
 import { Folder } from '@/services/folderServices';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface FolderCardProps {
   folder: Folder;
   onEdit: (folder: Folder) => void;
   onDelete: (folderId: string) => void;
   onPlay: (folderId: string) => void;
+  id?: string; // Optional for drag-and-drop
 }
 
 const FolderCard: React.FC<FolderCardProps> = ({
@@ -23,8 +26,19 @@ const FolderCard: React.FC<FolderCardProps> = ({
   onEdit,
   onDelete,
   onPlay,
+  id,
 }) => {
   const isRemote = folder.path.startsWith('http');
+
+  // Only useSortable if id is provided (for drag-and-drop)
+  const sortable = id ? useSortable({ id }) : undefined;
+  const style = sortable
+    ? {
+        transform: CSS.Transform.toString(sortable.transform),
+        transition: sortable.transition,
+        opacity: sortable.isDragging ? 0.5 : 1,
+      }
+    : {};
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -34,21 +48,44 @@ const FolderCard: React.FC<FolderCardProps> = ({
   };
 
   return (
-    <Card className="bg-gray-800/70 border border-gray-700 hover:border-gray-600 transition-all duration-200">
-      <CardHeader className="pb-2">
+    <Card
+      ref={sortable?.setNodeRef}
+      style={style}
+      className={`bg-gray-900/90 border border-gray-800 hover:border-blue-800/50 transition-all duration-200 rounded-lg shadow-lg shadow-black/20 w-full h-full ${
+        sortable?.isDragging ? 'ring-2 ring-blue-500' : ''
+      }`}
+    >
+      <CardHeader className="pb-2 pt-3">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-white font-semibold">
+          <CardTitle className="text-white text-lg font-semibold">
             {folder.label}
           </CardTitle>
           <div className="flex space-x-1">
+            {/* Only show drag handle if id is provided */}
+            {id && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800/80 rounded-md cursor-grab"
+                {...(sortable?.attributes || {})}
+                {...(sortable?.listeners || {})}
+                tabIndex={0}
+                aria-label="Drag to reorder"
+                type="button"
+              >
+                <FiMove className="h-4 w-4" />
+                <span className="sr-only">Drag</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-700/50"
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800/80 rounded-md"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(folder);
               }}
+              type="button"
             >
               <FiEdit2 className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -56,8 +93,9 @@ const FolderCard: React.FC<FolderCardProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-gray-700/50"
+              className="h-8 w-8 text-gray-400 hover:text-red-400 hover:bg-gray-800/80 rounded-md"
               onClick={handleDelete}
+              type="button"
             >
               <FiTrash2 className="h-4 w-4" />
               <span className="sr-only">Delete</span>
@@ -65,28 +103,28 @@ const FolderCard: React.FC<FolderCardProps> = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
+      <CardContent className="pt-0 pb-2">
+        <div className="space-y-1">
           <div className="text-xs text-gray-400 break-all">
             <span
-              className={`inline-block px-2 py-1 rounded-full mr-2 text-xs ${
+              className={`inline-block px-2 py-1 rounded-md text-xs font-medium mb-2 mr-2 ${
                 isRemote
-                  ? 'bg-blue-900/40 text-blue-300'
-                  : 'bg-purple-900/40 text-purple-300'
+                  ? 'bg-blue-800/70 text-blue-200 border border-blue-700'
+                  : 'bg-purple-800/70 text-purple-200 border border-purple-700'
               }`}
             >
               {isRemote ? 'Remote' : 'Local'}
             </span>
-            {folder.path}
+            <span className="opacity-80">{folder.path}</span>
           </div>
-          <div className="text-xs text-gray-500">
-            Created {formatDateRelative(folder.created)}
+          <div className="text-xs text-gray-500 mt-2">
+            Created {formatDateRelative(folder.createdAt)}
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="pt-1 pb-4">
         <Button
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md transition-all border border-blue-500"
           onClick={() => onPlay(folder._id)}
         >
           <FiPlay className="h-4 w-4" />
