@@ -8,18 +8,28 @@ export interface DAUStats {
   updated: string;
 }
 
-export interface TopTrack {
-  trackUrl: string;
-  title: string;
-  count: number;
+export interface UserActivityDailySummary {
+  dateLabel: string; // e.g., "Today", "Yesterday", "Oct 28"
+  date: string; // e.g., "2023-10-30"
+  newUsers: number;
+  logins: number;
 }
 
-export interface ApiResponse<T = any> {
+export interface BaseResponse {
   success: boolean;
-  data?: T;
   error?: string;
   status?: number;
   isRateLimited?: boolean;
+}
+
+export interface DAUResponse extends BaseResponse {
+  data?: DAUStats;
+  isRateLimited?: boolean;
+}
+
+export interface UserActivitySummaryResponse extends BaseResponse {
+  data?: UserActivityDailySummary[];
+  isRateLimited?: boolean; // Optional: if this endpoint also has rate limiting
 }
 
 // API base URL from environment variables
@@ -110,7 +120,7 @@ const statsService = {
    * @param forceFresh If true, bypass cache and fetch fresh data
    * @returns Promise with DAU stats
    */
-  fetchDAU: async (forceFresh = false): Promise<ApiResponse<DAUStats>> => {
+  fetchDAU: async (forceFresh = false): Promise<DAUResponse> => {
     const cacheKey = 'dau-stats';
 
     // Check cache first unless forceFresh is true
@@ -210,6 +220,66 @@ const statsService = {
         };
       }
       return apiError;
+    }
+  },
+
+  /**
+   * Fetch daily user activity summary (new users and logins)
+   * @param forceFresh If true, bypass cache and fetch fresh data
+   * @returns Promise with array of daily user activity summaries
+   */
+  fetchUserActivitySummary: async (
+    forceFresh = false,
+  ): Promise<UserActivitySummaryResponse> => {
+    try {
+      const response = await axios.get<UserActivityDailySummary[]>(
+        `${API_BASE_URL}/admin/stats/user-activity-summary${
+          forceFresh ? '?fresh=true' : ''
+        }`,
+        getAuthHeaders(),
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        isRateLimited: response.headers['x-rate-limit-remaining'] === '0',
+      };
+    } catch (error: any) {
+      console.error('Error fetching user activity summary:', error);
+      const isRateLimited =
+        error.response?.status === 429 ||
+        error.response?.headers['x-rate-limit-remaining'] === '0';
+      if (isRateLimited) {
+        // Fallback to sample data if rate limited
+        const sampleData: UserActivityDailySummary[] = [
+          {
+            dateLabel: 'Today',
+            date: new Date().toISOString().split('T')[0],
+            newUsers: 1,
+            logins: 10,
+          },
+          {
+            dateLabel: 'Yesterday',
+            date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+            newUsers: 2,
+            logins: 12,
+          },
+        ];
+        return {
+          success: true,
+          data: sampleData,
+          error: 'API rate limit hit. Displaying sample data.',
+          isRateLimited: true,
+        };
+      }
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch user activity summary',
+        isRateLimited,
+      };
     }
   },
 };

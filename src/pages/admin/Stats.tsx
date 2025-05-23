@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
   FiUsers,
@@ -14,8 +14,17 @@ import ApiLatencyWidget from '@/components/admin/ApiLatencyWidget';
 import UserActivityStats from '@/components/admin/UserActivityStats';
 import TopTracksTable from '@/components/admin/TopTracksTable';
 import AdminErrorsWidget from '@/components/admin/AdminErrorsWidget';
-import { AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Clock,
+  AlertCircle,
+  Users as LucideUsersIcon,
+} from 'lucide-react'; // Added Clock, AlertCircle, LucideUsersIcon
 import healthService from '@/services/healthService';
+import statsService, {
+  DAUStats,
+  UserActivityDailySummary,
+} from '@/services/statsService'; // Added UserActivityDailySummary
 
 const StatsPage: React.FC = () => {
   // Authentication state
@@ -23,13 +32,27 @@ const StatsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // DAU/WAU Stats
+  const [dauStats, setDauStats] = useState<DAUStats | null>(null);
+  const [dauLoading, setDauLoading] = useState(true);
+  const [dauError, setDauError] = useState<string | null>(null);
+  const [dauIsRateLimited, setDauIsRateLimited] = useState(false);
+  const dauRefreshTimeoutRef = useRef<number | null>(null);
+
+  // User Activity Summary Stats
+  const [userActivitySummary, setUserActivitySummary] = useState<
+    UserActivityDailySummary[] | null
+  >(null);
+  const [userActivityLoading, setUserActivityLoading] = useState(true);
+  const [userActivityError, setUserActivityError] = useState<string | null>(
+    null,
+  );
+  const [userActivityRateLimited, setUserActivityRateLimited] = useState(false);
+  // Placeholder for user activity summary refresh, if needed separately
+  // const userActivityRefreshTimeoutRef = useRef<number | null>(null);
+
   // This is a placeholder - in a real implementation, you would fetch stats from the API
   const stats = {
-    users: {
-      total: 156,
-      admins: 2,
-      newThisMonth: 14,
-    },
     music: {
       totalSongs: 78,
       totalPlaylists: 12,
@@ -60,6 +83,76 @@ const StatsPage: React.FC = () => {
 
     checkAuth();
   }, []);
+
+  const fetchDauStats = async (forceFresh = false) => {
+    try {
+      setDauLoading(true);
+      const response = await statsService.fetchDAU(forceFresh);
+
+      if (response.success && response.data) {
+        setDauStats(response.data);
+        setDauError(null);
+        setDauIsRateLimited(response.isRateLimited || false);
+      } else {
+        setDauError(response.error || 'Failed to fetch user activity stats');
+        setDauIsRateLimited(response.isRateLimited || false);
+      }
+    } catch (err) {
+      setDauError('An unexpected error occurred while fetching DAU stats');
+      console.error(err);
+    } finally {
+      setDauLoading(false);
+    }
+  };
+
+  const fetchUserActivitySummaryData = async (forceFresh = false) => {
+    try {
+      setUserActivityLoading(true);
+      const response = await statsService.fetchUserActivitySummary(forceFresh);
+
+      if (response.success && response.data) {
+        setUserActivitySummary(response.data);
+        setUserActivityError(null);
+        setUserActivityRateLimited(response.isRateLimited || false);
+      } else {
+        setUserActivityError(
+          response.error || 'Failed to fetch user activity summary',
+        );
+        setUserActivityRateLimited(response.isRateLimited || false);
+      }
+    } catch (err) {
+      setUserActivityError(
+        'An unexpected error occurred while fetching user activity summary',
+      );
+      console.error(err);
+    } finally {
+      setUserActivityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDauStats(); // Initial fetch
+    fetchUserActivitySummaryData(); // Initial fetch for activity summary
+
+    const refreshIntervalTime =
+      dauIsRateLimited || userActivityRateLimited // Use a combined check if desired
+        ? 5 * 60 * 1000 // 5 minutes if rate limited
+        : 2 * 60 * 1000; // 2 minutes normally
+
+    const intervalId = setInterval(() => {
+      fetchDauStats(true);
+      fetchUserActivitySummaryData(true);
+    }, refreshIntervalTime);
+
+    return () => {
+      clearInterval(intervalId);
+      if (dauRefreshTimeoutRef.current) {
+        // Ensure this ref is used if you have separate timeouts
+        window.clearTimeout(dauRefreshTimeoutRef.current);
+      }
+      // Clear userActivityRefreshTimeoutRef if it were used
+    };
+  }, [dauIsRateLimited, userActivityRateLimited]); // Re-run if either rate limit status changes
 
   const handleLogin = () => {
     navigate('/login', { state: { returnUrl: '/admin/stats' } });
@@ -137,34 +230,64 @@ const StatsPage: React.FC = () => {
           <TabsContent value="system" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <HealthCard />
-              {/* Users Stats */}
+              {/* Active Users Stats (derived from DAU/WAU) */}
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Users</h2>
-                    <p className="text-4xl font-bold text-white mt-2">
-                      {stats.users.total}
-                    </p>
+                    <h2 className="text-xl font-semibold text-white flex items-center">
+                      <LucideUsersIcon className="mr-2 h-5 w-5" /> Active Users
+                    </h2>
+                    {dauLoading && !dauStats && (
+                      <div className="mt-2 flex items-center">
+                        <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent mr-2"></div>
+                        <p className="text-gray-400">Loading...</p>
+                      </div>
+                    )}
+                    {dauError && (
+                      <p className="text-red-400 mt-2 text-sm">{dauError}</p>
+                    )}
+                    {dauStats && !dauLoading && !dauError && (
+                      <p className="text-4xl font-bold text-white mt-2">
+                        {dauStats.dau}
+                      </p>
+                    )}
                   </div>
                   <div className="bg-blue-500/30 p-3 rounded-full">
                     <FiUsers className="h-8 w-8 text-blue-300" />
                   </div>
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Admins</span>
-                    <span className="text-white font-medium">
-                      {stats.users.admins}
-                    </span>
+                {dauStats && !dauLoading && !dauError && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Daily Active Users</span>
+                      <span className="text-white font-medium">
+                        {dauStats.dau}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Weekly Active Users</span>
+                      <span className="text-white font-medium">
+                        {dauStats.wau}
+                      </span>
+                    </div>
+                    {dauIsRateLimited && (
+                      <div className="mt-1 text-amber-400 text-xs flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Using cached data (API rate limit)
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-400 flex items-center justify-end mt-1 pt-1 border-t border-gray-700/50">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Last updated:{' '}
+                      {new Date(dauStats.updated).toLocaleString()}
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">New this month</span>
-                    <span className="text-white font-medium">
-                      {stats.users.newThisMonth}
-                    </span>
-                  </div>
-                </div>
+                )}
+                {dauLoading &&
+                  dauStats && ( // Show spinner next to title if loading new data but old data exists
+                    <div className="absolute top-6 right-6 animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                  )}
               </div>
 
               {/* Music Stats */}
@@ -319,10 +442,39 @@ const StatsPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* User Activity card removed from System tab */}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="traffic" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <UserActivityStats
+                stats={dauStats}
+                loading={dauLoading}
+                error={dauError}
+                isRateLimited={dauIsRateLimited}
+              />
+
+              {/* User Activity card moved here from System tab */}
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-700">
                 <h2 className="text-xl font-semibold text-white p-6 pb-4 flex items-center">
                   <FiUsers className="mr-2" /> User Activity
+                  {userActivityLoading && (
+                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent ml-2"></div>
+                  )}
                 </h2>
+                {userActivityRateLimited && !userActivityError && (
+                  <div className="px-6 pb-2 text-amber-400 text-xs flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Using cached/sample data (API rate limit)
+                  </div>
+                )}
+                {userActivityError && (
+                  <div className="px-6 pb-4 text-red-400 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    {userActivityError}
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-700">
                     <thead className="bg-gray-700/50">
@@ -348,60 +500,48 @@ const StatsPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-gray-800/30 divide-y divide-gray-700">
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Today
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-green-400">
-                          +3
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          42
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Yesterday
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-green-400">
-                          +5
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          38
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Apr 22
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-green-400">
-                          +2
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          45
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Apr 21
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-green-400">
-                          +4
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          51
-                        </td>
-                      </tr>
+                      {userActivitySummary && !userActivityError ? (
+                        userActivitySummary.map((activity, index) => (
+                          <tr key={index}>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {activity.dateLabel}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-green-400">
+                              {activity.newUsers > 0
+                                ? `+${activity.newUsers}`
+                                : activity.newUsers}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {activity.logins}
+                            </td>
+                          </tr>
+                        ))
+                      ) : !userActivityLoading && !userActivityError ? (
+                        <tr>
+                          <td
+                            colSpan={3}
+                            className="px-4 sm:px-6 py-4 text-center text-gray-400"
+                          >
+                            No user activity data available.
+                          </td>
+                        </tr>
+                      ) : null}
+                      {userActivityLoading &&
+                        !userActivitySummary &&
+                        !userActivityError && (
+                          <tr>
+                            <td
+                              colSpan={3}
+                              className="px-4 sm:px-6 py-4 text-center text-gray-400"
+                            >
+                              Loading activity data...
+                            </td>
+                          </tr>
+                        )}
                     </tbody>
                   </table>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="traffic" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <UserActivityStats />
             </div>
             <TopTracksTable />
           </TabsContent>
