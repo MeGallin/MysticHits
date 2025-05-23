@@ -19,17 +19,41 @@ import {
   Clock,
   AlertCircle,
   Users as LucideUsersIcon,
-} from 'lucide-react'; // Added Clock, AlertCircle, LucideUsersIcon
+} from 'lucide-react';
+import PageViewsChart from '@/components/admin/PageViewsChart'; // Add this import
 import healthService from '@/services/healthService';
 import statsService, {
   DAUStats,
   UserActivityDailySummary,
-} from '@/services/statsService'; // Added UserActivityDailySummary
+  DailyPageViewData,
+  TopPageData, // Add this import
+} from '@/services/statsService';
+import axios from 'axios';
+
+// Add these interfaces for the new stats
+interface MusicStats {
+  totalSongs: number;
+  totalPlaylists: number;
+}
+
+interface ViewsStats {
+  total: number;
+  unique: number;
+  averagePerDay: number;
+}
+
+interface SystemStats {
+  music?: MusicStats;
+  views?: ViewsStats;
+  lastUpdated?: string;
+}
 
 const StatsPage: React.FC = () => {
-  // Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  // Authentication state - default to true when token exists
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem('token'),
+  );
+  const [isLoading, setIsLoading] = useState(false); // Start with false if token exists
   const navigate = useNavigate();
 
   // DAU/WAU Stats
@@ -48,40 +72,59 @@ const StatsPage: React.FC = () => {
     null,
   );
   const [userActivityRateLimited, setUserActivityRateLimited] = useState(false);
-  // Placeholder for user activity summary refresh, if needed separately
-  // const userActivityRefreshTimeoutRef = useRef<number | null>(null);
 
-  // This is a placeholder - in a real implementation, you would fetch stats from the API
-  const stats = {
-    music: {
-      totalSongs: 78,
-      totalPlaylists: 12,
-    },
-    views: {
-      total: 12458,
-      unique: 3862,
-      averagePerDay: 128,
-    },
-  };
+  // Add state for daily page views
+  const [pageViewsData, setPageViewsData] = useState<
+    DailyPageViewData[] | null
+  >(null);
+  const [pageViewsLoading, setPageViewsLoading] = useState(true);
+  const [pageViewsError, setPageViewsError] = useState<string | null>(null);
+  const [pageViewsRateLimited, setPageViewsRateLimited] = useState(false);
+  const [pageViewsPeriod, setPageViewsPeriod] = useState('30 days');
+
+  // Add new state for top pages
+  const [topPagesData, setTopPagesData] = useState<TopPageData[] | null>(null);
+  const [topPagesLoading, setTopPagesLoading] = useState(true);
+  const [topPagesError, setTopPagesError] = useState<string | null>(null);
+  const [topPagesRateLimited, setTopPagesRateLimited] = useState(false);
+  const [topPagesPeriod, setTopPagesPeriod] = useState('30 days');
+
+  // Replace hardcoded stats with state variables
+  const [systemStats, setSystemStats] = useState<SystemStats>({
+    music: { totalSongs: 0, totalPlaylists: 0 },
+    views: { total: 0, unique: 0, averagePerDay: 0 },
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [statsRateLimited, setStatsRateLimited] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setIsLoading(true);
-        const isAuth = await healthService.checkAuth();
-        setIsAuthenticated(isAuth);
-        if (!isAuth) {
-          console.warn('User not authenticated for health endpoints');
+    // Don't check authentication if token exists
+    const token = localStorage.getItem('token');
+    if (token) {
+      // User is already authenticated, skip the auth check
+      setIsAuthenticated(true);
+      setIsLoading(false);
+    } else {
+      // Only check authentication if no token exists
+      const checkAuth = async () => {
+        try {
+          setIsLoading(true);
+          const isAuth = await healthService.checkAuth();
+          setIsAuthenticated(isAuth);
+          if (!isAuth) {
+            console.warn('User not authenticated for health endpoints');
+          }
+        } catch (error) {
+          console.error('Error checking authentication:', error);
+          setIsAuthenticated(false);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    checkAuth();
+      checkAuth();
+    }
   }, []);
 
   const fetchDauStats = async (forceFresh = false) => {
@@ -130,32 +173,223 @@ const StatsPage: React.FC = () => {
     }
   };
 
+  // Add function to fetch page views data
+  const fetchPageViewsData = async (forceFresh = false) => {
+    try {
+      setPageViewsLoading(true);
+      const response = await statsService.fetchDailyPageViews(30, forceFresh);
+
+      if (
+        response.success &&
+        response.data &&
+        response.data.dailyData &&
+        response.data.dailyData.length > 0
+      ) {
+        setPageViewsData(response.data.dailyData);
+        setPageViewsPeriod(response.data.period);
+        setPageViewsError(null);
+        setPageViewsRateLimited(response.isRateLimited || false);
+      } else {
+        // If we get an empty dataset, provide sample data
+        const sampleData = generateSamplePageViewData(30);
+        setPageViewsData(sampleData);
+        setPageViewsPeriod('30 days (sample)');
+        setPageViewsError(
+          response.error || 'No page view data available, showing sample data',
+        );
+        setPageViewsRateLimited(response.isRateLimited || false);
+      }
+    } catch (err) {
+      console.error('Error fetching page views:', err);
+      // On error, generate sample data
+      const sampleData = generateSamplePageViewData(30);
+      setPageViewsData(sampleData);
+      setPageViewsPeriod('30 days (sample)');
+      setPageViewsError('Error fetching data, showing sample chart');
+    } finally {
+      setPageViewsLoading(false);
+    }
+  };
+
+  // Helper function to generate sample page view data
+  const generateSamplePageViewData = (days: number): DailyPageViewData[] => {
+    const data: DailyPageViewData[] = [];
+    const today = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+
+      // Generate some realistic-looking data
+      const baseViews = Math.floor(Math.random() * 100) + 50;
+      const dayOfWeek = date.getDay();
+      // Weekend multiplier (more traffic on weekends)
+      const multiplier = dayOfWeek === 0 || dayOfWeek === 6 ? 1.5 : 1;
+      // Random fluctuation
+      const randomFactor = 0.7 + Math.random() * 0.6;
+
+      const views = Math.floor(baseViews * multiplier * randomFactor);
+      const visitors = Math.floor(views * (0.4 + Math.random() * 0.3)); // 40-70% of views are unique visitors
+
+      data.push({
+        date: dateString,
+        views,
+        visitors,
+      });
+    }
+
+    return data;
+  };
+
+  // Add function to fetch top pages data
+  const fetchTopPagesData = async (forceFresh = false) => {
+    try {
+      setTopPagesLoading(true);
+      const response = await statsService.fetchTopPages(30, 5, forceFresh);
+
+      if (response.success && response.data) {
+        setTopPagesData(response.data.pages);
+        setTopPagesPeriod(response.data.period);
+        setTopPagesError(null);
+        setTopPagesRateLimited(response.isRateLimited || false);
+      } else {
+        setTopPagesError(response.error || 'Failed to fetch top pages data');
+        setTopPagesRateLimited(response.isRateLimited || false);
+      }
+    } catch (err) {
+      setTopPagesError(
+        'An unexpected error occurred while fetching top pages data',
+      );
+    } finally {
+      setTopPagesLoading(false);
+    }
+  };
+
+  // Add function to fetch general system stats
+  const fetchSystemStats = async (forceFresh = false) => {
+    try {
+      setStatsLoading(true);
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        }/admin/stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          params: { forceFresh: forceFresh ? 'true' : 'false' },
+        },
+      );
+
+      if (response.status === 200) {
+        const data = response.data;
+        setSystemStats({
+          music: {
+            totalSongs: data.music?.totalSongs || 0,
+            totalPlaylists: data.music?.totalPlaylists || 0,
+          },
+          views: {
+            total: data.pageViews?.total || 0,
+            unique: data.pageViews?.uniqueVisitors || 0,
+            averagePerDay: data.pageViews?.averagePerDay || 0,
+          },
+          lastUpdated: data.lastUpdated,
+        });
+        setStatsError(null);
+      }
+    } catch (err: any) {
+      setStatsError('Failed to fetch system statistics');
+      if (err.response?.status === 429) {
+        setStatsRateLimited(true);
+      }
+      console.error('Error fetching system stats:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchDauStats(); // Initial fetch
     fetchUserActivitySummaryData(); // Initial fetch for activity summary
+    fetchPageViewsData(); // Initial fetch of page views
+    fetchTopPagesData(); // Fetch top pages
+    fetchSystemStats(); // Add this line to fetch system stats
 
     const refreshIntervalTime =
-      dauIsRateLimited || userActivityRateLimited // Use a combined check if desired
-        ? 5 * 60 * 1000 // 5 minutes if rate limited
-        : 2 * 60 * 1000; // 2 minutes normally
+      dauIsRateLimited ||
+      userActivityRateLimited ||
+      pageViewsRateLimited ||
+      topPagesRateLimited ||
+      statsRateLimited // Updated check
+        ? 10 * 60 * 1000 // 10 minutes if rate limited
+        : 5 * 60 * 1000; // 5 minutes normally
 
     const intervalId = setInterval(() => {
       fetchDauStats(true);
       fetchUserActivitySummaryData(true);
+      fetchPageViewsData(true);
+      fetchTopPagesData(true);
+      fetchSystemStats(true); // Add this line
     }, refreshIntervalTime);
 
     return () => {
       clearInterval(intervalId);
       if (dauRefreshTimeoutRef.current) {
-        // Ensure this ref is used if you have separate timeouts
         window.clearTimeout(dauRefreshTimeoutRef.current);
       }
-      // Clear userActivityRefreshTimeoutRef if it were used
     };
-  }, [dauIsRateLimited, userActivityRateLimited]); // Re-run if either rate limit status changes
+  }, [
+    dauIsRateLimited,
+    userActivityRateLimited,
+    pageViewsRateLimited,
+    topPagesRateLimited,
+    statsRateLimited,
+  ]); // Updated dependencies
 
   const handleLogin = () => {
     navigate('/login', { state: { returnUrl: '/admin/stats' } });
+  };
+
+  // Add function to seed hit data in the database
+  const seedHitData = async () => {
+    try {
+      setTopPagesLoading(true);
+      setPageViewsLoading(true);
+
+      // Call API endpoint to seed hit data
+      const response = await axios.post(
+        `${
+          import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+        }/admin/seed/hit-data`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        },
+      );
+
+      console.log('Seed response:', response.data);
+
+      // Force fresh data fetch after seeding
+      await Promise.all([
+        fetchTopPagesData(true),
+        fetchPageViewsData(true),
+        fetchSystemStats(true),
+      ]);
+
+      // Show success message
+      alert('Sample data has been successfully created!');
+    } catch (err: any) {
+      setTopPagesError(
+        `Failed to seed hit data: ${err.response?.data?.error || err.message}`,
+      );
+      console.error('Error seeding hit data:', err);
+    } finally {
+      setTopPagesLoading(false);
+      setPageViewsLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -294,9 +528,14 @@ const StatsPage: React.FC = () => {
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Music</h2>
+                    <h2 className="text-xl font-semibold text-white flex items-center">
+                      Music
+                      {statsLoading && (
+                        <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent ml-2"></div>
+                      )}
+                    </h2>
                     <p className="text-4xl font-bold text-white mt-2">
-                      {stats.music.totalSongs}
+                      {systemStats.music?.totalSongs.toLocaleString()}
                     </p>
                   </div>
                   <div className="bg-purple-500/30 p-3 rounded-full">
@@ -308,15 +547,21 @@ const StatsPage: React.FC = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Total songs</span>
                     <span className="text-white font-medium">
-                      {stats.music.totalSongs}
+                      {systemStats.music?.totalSongs.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Playlists</span>
                     <span className="text-white font-medium">
-                      {stats.music.totalPlaylists}
+                      {systemStats.music?.totalPlaylists.toLocaleString()}
                     </span>
                   </div>
+                  {statsRateLimited && (
+                    <div className="mt-1 text-amber-400 text-xs flex items-center">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Using cached data (API rate limit)
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -324,9 +569,14 @@ const StatsPage: React.FC = () => {
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Views</h2>
+                    <h2 className="text-xl font-semibold text-white flex items-center">
+                      Views
+                      {statsLoading && (
+                        <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent ml-2"></div>
+                      )}
+                    </h2>
                     <p className="text-4xl font-bold text-white mt-2">
-                      {stats.views.total.toLocaleString()}
+                      {systemStats.views?.total.toLocaleString()}
                     </p>
                   </div>
                   <div className="bg-green-500/30 p-3 rounded-full">
@@ -338,15 +588,28 @@ const StatsPage: React.FC = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Unique visitors</span>
                     <span className="text-white font-medium">
-                      {stats.views.unique.toLocaleString()}
+                      {systemStats.views?.unique.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Avg. per day</span>
                     <span className="text-white font-medium">
-                      {stats.views.averagePerDay}
+                      {systemStats.views?.averagePerDay.toLocaleString()}
                     </span>
                   </div>
+                  {statsRateLimited && (
+                    <div className="mt-1 text-amber-400 text-xs flex items-center">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Using cached data (API rate limit)
+                    </div>
+                  )}
+                  {systemStats.lastUpdated && (
+                    <div className="text-xs text-gray-400 flex items-center justify-end mt-1 pt-1 border-t border-gray-700/50">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Last updated:{' '}
+                      {new Date(systemStats.lastUpdated).toLocaleString()}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -363,13 +626,31 @@ const StatsPage: React.FC = () => {
             {/* Analytics graph placeholder */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <FiBarChart2 className="mr-2" /> Page Views (Last 30 Days)
+                <FiBarChart2 className="mr-2" /> Page Views{' '}
+                {pageViewsPeriod ? `(${pageViewsPeriod})` : ''}
+                {pageViewsLoading && (
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent ml-2"></div>
+                )}
               </h2>
-              <div className="h-64 bg-gray-700/50 rounded-md flex items-center justify-center">
-                <p className="text-gray-400">
-                  Graph visualization would be rendered here
-                </p>
-              </div>
+
+              {pageViewsError && pageViewsError.includes('sample') && (
+                <div className="mb-4 px-2 py-1 text-xs inline-flex items-center rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {pageViewsError}
+                </div>
+              )}
+
+              <PageViewsChart
+                data={pageViewsData}
+                loading={pageViewsLoading && !pageViewsData}
+                error={
+                  pageViewsError && !pageViewsError.includes('sample')
+                    ? pageViewsError
+                    : null
+                }
+                isRateLimited={pageViewsRateLimited}
+                period={pageViewsPeriod}
+              />
             </div>
 
             {/* Data tables */}
@@ -378,6 +659,18 @@ const StatsPage: React.FC = () => {
                 <h2 className="text-xl font-semibold text-white p-6 pb-4 flex items-center">
                   <FiBarChart2 className="mr-2" /> Top Pages
                 </h2>
+                {topPagesRateLimited && !topPagesError && (
+                  <div className="px-6 pb-2 text-amber-400 text-xs flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Using cached/sample data (API rate limit)
+                  </div>
+                )}
+                {topPagesError && (
+                  <div className="px-6 pb-4 text-red-400 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    {topPagesError}
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-700">
                     <thead className="bg-gray-700/50">
@@ -397,46 +690,49 @@ const StatsPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-gray-800/30 divide-y divide-gray-700">
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Home
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          5,842
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Playlist
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          3,125
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Charts
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          2,345
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          About
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          1,864
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          Contact
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                          1,627
-                        </td>
-                      </tr>
+                      {topPagesData &&
+                      topPagesData.length > 0 &&
+                      !topPagesError ? (
+                        topPagesData.map((page, index) => (
+                          <tr key={index}>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {page.pageName || 'Unknown Page'}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {(page.views || 0).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      ) : !topPagesLoading && !topPagesError ? (
+                        <tr>
+                          <td
+                            colSpan={2}
+                            className="px-4 sm:px-6 py-4 text-center text-gray-400"
+                          >
+                            <div className="flex flex-col items-center justify-center">
+                              <p className="mb-3">
+                                No page view data available.
+                              </p>
+                              <button
+                                onClick={seedHitData}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-xs"
+                              >
+                                Generate Sample Hit Data
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                      {topPagesLoading && !topPagesData && !topPagesError && (
+                        <tr>
+                          <td
+                            colSpan={2}
+                            className="px-4 sm:px-6 py-4 text-center text-gray-400"
+                          >
+                            Loading page view data...
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -444,6 +740,41 @@ const StatsPage: React.FC = () => {
 
               {/* User Activity card removed from System tab */}
             </div>
+
+            {/* Debug section to show raw stats data */}
+            {/* <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                Debug: Raw Stats Data
+              </h2>
+              <pre className="text-gray-300 text-sm whitespace-pre-wrap">
+                {JSON.stringify(
+                  {
+                    dauStats,
+                    userActivitySummary,
+                    pageViewsData,
+                    topPagesData,
+                    systemStats,
+                    dauLoading,
+                    userActivityLoading,
+                    pageViewsLoading,
+                    topPagesLoading,
+                    statsLoading,
+                    dauError,
+                    userActivityError,
+                    pageViewsError,
+                    topPagesError,
+                    statsError,
+                    dauIsRateLimited,
+                    userActivityRateLimited,
+                    pageViewsRateLimited,
+                    topPagesRateLimited,
+                    statsRateLimited,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </div> */}
           </TabsContent>
 
           <TabsContent value="traffic" className="space-y-6">

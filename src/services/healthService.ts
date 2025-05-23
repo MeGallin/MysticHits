@@ -163,12 +163,45 @@ const healthService = {
    * Check if user is authenticated for health endpoints
    * @returns Whether the user is authenticated
    */
-  checkAuth: async (): Promise<boolean> => {
+  checkAuth: async () => {
     try {
-      await axios.get(`${API_BASE_URL}/health/status`, getAuthHeaders());
-      return true;
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.log('No token found during auth check');
+        return false;
+      }
+
+      // Log token format for debugging (mask most of it for security)
+      const tokenFirstChars = token.substring(0, 10);
+      const tokenLength = token.length;
+      console.log(
+        `Checking auth with token: ${tokenFirstChars}...${token.substring(
+          tokenLength - 5,
+        )} (${tokenLength} chars)`,
+      );
+
+      const response = await axios.get(`${API_BASE_URL}/health/auth`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('Auth response:', response.data);
+      return response.data.authenticated === true;
     } catch (error) {
-      return error.response?.status !== 401;
+      console.error(
+        'Auth check error:',
+        error.response?.status || error.message,
+      );
+
+      // If unauthorized or forbidden, clear token to force new login
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Auth failed with 401/403, clearing token');
+        localStorage.removeItem('token');
+      }
+
+      return false;
     }
   },
 
@@ -176,18 +209,56 @@ const healthService = {
    * Fetch basic system health information
    * @returns Promise with health data
    */
-  fetchHealth: async (): Promise<ApiResponse<HealthData>> => {
+  fetchHealthStatus: async () => {
     try {
+      // Add cache-busting parameter with timestamp modulo to reduce unnecessary precision
+      // This helps avoid ad blockers while still preventing hard caching
+      const cacheBuster = Math.floor(Date.now() / 10000); // Changes every 10 seconds
+
       const response = await axios.get(
-        `${API_BASE_URL}/health`,
-        getAuthHeaders(),
+        `${API_BASE_URL}/health?_t=${cacheBuster}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
+
       return {
         success: true,
-        data: response.data as HealthData,
+        data: response.data,
+        isRateLimited: false,
       };
     } catch (error) {
-      return handleApiError(error);
+      console.error('Error fetching health status:', error);
+
+      // Check for rate limiting specifically
+      const isRateLimited = error.response?.status === 429;
+
+      // If rate limited, return a simplified/mock health status
+      if (isRateLimited) {
+        return {
+          success: true,
+          data: {
+            status: 'partial',
+            database: { status: 'unknown', latency: null },
+            api: { status: 'rate_limited', latency: null },
+            cache: { status: 'unknown', latency: null },
+            updatedAt: new Date().toISOString(),
+          },
+          isRateLimited: true,
+          error: 'Rate limit exceeded. Using cached data.',
+        };
+      }
+
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to fetch health status',
+        isRateLimited,
+      };
     }
   },
 

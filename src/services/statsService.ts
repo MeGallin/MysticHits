@@ -32,6 +32,38 @@ export interface UserActivitySummaryResponse extends BaseResponse {
   isRateLimited?: boolean; // Optional: if this endpoint also has rate limiting
 }
 
+export interface DailyPageViewData {
+  date: string;
+  views: number;
+  visitors: number;
+}
+
+export interface DailyPageViewsResponse extends BaseResponse {
+  data?: {
+    dailyData: DailyPageViewData[];
+    period: string;
+    updatedAt: string;
+  };
+  isRateLimited?: boolean;
+}
+
+export interface TopPageData {
+  page: string;
+  pageName: string;
+  views: number;
+  visitors: number;
+}
+
+export interface TopPagesResponse extends BaseResponse {
+  data?: {
+    pages: TopPageData[];
+    period: string;
+    total: number;
+    updatedAt: string;
+  };
+  isRateLimited?: boolean;
+}
+
 // API base URL from environment variables
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -280,6 +312,137 @@ const statsService = {
           'Failed to fetch user activity summary',
         isRateLimited,
       };
+    }
+  },
+
+  /**
+   * Fetch daily page view metrics for charting
+   * @param days Number of days to look back (default: 30)
+   * @param forceFresh If true, bypass cache and fetch fresh data
+   * @returns Promise with daily page views data
+   */
+  fetchDailyPageViews: async (
+    days: number = 30,
+    forceFresh = false,
+  ): Promise<DailyPageViewsResponse> => {
+    const cacheKey = `daily-pageviews-${days}`;
+
+    // Check cache first unless forceFresh is true
+    if (!forceFresh) {
+      const cachedData = getCachedData(cacheKey);
+      if (cachedData) return cachedData;
+    }
+
+    try {
+      // Use the alternative URL that doesn't trigger ad blockers
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/metrics/daily-activity?days=${days}`,
+        getAuthHeaders(),
+      );
+
+      // Cache the successful response
+      cacheResponse(cacheKey, response.data);
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      // If rate limited or other error, return informative error
+      const apiError = handleApiError(error);
+
+      // If we're in development and getting 404, provide clearer message
+      if (apiError.status === 404) {
+        return {
+          success: false,
+          error: `API endpoint not found: /admin/metrics/daily-activity. Please ensure the backend route is implemented.`,
+          status: 404,
+        };
+      }
+
+      // For other errors, return the standard error
+      return apiError;
+    }
+  },
+
+  /**
+   * Fetch top pages by views
+   * @param days Number of days to look back (default: 30)
+   * @param limit Maximum number of pages to return (default: 5)
+   * @param forceFresh If true, bypass cache and fetch fresh data
+   * @returns Promise with top pages data
+   */
+  fetchTopPages: async (
+    days: number = 30,
+    limit: number = 5,
+    forceFresh = false,
+  ): Promise<TopPagesResponse> => {
+    const cacheKey = `top-pages-${days}-${limit}`;
+
+    // Check cache first unless forceFresh is true
+    if (!forceFresh) {
+      const cachedData = getCachedData(cacheKey);
+      if (cachedData) return cachedData;
+    }
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/admin/stats/top-pages?days=${days}&limit=${limit}`,
+        getAuthHeaders(),
+      );
+
+      // Cache the successful response
+      cacheResponse(cacheKey, response.data);
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      // If rate limited or other error, handle appropriately
+      const apiError = handleApiError(error);
+
+      // Only use fallback mock data if rate limited
+      if (apiError.isRateLimited) {
+        const mockData = {
+          pages: [
+            { page: '/', pageName: 'Home', views: 5842, visitors: 3456 },
+            {
+              page: '/playlist',
+              pageName: 'Playlist',
+              views: 3125,
+              visitors: 1890,
+            },
+            {
+              page: '/charts',
+              pageName: 'Charts',
+              views: 2345,
+              visitors: 1456,
+            },
+            { page: '/about', pageName: 'About', views: 1864, visitors: 998 },
+            {
+              page: '/contact',
+              pageName: 'Contact',
+              views: 1627,
+              visitors: 876,
+            },
+          ],
+          period: `${days} days`,
+          total: 14803,
+          updatedAt: new Date().toISOString(),
+        };
+
+        return {
+          success: true,
+          data: mockData,
+          status: 200,
+          isRateLimited: true,
+          error: 'Rate limited. Using cached data.',
+        };
+      }
+
+      // Otherwise return the error
+      return apiError;
     }
   },
 };

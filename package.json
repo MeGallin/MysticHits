@@ -24,6 +24,7 @@
     "@radix-ui/react-toast": "^1.2.11",
     "@radix-ui/react-tooltip": "^1.2.6",
     "axios": "^1.8.4",
+    "chart.js": "^4.4.9",
     "date-fns": "^4.1.0",
     "jotai": "^2.0.0",
     "jwt-decode": "^4.0.0",
