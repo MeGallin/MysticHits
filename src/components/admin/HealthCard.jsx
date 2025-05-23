@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { AlertCircle, Clock, Database, Server } from 'lucide-react';
 import {
@@ -29,31 +29,66 @@ const getAuthHeaders = () => {
   };
 };
 
+// Add a caching mechanism to reduce API calls
+const healthCache = {
+  data: null,
+  timestamp: 0,
+  expiryTime: 2 * 60 * 1000, // 2 minutes cache validity
+};
+
+// Add a backoff timer that increases when rate-limited
+let backoffTimer = 0;
+const MAX_BACKOFF = 60 * 1000; // Maximum backoff of 1 minute
+
 export default function HealthCard() {
-  const [health, setHealth] = useState(null);
+  const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [authError, setAuthError] = useState(false);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const refreshTimerRef = useRef(null);
 
-  const fetchHealthData = async () => {
+  const fetchHealthData = async (forceFresh = false) => {
     try {
       setLoading(true);
+
+      // Check if we have valid cached data and not forcing refresh
+      const now = Date.now();
+      if (
+        !forceFresh &&
+        healthCache.data &&
+        now - healthCache.timestamp < healthCache.expiryTime
+      ) {
+        setHealthData(healthCache.data);
+        setError(null);
+        setLoading(false);
+        setIsRateLimited(false);
+        return;
+      }
+
+      // Add a random delay (0-100ms) to prevent synchronized requests from multiple instances
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
+
       const { data } = await axios.get(
         `${API_BASE_URL}/health`,
         getAuthHeaders(),
       );
-      setHealth(data);
+
+      // Cache the successful response
+      healthCache.data = data;
+      healthCache.timestamp = now;
+
+      setHealthData(data);
       setError(null);
-      setAuthError(false);
+      setIsRateLimited(false);
+
+      // Reset backoff on successful request
+      backoffTimer = 0;
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.status === 401) {
-        setAuthError(true);
-        setError('Authentication required. Please log in.');
-      } else {
-        setAuthError(false);
-        setError('Failed to fetch system health');
-      }
+      setError('An unexpected error occurred');
+
+      // Assume it might be rate limiting if the error wasn't caught properly
+      backoffTimer = Math.min(MAX_BACKOFF, (backoffTimer || 1000) * 2);
     } finally {
       setLoading(false);
     }
@@ -61,9 +96,23 @@ export default function HealthCard() {
 
   useEffect(() => {
     fetchHealthData();
-    const interval = setInterval(fetchHealthData, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, []);
+
+    // Calculate refresh time based on rate limiting status
+    const refreshTime = isRateLimited
+      ? Math.max(5 * 60 * 1000, backoffTimer) // At least 5 minutes when rate limited
+      : Math.max(30 * 1000, backoffTimer); // At least 30 seconds normally
+
+    const intervalId = setInterval(() => {
+      fetchHealthData(true);
+    }, refreshTime);
+
+    return () => {
+      clearInterval(intervalId);
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, [isRateLimited]); // Re-run effect when rate limit status changes
 
   // Format uptime to human-readable format
   const formatUptime = (seconds) => {
@@ -105,7 +154,7 @@ export default function HealthCard() {
             </button>
           )}
         </div>
-      ) : !health ? (
+      ) : !healthData ? (
         <div className="text-gray-500">Loading system status...</div>
       ) : (
         <div className="space-y-3">
@@ -114,12 +163,12 @@ export default function HealthCard() {
             <span className="text-sm text-gray-500">Status:</span>
             <div
               className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                health.status === 'ok'
+                healthData.status === 'ok'
                   ? 'bg-green-100 text-green-800'
                   : 'bg-red-100 text-red-800'
               }`}
             >
-              {health.status === 'ok' ? 'OPERATIONAL' : 'DOWN'}
+              {healthData.status === 'ok' ? 'OPERATIONAL' : 'DOWN'}
             </div>
           </div>
 
@@ -130,7 +179,7 @@ export default function HealthCard() {
               Uptime:
             </span>
             <span className="font-medium">
-              {formatUptime(health.uptimeSec)}
+              {formatUptime(healthData.uptimeSec)}
             </span>
           </div>
 
@@ -140,7 +189,7 @@ export default function HealthCard() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger className="font-medium">
-                  {health.memoryMB} MB
+                  {healthData.memoryMB} MB
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Resident Set Size - Memory allocated to Node.js process</p>
@@ -150,14 +199,15 @@ export default function HealthCard() {
           </div>
 
           {/* System Memory (if available) */}
-          {health.systemMemory && (
+          {healthData.systemMemory && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">System Memory:</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger className="font-medium">
-                    {health.systemMemory.used} / {health.systemMemory.total} GB
-                    ({health.systemMemory.usagePercent}%)
+                    {healthData.systemMemory.used} /{' '}
+                    {healthData.systemMemory.total} GB (
+                    {healthData.systemMemory.usagePercent}%)
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Total system memory usage</p>
@@ -168,10 +218,12 @@ export default function HealthCard() {
           )}
 
           {/* CPU Load (if available) */}
-          {health.cpu && (
+          {healthData.cpu && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">CPU Load (1m):</span>
-              <span className="font-medium">{health.cpu.loadAvg['1min']}</span>
+              <span className="font-medium">
+                {healthData.cpu.loadAvg['1min']}
+              </span>
             </div>
           )}
 
@@ -184,16 +236,16 @@ export default function HealthCard() {
             <div className="flex items-center gap-2">
               <div
                 className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  health.db.connected
+                  healthData.db.connected
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                 }`}
               >
-                {health.db.connected ? 'CONNECTED' : 'OFFLINE'}
+                {healthData.db.connected ? 'CONNECTED' : 'OFFLINE'}
               </div>
-              {health.db.connected && health.db.latencyMs && (
+              {healthData.db.connected && healthData.db.latencyMs && (
                 <span className="text-xs text-gray-500">
-                  {health.db.latencyMs}ms
+                  {healthData.db.latencyMs}ms
                 </span>
               )}
             </div>
@@ -201,7 +253,7 @@ export default function HealthCard() {
 
           {/* Last updated */}
           <div className="text-xs text-gray-500 mt-4">
-            Last updated: {new Date(health.timestamp).toLocaleTimeString()}
+            Last updated: {new Date(healthData.timestamp).toLocaleTimeString()}
           </div>
         </div>
       )}
