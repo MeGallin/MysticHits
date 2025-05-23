@@ -1,68 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react'; // Removed useState, useEffect, useRef
 import { Users, AlertTriangle, Clock, AlertCircle } from 'lucide-react';
-import statsService, { DAUStats } from '@/services/statsService';
+import { DAUStats } from '@/services/statsService'; // Removed statsService import
 
-const UserActivityStats: React.FC = () => {
-  const [stats, setStats] = useState<DAUStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isRateLimited, setIsRateLimited] = useState(false);
-  const refreshTimeoutRef = useRef<number | null>(null);
+interface UserActivityStatsProps {
+  stats: DAUStats | null;
+  loading: boolean;
+  error: string | null;
+  isRateLimited: boolean;
+}
 
-  const fetchUserStats = async (forceFresh = false) => {
-    try {
-      setLoading(true);
-      const response = await statsService.fetchDAU(forceFresh);
-
-      if (response.success && response.data) {
-        setStats(response.data);
-        setError(null);
-
-        // Note if the data is from the rate limit handler
-        setIsRateLimited(response.isRateLimited || false);
-      } else {
-        setError(response.error || 'Failed to fetch user activity stats');
-        setIsRateLimited(response.isRateLimited || false);
-      }
-    } catch (err) {
-      setError('An unexpected error occurred');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserStats();
-
-    // Instead of a fixed interval, we'll use an exponential backoff for retries
-    // when rate limited, or a normal refresh when not rate limited
-    const scheduleNextRefresh = () => {
-      // Clear any existing timeout
-      if (refreshTimeoutRef.current) {
-        window.clearTimeout(refreshTimeoutRef.current);
-      }
-
-      // Set the refresh timeout based on rate limiting status
-      const refreshTime = isRateLimited
-        ? 5 * 60 * 1000 // 5 minutes if rate limited
-        : 2 * 60 * 1000; // 2 minutes normally
-
-      refreshTimeoutRef.current = window.setTimeout(() => {
-        fetchUserStats();
-        scheduleNextRefresh();
-      }, refreshTime);
-    };
-
-    scheduleNextRefresh();
-
-    // Cleanup
-    return () => {
-      if (refreshTimeoutRef.current) {
-        window.clearTimeout(refreshTimeoutRef.current);
-      }
-    };
-  }, [isRateLimited]); // Re-run when rate limiting status changes
+const UserActivityStats: React.FC<UserActivityStatsProps> = ({
+  stats,
+  loading,
+  error,
+  isRateLimited,
+}) => {
+  // Removed internal state and fetchUserStats logic
+  // Removed useEffect for polling
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
@@ -77,12 +31,13 @@ const UserActivityStats: React.FC = () => {
         )}
       </div>
 
-      {isRateLimited && (
-        <div className="mt-2 text-amber-400 text-xs flex items-center">
-          <AlertCircle className="h-3 w-3 mr-1" />
-          Using cached/sample data (API rate limit)
-        </div>
-      )}
+      {isRateLimited &&
+        !error && ( // Added !error to not show if there's a more critical error
+          <div className="mt-2 text-amber-400 text-xs flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Using cached/sample data (API rate limit)
+          </div>
+        )}
 
       {error ? (
         <div className="mt-4 text-red-400 flex items-center">
