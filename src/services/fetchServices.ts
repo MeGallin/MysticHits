@@ -44,6 +44,27 @@ interface ErrorData {
   at: string;
 }
 
+export interface HitAnalytics {
+  dailyStats: Array<{
+    page: string;
+    date: string;
+    totalHits: number;
+    uniqueVisitors: number;
+    topReferrers: string[];
+  }>;
+  summary: {
+    totalHits: number;
+    uniquePages: number;
+    uniqueVisitors: number;
+    totalRecords: number;
+  };
+  period: {
+    days: number;
+    from: string;
+    to: string;
+  };
+}
+
 interface AuthServices {
   loginUser: (email: string, password: string) => Promise<ApiResponse>;
   logoutUser: () => Promise<ApiResponse>;
@@ -80,6 +101,11 @@ interface AdminServices {
     hours?: number,
     limit?: number,
   ) => Promise<ApiResponse<ErrorData[]>>;
+  getHitAnalytics: (
+    days?: number,
+    page?: string,
+  ) => Promise<ApiResponse<HitAnalytics>>;
+  clearHitData: () => Promise<ApiResponse<{ recordsDeleted: number }>>;
 }
 
 interface HealthServices {
@@ -492,6 +518,86 @@ export const adminServices: AdminServices = {
       return handleApiError(error as AxiosError);
     }
   },
+
+  // Get hit analytics data
+  getHitAnalytics: async (days = 30, page?: string) => {
+    try {
+      checkAndFixToken();
+
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        return {
+          success: false,
+          error: 'No authentication token found. Please log in again.',
+          status: 401,
+        } as ApiResponse;
+      }
+
+      const analyticsAxios = axios.create({
+        baseURL: API_BASE_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const params = new URLSearchParams();
+      params.append('days', days.toString());
+      if (page) {
+        params.append('page', page);
+      }
+
+      const response: AxiosResponse = await analyticsAxios.get(
+        `/admin/analytics/hits?${params}`,
+      );
+
+      if (response.data && response.data.success) {
+        const analytics = response.data.data;
+        if (analytics) {
+          const validatedAnalytics: HitAnalytics = {
+            dailyStats: analytics.dailyStats || [],
+            summary: {
+              totalHits: analytics.summary?.totalHits || 0,
+              uniquePages: analytics.summary?.uniquePages || 0,
+              uniqueVisitors: analytics.summary?.uniqueVisitors || 0,
+              totalRecords: analytics.summary?.totalRecords || 0,
+            },
+            period: {
+              days: analytics.period?.days || days,
+              from: analytics.period?.from || new Date().toISOString(),
+              to: analytics.period?.to || new Date().toISOString(),
+            },
+          };
+
+          return {
+            success: true,
+            data: validatedAnalytics,
+          };
+        }
+      }
+
+      return {
+        success: false,
+        error: 'Invalid response format from server',
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
+  },
+
+  // Clear hit data
+  clearHitData: async () => {
+    try {
+      const response: AxiosResponse = await api.delete('/admin/clear/hit-data');
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
+  },
 };
 
 // Health status services
@@ -539,6 +645,8 @@ export const {
   deleteMessage,
   getApiMetrics,
   getErrorLogs,
+  getHitAnalytics,
+  clearHitData,
 } = adminServices;
 
 // Export services object as default

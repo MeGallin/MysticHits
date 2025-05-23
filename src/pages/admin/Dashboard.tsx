@@ -12,6 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import services from '../../services/fetchServices';
 import HealthCard from '../../components/admin/HealthCard';
+import HitAnalyticsWidget from '../../components/admin/HitAnalyticsWidget';
 
 const AdminDashboard: React.FC = () => {
   const [user] = useAtom(userAtom);
@@ -180,6 +181,11 @@ const AdminDashboard: React.FC = () => {
             <p className="text-green-200">View site analytics</p>
           </div>
         </Link>
+      </div>
+
+      {/* Add Hit Analytics Widget */}
+      <div className="mb-6">
+        <HitAnalyticsWidget days={7} autoRefresh={true} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
