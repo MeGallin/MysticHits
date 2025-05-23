@@ -1,74 +1,104 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Toast } from './ui/toast';
-import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
 }
 
 interface State {
   hasError: boolean;
+  error?: Error;
 }
 
-/**
- * ErrorBoundary component to catch JavaScript errors in child components
- * and display a fallback UI instead of crashing the whole app
- */
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(_: Error): State {
-    // Update state so the next render will show the fallback UI
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log the error to the console
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
-    
-    // Log to server-side endpoint (optional)
+
+    // Only log to server in development or if we have a proper logging endpoint
     this.logErrorToServer(error, errorInfo);
   }
 
-  logErrorToServer(error: Error, errorInfo: ErrorInfo): void {
-    // Log the error to our backend API
-    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
-    
-    axios.post(`${API_BASE_URL}/api/client-error`, {
-      error: {
-        message: error.message,
-        stack: error.stack,
-      },
-      componentStack: errorInfo.componentStack,
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString(),
-    }).catch(err => {
-      // Silent catch - don't throw more errors from the error handler
-      console.warn('Failed to send error to server:', err);
-    });
-  }
+  logErrorToServer = (error: Error, errorInfo: ErrorInfo) => {
+    try {
+      // Check if we're in development mode using import.meta.env instead of process
+      const isDevelopment =
+        import.meta.env?.DEV || import.meta.env?.MODE === 'development';
 
-  render(): ReactNode {
+      if (isDevelopment) {
+        console.warn('Development mode - not sending error to server:', {
+          error: error.message,
+          stack: error.stack,
+          componentStack: errorInfo.componentStack,
+        });
+        return;
+      }
+
+      // In production, you might want to send errors to a logging service
+      // fetch('/api/log-error', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     message: error.message,
+      //     stack: error.stack,
+      //     componentStack: errorInfo.componentStack,
+      //     timestamp: new Date().toISOString(),
+      //   }),
+      // }).catch(err => console.error('Failed to log error to server:', err));
+    } catch (loggingError) {
+      console.error('Failed to log error:', loggingError);
+    }
+  };
+
+  render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 text-white">
-          <div className="bg-red-900/20 backdrop-blur-sm border border-red-500 rounded-lg p-8 max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
-            <p className="mb-6">
-              We're sorry, but something unexpected happened. The error has been logged and we'll look into it.
+      return (
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+          <div className="bg-gray-800 border border-red-500/30 rounded-lg p-8 max-w-md w-full text-center">
+            <div className="text-red-400 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-white mb-4">
+              Something went wrong
+            </h2>
+            <p className="text-gray-300 mb-6">
+              An unexpected error occurred. Please refresh the page to try
+              again.
             </p>
-            <button
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
-              onClick={() => window.location.reload()}
-            >
-              Refresh the page
-            </button>
+
+            {/* Show error details in development */}
+            {import.meta.env?.DEV && this.state.error && (
+              <details className="text-left mb-4">
+                <summary className="text-red-400 cursor-pointer">
+                  Error Details
+                </summary>
+                <pre className="text-xs text-gray-400 mt-2 overflow-auto max-h-32 bg-gray-900 p-2 rounded">
+                  {this.state.error.stack}
+                </pre>
+              </details>
+            )}
+
+            <div className="space-y-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                Refresh Page
+              </button>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: undefined });
+                }}
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       );

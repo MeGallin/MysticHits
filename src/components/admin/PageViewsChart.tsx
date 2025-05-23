@@ -1,192 +1,206 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Chart } from 'chart.js/auto';
-import { DailyPageViewData } from '@/services/statsService';
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import services, { HitAnalytics } from '../../services/fetchServices';
 
 interface PageViewsChartProps {
-  data: DailyPageViewData[] | null;
-  loading?: boolean;
-  error?: string | null;
-  isRateLimited?: boolean;
-  period?: string;
+  days?: number;
+  height?: number;
 }
 
 const PageViewsChart: React.FC<PageViewsChartProps> = ({
-  data,
-  loading = false,
-  error = null,
-  isRateLimited = false,
-  period = '30 days',
+  days = 30,
+  height = 300,
 }) => {
-  const chartRef = useRef<HTMLCanvasElement | null>(null);
-  const chartInstance = useRef<Chart | null>(null);
-  const [chartInitialized, setChartInitialized] = useState(false);
+  const [analytics, setAnalytics] = useState<HitAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Add debug logging to trace the data flow
-  useEffect(() => {
-    console.log('PageViewsChart: Component mounted or updated');
-    console.log('Data received in chart:', data);
-    console.log('Chart ref exists:', !!chartRef.current);
-
-    if (!data || !chartRef.current) {
-      console.log('Missing data or chart ref');
-      return;
-    }
-
+  const fetchData = async () => {
     try {
-      // Process dates and values for the chart
-      const dates = data.map((item) => {
-        // Format date for display (e.g., "Apr 15")
-        const date = new Date(item.date);
-        return date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
-      });
+      setLoading(true);
+      setError(null);
 
-      const viewsData = data.map((item) => item.views);
-      const visitorsData = data.map((item) => item.visitors);
+      const response = await services.adminServices.getHitAnalytics(days);
 
-      console.log('Processed chart data:');
-      console.log('Dates:', dates);
-      console.log('Views:', viewsData);
-      console.log('Visitors:', visitorsData);
-
-      // Create or update the chart
-      if (chartInstance.current) {
-        console.log('Updating existing chart');
-        chartInstance.current.data.labels = dates;
-        chartInstance.current.data.datasets[0].data = viewsData;
-        chartInstance.current.data.datasets[1].data = visitorsData;
-        chartInstance.current.update();
+      if (response.success && response.data) {
+        setAnalytics(response.data);
       } else {
-        console.log('Creating new chart');
-        const ctx = chartRef.current.getContext('2d');
-
-        if (!ctx) {
-          console.error('Could not get 2d context from canvas');
-          return;
-        }
-
-        chartInstance.current = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: dates,
-            datasets: [
-              {
-                label: 'Page Views',
-                data: viewsData,
-                borderColor: 'rgba(59, 130, 246, 0.8)',
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                borderWidth: 2,
-                tension: 0.4,
-                fill: true,
-              },
-              {
-                label: 'Unique Visitors',
-                data: visitorsData,
-                borderColor: 'rgba(16, 185, 129, 0.8)',
-                backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                borderWidth: 2,
-                tension: 0.4,
-                fill: true,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: {
-                  color: 'rgba(255, 255, 255, 0.8)',
-                },
-              },
-              tooltip: {
-                mode: 'index',
-                intersect: false,
-                backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                borderColor: 'rgba(75, 85, 99, 0.8)',
-                borderWidth: 1,
-              },
-            },
-            scales: {
-              x: {
-                grid: {
-                  color: 'rgba(75, 85, 99, 0.2)',
-                },
-                ticks: {
-                  color: 'rgba(209, 213, 219, 0.8)',
-                },
-              },
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: 'rgba(75, 85, 99, 0.2)',
-                },
-                ticks: {
-                  color: 'rgba(209, 213, 219, 0.8)',
-                },
-              },
-            },
-            interaction: {
-              mode: 'nearest',
-              axis: 'x',
-              intersect: false,
-            },
-          },
-        });
-
-        setChartInitialized(true);
+        setError(response.error || 'Failed to fetch page view data');
       }
     } catch (err) {
-      console.error('Error creating/updating chart:', err);
+      setError('An unexpected error occurred');
+      console.error('Error fetching page views:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [data]);
+  };
 
-  // Cleanup chart on unmount
   useEffect(() => {
-    return () => {
-      if (chartInstance.current) {
-        console.log('Destroying chart instance');
-        chartInstance.current.destroy();
-        chartInstance.current = null;
-      }
-    };
-  }, []);
+    fetchData();
+  }, [days]);
 
   if (loading) {
     return (
-      <div className="h-80 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      <div className="flex items-center justify-center" style={{ height }}>
+        <div className="flex items-center space-x-2 text-gray-400">
+          <RefreshCw className="h-5 w-5 animate-spin" />
+          <span>Loading chart data...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="h-80 flex items-center justify-center">
-        <div className="text-red-400 text-center">
-          <p className="text-lg mb-2">Error loading chart data</p>
-          <p className="text-sm">{error}</p>
+      <div className="flex items-center justify-center" style={{ height }}>
+        <div className="text-center text-red-400">
+          <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+          <p className="mb-2">{error}</p>
+          <button
+            onClick={fetchData}
+            className="text-blue-400 hover:underline text-sm"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!analytics || analytics.dailyStats.length === 0) {
     return (
-      <div className="h-80 flex items-center justify-center">
-        <p className="text-gray-400">
-          No data available for the selected period
-        </p>
+      <div className="flex items-center justify-center" style={{ height }}>
+        <div className="text-center text-gray-400">
+          <p className="mb-2">No page view data available</p>
+          <p className="text-sm">Data will appear as users visit the site</p>
+        </div>
       </div>
     );
   }
 
+  // Group daily stats by date for chart display
+  const chartData = analytics.dailyStats.reduce((acc, stat) => {
+    const date = stat.date;
+    if (!acc[date]) {
+      acc[date] = { date, totalHits: 0, uniqueVisitors: 0 };
+    }
+    acc[date].totalHits += stat.totalHits;
+    acc[date].uniqueVisitors += stat.uniqueVisitors;
+    return acc;
+  }, {} as Record<string, { date: string; totalHits: number; uniqueVisitors: number }>);
+
+  const sortedData = Object.values(chartData).sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+
+  // Simple SVG chart implementation
+  const maxHits = Math.max(...sortedData.map((d) => d.totalHits), 1);
+  const maxVisitors = Math.max(...sortedData.map((d) => d.uniqueVisitors), 1);
+  const chartHeight = height - 60; // Leave space for labels
+  const chartWidth = 600;
+  const pointSpacing = chartWidth / Math.max(sortedData.length - 1, 1);
+
   return (
-    <div className="h-80">
-      <canvas ref={chartRef}></canvas>
+    <div className="w-full" style={{ height }}>
+      <div className="mb-4 flex justify-between items-center">
+        <div className="flex space-x-4 text-sm">
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
+            <span className="text-gray-300">Total Hits</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
+            <span className="text-gray-300">Unique Visitors</span>
+          </div>
+        </div>
+        <div className="text-xs text-gray-400">
+          {analytics.period.days} days •{' '}
+          {analytics.summary.totalHits.toLocaleString()} total hits
+        </div>
+      </div>
+
+      <div className="bg-gray-700/30 rounded-lg p-4 overflow-x-auto">
+        <svg width={chartWidth} height={chartHeight} className="w-full">
+          {/* Grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
+            <line
+              key={ratio}
+              x1="0"
+              y1={chartHeight * ratio}
+              x2={chartWidth}
+              y2={chartHeight * ratio}
+              stroke="#374151"
+              strokeWidth="1"
+              opacity="0.3"
+            />
+          ))}
+
+          {/* Hit line */}
+          <polyline
+            fill="none"
+            stroke="#3B82F6"
+            strokeWidth="2"
+            points={sortedData
+              .map(
+                (d, i) =>
+                  `${i * pointSpacing},${
+                    chartHeight - (d.totalHits / maxHits) * chartHeight
+                  }`,
+              )
+              .join(' ')}
+          />
+
+          {/* Visitor line */}
+          <polyline
+            fill="none"
+            stroke="#10B981"
+            strokeWidth="2"
+            points={sortedData
+              .map(
+                (d, i) =>
+                  `${i * pointSpacing},${
+                    chartHeight - (d.uniqueVisitors / maxVisitors) * chartHeight
+                  }`,
+              )
+              .join(' ')}
+          />
+
+          {/* Data points */}
+          {sortedData.map((d, i) => (
+            <g key={d.date}>
+              <circle
+                cx={i * pointSpacing}
+                cy={chartHeight - (d.totalHits / maxHits) * chartHeight}
+                r="3"
+                fill="#3B82F6"
+              />
+              <circle
+                cx={i * pointSpacing}
+                cy={
+                  chartHeight - (d.uniqueVisitors / maxVisitors) * chartHeight
+                }
+                r="3"
+                fill="#10B981"
+              />
+            </g>
+          ))}
+        </svg>
+
+        {/* X-axis labels */}
+        <div className="flex justify-between mt-2 text-xs text-gray-400">
+          {sortedData.map((d, i) => (
+            <span
+              key={d.date}
+              className={i % 3 === 0 ? '' : 'hidden sm:inline'}
+            >
+              {new Date(d.date).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

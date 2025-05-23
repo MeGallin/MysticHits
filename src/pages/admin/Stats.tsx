@@ -29,6 +29,8 @@ import statsService, {
   TopPageData, // Add this import
 } from '@/services/statsService';
 import axios from 'axios';
+import services from '../../services/fetchServices';
+import HitAnalyticsWidget from '../../components/admin/HitAnalyticsWidget';
 
 // Add these interfaces for the new stats
 interface MusicStats {
@@ -142,7 +144,6 @@ const StatsPage: React.FC = () => {
       }
     } catch (err) {
       setDauError('An unexpected error occurred while fetching DAU stats');
-      console.error(err);
     } finally {
       setDauLoading(false);
     }
@@ -167,7 +168,6 @@ const StatsPage: React.FC = () => {
       setUserActivityError(
         'An unexpected error occurred while fetching user activity summary',
       );
-      console.error(err);
     } finally {
       setUserActivityLoading(false);
     }
@@ -200,7 +200,6 @@ const StatsPage: React.FC = () => {
         setPageViewsRateLimited(response.isRateLimited || false);
       }
     } catch (err) {
-      console.error('Error fetching page views:', err);
       // On error, generate sample data
       const sampleData = generateSamplePageViewData(30);
       setPageViewsData(sampleData);
@@ -303,7 +302,6 @@ const StatsPage: React.FC = () => {
       if (err.response?.status === 429) {
         setStatsRateLimited(true);
       }
-      console.error('Error fetching system stats:', err);
     } finally {
       setStatsLoading(false);
     }
@@ -349,47 +347,6 @@ const StatsPage: React.FC = () => {
 
   const handleLogin = () => {
     navigate('/login', { state: { returnUrl: '/admin/stats' } });
-  };
-
-  // Add function to seed hit data in the database
-  const seedHitData = async () => {
-    try {
-      setTopPagesLoading(true);
-      setPageViewsLoading(true);
-
-      // Call API endpoint to seed hit data
-      const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-        }/admin/seed/hit-data`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        },
-      );
-
-      console.log('Seed response:', response.data);
-
-      // Force fresh data fetch after seeding
-      await Promise.all([
-        fetchTopPagesData(true),
-        fetchPageViewsData(true),
-        fetchSystemStats(true),
-      ]);
-
-      // Show success message
-      alert('Sample data has been successfully created!');
-    } catch (err: any) {
-      setTopPagesError(
-        `Failed to seed hit data: ${err.response?.data?.error || err.message}`,
-      );
-      console.error('Error seeding hit data:', err);
-    } finally {
-      setTopPagesLoading(false);
-      setPageViewsLoading(false);
-    }
   };
 
   if (isLoading) {
@@ -713,12 +670,10 @@ const StatsPage: React.FC = () => {
                               <p className="mb-3">
                                 No page view data available.
                               </p>
-                              <button
-                                onClick={seedHitData}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors text-xs"
-                              >
-                                Generate Sample Hit Data
-                              </button>
+                              <p className="text-sm text-gray-500">
+                                Page views are automatically tracked when users
+                                visit the site.
+                              </p>
                             </div>
                           </td>
                         </tr>
@@ -738,43 +693,8 @@ const StatsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* User Activity card removed from System tab */}
+              {/* User Activity card remains unchanged */}
             </div>
-
-            {/* Debug section to show raw stats data */}
-            {/* <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Debug: Raw Stats Data
-              </h2>
-              <pre className="text-gray-300 text-sm whitespace-pre-wrap">
-                {JSON.stringify(
-                  {
-                    dauStats,
-                    userActivitySummary,
-                    pageViewsData,
-                    topPagesData,
-                    systemStats,
-                    dauLoading,
-                    userActivityLoading,
-                    pageViewsLoading,
-                    topPagesLoading,
-                    statsLoading,
-                    dauError,
-                    userActivityError,
-                    pageViewsError,
-                    topPagesError,
-                    statsError,
-                    dauIsRateLimited,
-                    userActivityRateLimited,
-                    pageViewsRateLimited,
-                    topPagesRateLimited,
-                    statsRateLimited,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
-            </div> */}
           </TabsContent>
 
           <TabsContent value="traffic" className="space-y-6">
