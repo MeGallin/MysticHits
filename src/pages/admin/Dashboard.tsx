@@ -88,7 +88,7 @@ const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Link
           to="/admin/messages"
-          className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-6 rounded-lg border border-amber-500/30 flex items-start hover:from-amber-500/30 hover:to-amber-600/30 transition-all group col-span-1 lg:col-span-2"
+          className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-6 rounded-lg border border-amber-500/30 flex items-start hover:from-amber-500/30 hover:to-amber-600/30 transition-all group"
         >
           <FiMessageSquare className="h-10 w-10 text-amber-400 mr-4 group-hover:scale-110 transition-transform" />
           <div className="flex-1">

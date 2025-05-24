@@ -1,5 +1,9 @@
 import axios from 'axios';
 import { handleApiError } from './apiUtils';
+import {
+  getCurrentDeviceType,
+  type DeviceType,
+} from '../utils/deviceDetection';
 
 // API base URL from environment variables
 const API_BASE_URL =
@@ -10,6 +14,7 @@ export interface PlayEventPayload {
   trackUrl: string;
   title?: string;
   duration?: number;
+  deviceType?: DeviceType;
 }
 
 // Queue for storing events when offline
@@ -43,18 +48,30 @@ export const logPlay = async (payload: PlayEventPayload): Promise<void> => {
       return;
     }
 
+    // Enhance payload with device type if not provided
+    const enhancedPayload = {
+      ...payload,
+      deviceType: payload.deviceType || getCurrentDeviceType(),
+    };
+
     // Attempt to send the event immediately
     await axios.post(
       `${API_BASE_URL}/playlist/plays`,
-      payload,
+      enhancedPayload,
       getAuthHeaders(),
     );
-    console.debug('Play event logged successfully', payload);
+    console.debug('Play event logged successfully', enhancedPayload);
   } catch (error) {
     console.warn('Failed to log play event, adding to queue', error);
 
+    // Enhance payload with device type before adding to queue
+    const enhancedPayload = {
+      ...payload,
+      deviceType: payload.deviceType || getCurrentDeviceType(),
+    };
+
     // Add to offline queue
-    offlinePlayEvents.push(payload);
+    offlinePlayEvents.push(enhancedPayload);
 
     // If we're not already retrying events and have some queued
     if (!isRetrying && offlinePlayEvents.length > 0) {
