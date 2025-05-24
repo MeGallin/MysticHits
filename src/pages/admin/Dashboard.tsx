@@ -75,10 +75,10 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 sm:gap-0">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-700/50">
-          <p className="text-gray-300">
+          <p className="text-gray-300 text-sm sm:text-base">
             Welcome,{' '}
             <span className="text-white font-medium">{user?.email}</span>
           </p>

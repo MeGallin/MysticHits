@@ -87,18 +87,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-900">
       {/* Header with title, logout and sidebar toggle */}
       <div className="fixed top-0 right-0 left-0 h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 z-20">
-        <h1 className="text-xl font-bold text-white">Mystic Hits Admin</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-white truncate">
+          Mystic Hits Admin
+        </h1>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => logout()}
-            className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 flex items-center"
+            className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 flex items-center transition-colors"
             title="Logout"
           >
             <FiLogOut className="h-5 w-5" />
           </button>
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600"
+            className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors"
           >
             {sidebarOpen ? <FiX /> : <FiMenu />}
           </button>
@@ -109,15 +111,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <aside
         className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed top-14 bottom-0 left-0 z-10 w-64 transition-transform duration-300 ease-in-out transform bg-gray-800 border-r border-gray-700 flex flex-col`}
+        } fixed top-14 bottom-0 left-0 z-10 w-64 sm:w-56 md:w-64 transition-transform duration-300 ease-in-out transform bg-gray-800 border-r border-gray-700 flex flex-col`}
       >
         {/* Welcome message */}
         <div className="p-4 border-b border-gray-700">
-          <p className="text-sm text-gray-400">Welcome, {user?.email}</p>
+          <p className="text-sm text-gray-400 truncate">
+            Welcome, {user?.email}
+          </p>
         </div>
 
         {/* Navigation items */}
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {navigationItems.map((item) => (
             <Link
               key={item.path}
@@ -126,11 +130,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 isActive(item.path)
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-300 hover:bg-gray-700'
-              } flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors`}
+              } flex items-center px-3 sm:px-4 py-3 text-sm font-medium rounded-md transition-colors`}
               onClick={handleNavigation}
             >
               {item.icon}
-              {item.name}
+              <span className="truncate">{item.name}</span>
             </Link>
           ))}
         </nav>
@@ -142,18 +146,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               logout();
               handleNavigation();
             }}
-            className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700"
+            className="flex items-center w-full px-3 sm:px-4 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700 transition-colors"
           >
-            <FiLogOut className="mr-3 h-5 w-5" />
-            Logout
+            <FiLogOut className="mr-3 h-5 w-5 flex-shrink-0" />
+            <span className="truncate">Logout</span>
           </button>
         </div>
       </aside>
 
       {/* Main content area */}
       <main
-        className={`flex-1 ml-0 p-6 pt-20 transition-all duration-300 ease-in-out ${
-          sidebarOpen ? 'ml-64' : 'ml-0'
+        className={`flex-1 ml-0 p-4 sm:p-6 pt-20 transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'sm:ml-56 md:ml-64' : 'ml-0'
         } `}
       >
         {children}

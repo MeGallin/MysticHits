@@ -149,7 +149,7 @@ const HitAnalyticsWidget: React.FC<HitAnalyticsWidgetProps> = ({
             <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent ml-2"></div>
           )}
         </h2>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
           <Button
             onClick={() => fetchAnalytics()}
             variant="outline"
@@ -176,7 +176,7 @@ const HitAnalyticsWidget: React.FC<HitAnalyticsWidgetProps> = ({
       {analytics && (
         <>
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-blue-500/20 rounded-lg p-4 border border-blue-500/30">
               <div className="flex items-center justify-between">
                 <div>
@@ -241,20 +241,20 @@ const HitAnalyticsWidget: React.FC<HitAnalyticsWidgetProps> = ({
               </p>
             </div>
 
-            <div className="overflow-x-auto max-h-64">
+            <div className="overflow-x-auto max-h-64 -mx-2 sm:mx-0">
               <table className="min-w-full">
                 <thead className="bg-gray-700/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Page
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Hits
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Visitors
                     </th>
                   </tr>
@@ -262,16 +262,16 @@ const HitAnalyticsWidget: React.FC<HitAnalyticsWidgetProps> = ({
                 <tbody className="divide-y divide-gray-700">
                   {dailyStats.slice(0, 10).map((stat, index) => (
                     <tr key={index} className="hover:bg-gray-700/30">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                         {new Date(stat.date).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-2 sm:px-4 py-3 text-sm text-gray-300 max-w-0 truncate">
                         {stat.page === '/' ? 'Home' : stat.page}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-white font-medium">
+                      <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-white font-medium">
                         {stat.totalHits.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                         {stat.uniqueVisitors.toLocaleString()}
                       </td>
                     </tr>
@@ -280,7 +280,7 @@ const HitAnalyticsWidget: React.FC<HitAnalyticsWidgetProps> = ({
                     <tr>
                       <td
                         colSpan={4}
-                        className="px-4 py-6 text-center text-gray-400"
+                        className="px-2 sm:px-4 py-6 text-center text-gray-400"
                       >
                         No hit data available for the selected period
                       </td>

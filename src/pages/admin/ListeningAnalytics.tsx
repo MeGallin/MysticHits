@@ -415,7 +415,9 @@ const ListeningAnalytics: React.FC = () => {
                       <CardContent className="space-y-3">
                         {overview.sources.slice(0, 5).map((source, index) => (
                           <div
-                            key={source.source}
+                            key={`source-${index}-${
+                              source.source || 'unknown'
+                            }`}
                             className="flex justify-between items-center"
                           >
                             <div className="flex items-center space-x-2">
@@ -446,7 +448,9 @@ const ListeningAnalytics: React.FC = () => {
                       <CardContent className="space-y-3">
                         {overview.devices.slice(0, 5).map((device, index) => (
                           <div
-                            key={device.deviceType}
+                            key={`device-${index}-${
+                              device.deviceType || 'unknown'
+                            }`}
                             className="flex justify-between items-center"
                           >
                             <div className="flex items-center space-x-2">
@@ -640,7 +644,7 @@ const ListeningAnalytics: React.FC = () => {
                     <CardContent className="space-y-3">
                       {patterns.genrePattern.slice(0, 8).map((genre, index) => (
                         <div
-                          key={genre.genre}
+                          key={`genre-${index}-${genre.genre || 'unknown'}`}
                           className="flex justify-between items-center"
                         >
                           <div className="flex items-center space-x-2">
@@ -695,7 +699,9 @@ const ListeningAnalytics: React.FC = () => {
                           .slice(0, 8)
                           .map((country, index) => (
                             <div
-                              key={country.country}
+                              key={`country-${index}-${
+                                country.country || 'unknown'
+                              }`}
                               className="flex justify-between items-center"
                             >
                               <div className="flex items-center space-x-2">
@@ -727,7 +733,9 @@ const ListeningAnalytics: React.FC = () => {
                       <CardContent className="space-y-3">
                         {geographic.regions.slice(0, 8).map((region, index) => (
                           <div
-                            key={`${region.country}-${region.region}`}
+                            key={`region-${index}-${
+                              region.country || 'unknown'
+                            }-${region.region || 'unknown'}`}
                             className="flex justify-between items-center"
                           >
                             <div className="flex items-center space-x-2">
@@ -762,7 +770,9 @@ const ListeningAnalytics: React.FC = () => {
                       <CardContent className="space-y-3">
                         {geographic.cities.slice(0, 8).map((city, index) => (
                           <div
-                            key={`${city.country}-${city.region}-${city.city}`}
+                            key={`city-${index}-${city.country || 'unknown'}-${
+                              city.region || 'unknown'
+                            }-${city.city || 'unknown'}`}
                             className="flex justify-between items-center"
                           >
                             <div className="flex items-center space-x-2">
