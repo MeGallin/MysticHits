@@ -60,7 +60,7 @@ const AdminDashboard: React.FC = () => {
           const users = usersResponse.data || [];
           setUserStats({
             total: users.length,
-            admins: users.filter((u) => u.isAdmin).length,
+            admins: users.filter((u: any) => u.isAdmin).length,
           });
         }
       } catch (error) {
@@ -168,6 +168,19 @@ const AdminDashboard: React.FC = () => {
           <div>
             <h2 className="text-lg font-semibold text-white">User Insights</h2>
             <p className="text-emerald-200">Active users & top tracks</p>
+          </div>
+        </Link>
+
+        <Link
+          to="/admin/listening-analytics"
+          className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 p-6 rounded-lg border border-purple-500/30 flex items-center hover:from-purple-500/30 hover:to-purple-600/30 transition-all group"
+        >
+          <FiActivity className="h-10 w-10 text-purple-400 mr-4 group-hover:scale-110 transition-transform" />
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              Listening Analytics
+            </h2>
+            <p className="text-purple-200">Comprehensive user listening data</p>
           </div>
         </Link>
 

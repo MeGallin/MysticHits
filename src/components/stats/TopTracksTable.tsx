@@ -43,7 +43,8 @@ const TopTracksTable: React.FC = () => {
     setError(null);
 
     try {
-      const response = await statsService.fetchTopTracks(days, limit);
+      // Force fresh data to bypass any caching issues
+      const response = await statsService.fetchTopTracks(days, limit, true);
 
       if (response.success && response.data) {
         setTracks(response.data);
@@ -59,13 +60,40 @@ const TopTracksTable: React.FC = () => {
     }
   };
 
+  // Handle cache clear and refresh
+  const handleClearCacheAndRefresh = async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      // Clear the cache first
+      statsService.clearCache();
+
+      // Force fresh data fetch
+      const response = await statsService.fetchTopTracks(days, limit, true);
+
+      if (response.success && response.data) {
+        setTracks(response.data);
+        setLastUpdated(new Date());
+        setError(null);
+      } else {
+        setError(response.error || 'Failed to refresh data');
+      }
+    } catch (err) {
+      setError('An error occurred during refresh');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Handle manual refresh
   const handleRefresh = async () => {
     if (isRefreshing) return;
 
     setIsRefreshing(true);
     try {
-      const response = await statsService.fetchTopTracks(days, limit);
+      // Force fresh data to bypass any caching issues
+      const response = await statsService.fetchTopTracks(days, limit, true);
 
       if (response.success && response.data) {
         setTracks(response.data);
@@ -112,10 +140,11 @@ const TopTracksTable: React.FC = () => {
     setTracks(sortedTracks);
   };
 
-  // Get a shortened title if it's too long
-  const getShortenedTitle = (title: string, maxLength: number = 40) => {
-    if (title.length <= maxLength) return title;
-    return `${title.substring(0, maxLength)}...`;
+  // Format the full title for display
+  const getFormattedTitle = (title: string) => {
+    // Return the full title without any truncation
+    if (!title) return '';
+    return title;
   };
 
   if (error) {
@@ -195,6 +224,20 @@ const TopTracksTable: React.FC = () => {
             />
             Refresh
           </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearCacheAndRefresh}
+            disabled={isRefreshing || loading}
+            className="flex items-center gap-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-600 hover:bg-red-100 dark:hover:bg-red-900/50"
+          >
+            <FiRefreshCw
+              className={isRefreshing ? 'animate-spin' : ''}
+              size={14}
+            />
+            Clear Cache & Refresh
+          </Button>
         </div>
       </div>
 
@@ -226,11 +269,11 @@ const TopTracksTable: React.FC = () => {
                 <TableHead className="w-12 text-center text-gray-700 dark:text-gray-300">
                   #
                 </TableHead>
-                <TableHead className="text-gray-700 dark:text-gray-300">
+                <TableHead className="text-gray-700 dark:text-gray-300 min-w-0">
                   Title
                 </TableHead>
                 <TableHead
-                  className="w-40 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300"
+                  className="w-32 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-300"
                   onClick={handleSort}
                 >
                   <div className="flex items-center gap-1">
@@ -250,16 +293,27 @@ const TopTracksTable: React.FC = () => {
                   key={`${track.trackUrl}-${index}`}
                   className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
                 >
-                  <TableCell className="font-medium text-center text-gray-700 dark:text-gray-300">
+                  <TableCell className="font-medium text-center text-gray-700 dark:text-gray-300 align-top">
                     {index + 1}
                   </TableCell>
                   <TableCell
-                    className="max-w-md truncate text-gray-900 dark:text-gray-100"
+                    className="text-gray-900 dark:text-gray-100 py-3"
+                    style={{
+                      wordBreak: 'break-word',
+                      whiteSpace: 'normal',
+                      maxWidth: 'none',
+                      overflow: 'visible',
+                      textOverflow: 'unset',
+                    }}
                     title={track.title}
                   >
-                    {getShortenedTitle(track.title)}
+                    <div
+                      style={{ wordWrap: 'break-word', whiteSpace: 'normal' }}
+                    >
+                      {getFormattedTitle(track.title)}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-gray-700 dark:text-gray-300">
+                  <TableCell className="text-gray-700 dark:text-gray-300 align-top">
                     {track.count}
                   </TableCell>
                 </TableRow>

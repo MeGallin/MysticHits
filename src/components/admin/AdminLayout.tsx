@@ -11,6 +11,7 @@ import {
   FiX,
   FiLogOut,
   FiHome,
+  FiActivity,
 } from 'react-icons/fi';
 
 interface AdminLayoutProps {
@@ -48,6 +49,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: 'Insights',
       path: '/admin/insights',
       icon: <FiBarChart2 className="mr-3 h-5 w-5 text-green-400" />,
+    },
+    {
+      name: 'Listening Analytics',
+      path: '/admin/listening-analytics',
+      icon: <FiActivity className="mr-3 h-5 w-5 text-purple-400" />,
     },
     {
       name: 'Stats',
