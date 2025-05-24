@@ -64,6 +64,27 @@ export interface TopPagesResponse extends BaseResponse {
   isRateLimited?: boolean;
 }
 
+export interface TopPagesResponse extends BaseResponse {
+  data?: {
+    pages: TopPageData[];
+    period: string;
+    total: number;
+    updatedAt: string;
+  };
+  isRateLimited?: boolean;
+}
+
+export interface TopTrack {
+  trackUrl: string;
+  title: string;
+  count: number;
+}
+
+export interface TopTracksResponse extends BaseResponse {
+  data?: TopTrack[];
+  isRateLimited?: boolean;
+}
+
 // API base URL from environment variables
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -89,7 +110,7 @@ const getAuthHeaders = () => {
 };
 
 // Handle API errors
-const handleApiError = (error: any): ApiResponse => {
+const handleApiError = (error: any): BaseResponse => {
   if (error.response) {
     // Check if this is a rate limit error
     const isRateLimited = error.response.status === 429;
@@ -124,7 +145,9 @@ const handleApiError = (error: any): ApiResponse => {
 };
 
 // Check and return cached data if available and fresh
-const getCachedData = <T>(cacheKey: string): ApiResponse<T> | null => {
+const getCachedData = <T>(
+  cacheKey: string,
+): { success: boolean; data: T } | null => {
   const cachedItem = responseCache.get(cacheKey);
   if (cachedItem && Date.now() - cachedItem.timestamp < CACHE_TTL) {
     return {
@@ -206,13 +229,13 @@ const statsService = {
     days: number = 7,
     limit: number = 10,
     forceFresh = false,
-  ): Promise<ApiResponse<TopTrack[]>> => {
+  ): Promise<TopTracksResponse> => {
     const cacheKey = `top-tracks-${days}-${limit}`;
 
     // Check cache first unless forceFresh is true
     if (!forceFresh) {
       const cachedData = getCachedData<TopTrack[]>(cacheKey);
-      if (cachedData) return cachedData;
+      if (cachedData) return cachedData as TopTracksResponse;
     }
 
     try {
@@ -444,6 +467,13 @@ const statsService = {
       // Otherwise return the error
       return apiError;
     }
+  },
+
+  /**
+   * Clear all cached data
+   */
+  clearCache: () => {
+    responseCache.clear();
   },
 };
 
