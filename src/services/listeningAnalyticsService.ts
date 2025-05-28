@@ -1,615 +1,462 @@
 import axios from 'axios';
-import { checkAndFixToken } from '@/utils/tokenFixer';
 
+// Use direct environment variable approach, NOT importing from api.ts
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-// Response cache for API calls
-const responseCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-// Types for Listening Analytics
-export interface ListeningOverview {
-  totalPlays: number;
-  totalListenTime: number;
-  totalTrackTime: number;
-  uniqueUsers: number;
-  uniqueTracks: number;
-  averageSessionLength: number;
-  listenRatio: number;
-}
-
-export interface CompletionStats {
-  completedTracks: number;
-  skippedTracks: number;
-  totalTracks: number;
-  completionRate: number;
-  skipRate: number;
-}
-
-export interface SourceStats {
-  source: string;
-  count: number;
-  averageListenDuration: number;
-}
-
-export interface DeviceStats {
-  deviceType: string;
-  count: number;
-  averageListenDuration: number;
-}
-
-export interface SkipAnalysis {
-  averageSkipTime: number;
-  totalSkips: number;
-}
-
-export interface ListeningAnalyticsOverview {
-  overview: ListeningOverview;
-  completion: CompletionStats;
-  sources: SourceStats[];
-  devices: DeviceStats[];
-  skipAnalysis: SkipAnalysis;
-  period: string;
-  updatedAt: string;
-}
-
-export interface UserBehavior {
-  userId: string;
-  username: string;
-  email: string;
-  totalPlays: number;
-  totalListenTime: number;
-  uniqueTracks: number;
-  completedTracks: number;
-  skippedTracks: number;
-  repeatedTracks: number;
-  likedTracks: number;
-  sharedTracks: number;
-  averageSessionLength: number;
-  deviceTypes: number;
-  sources: number;
-  countries: number;
-  completionRate: number;
-  skipRate: number;
-  averageListenTimePerTrack: number;
-  firstPlay: string;
-  lastPlay: string;
-}
-
-export interface UserListeningBehavior {
-  users: UserBehavior[];
-  period: string;
-  totalUsers: number;
-  updatedAt: string;
-}
-
-export interface HourlyPattern {
-  hour: number;
-  plays: number;
-  totalListenTime: number;
-  uniqueUsers: number;
-}
-
-export interface DailyPattern {
-  day: string;
-  dayNumber: number;
-  plays: number;
-  totalListenTime: number;
-  uniqueUsers: number;
-}
-
-export interface GenrePattern {
-  genre: string;
-  plays: number;
-  totalListenTime: number;
-  uniqueUsers: number;
-  averageCompletionRate: number;
-}
-
-export interface ListeningPatterns {
-  hourlyPattern: HourlyPattern[];
-  dailyPattern: DailyPattern[];
-  genrePattern: GenrePattern[];
-  period: string;
-  updatedAt: string;
-}
-
-export interface GeographicData {
-  country: string;
-  region?: string;
-  city?: string;
-  plays: number;
-  totalListenTime: number;
-  uniqueUsers: number;
-  averageSessionLength?: number;
-}
-
-export interface GeographicListeningAnalytics {
-  countries: GeographicData[];
-  regions: GeographicData[];
-  cities: GeographicData[];
-  period: string;
-  updatedAt: string;
-}
-
-export interface PlaylistAnalytic {
-  playlistId: string;
-  plays: number;
-  totalListenTime: number;
-  uniqueUsers: number;
-  uniqueTracks: number;
-  averageSessionPosition: number;
-  completedTracks: number;
-  skippedTracks: number;
-  completionRate: number;
-}
-
-export interface PlaylistAnalytics {
-  playlists: PlaylistAnalytic[];
-  sourceBreakdown: SourceStats[];
-  period: string;
-  updatedAt: string;
-}
-
-export interface EngagementMetrics {
-  totalUsers: number;
-  averagePlaysPerUser: number;
-  averageListenTimePerUser: number;
-  totalInteractions: number;
-  likeRate: number;
-  shareRate: number;
-  repeatRate: number;
-  averageActiveDays: number;
-  highEngagementUsers: number;
-  highEngagementRate: number;
-}
-
-export interface RetentionMetrics {
-  totalUsers: number;
-  newUsersLast7Days: number;
-  activeUsersLast7Days: number;
-  returningUsers: number;
-  retentionRate: number;
-  newUserRetentionRate: number;
-}
-
-export interface QualityMetrics {
-  totalPlays: number;
-  totalBufferEvents: number;
-  totalQualityDrops: number;
-  averageBufferCount: number;
-  averageQualityDrops: number;
-  bufferRate: number;
-  qualityIssueRate: number;
-}
-
-export interface UserEngagementAnalytics {
-  engagement: EngagementMetrics;
-  retention: RetentionMetrics;
-  quality: QualityMetrics;
-  period: string;
-  updatedAt: string;
-}
-
-// Enhanced play event interface for logging
-export interface EnhancedPlayEvent {
-  trackUrl: string;
-  title?: string;
-  duration?: number;
-  deviceType?: string;
-  // Enhanced analytics fields
-  artist?: string;
-  album?: string;
-  genre?: string;
-  year?: number;
-  // Playback context
-  source?: 'playlist' | 'search' | 'recommendation' | 'repeat' | 'shuffle' | 'direct';
-  playlistId?: string;
-  previousTrack?: string;
-  nextTrack?: string;
-  // Session data
-  sessionId?: string;
-  sessionPosition?: number;
-  // Quality metrics
-  networkType?: 'wifi' | '4g' | '3g' | '2g' | 'ethernet' | 'unknown';
-}
-
-export interface PlayEventUpdate {
-  listenDuration?: number;
-  completed?: boolean;
-  skipped?: boolean;
-  skipTime?: number;
-  repeated?: boolean;
-  liked?: boolean;
-  shared?: boolean;
-  bufferCount?: number;
-  qualityDrops?: number;
-  endedAt?: string;
-}
-
-export interface BatchPlayEventUpdate {
-  playEventId: string;
-  updateData: PlayEventUpdate;
-}
-
-export interface BaseResponse {
-  success: boolean;
-  error?: string;
-  status?: number;
-  isRateLimited?: boolean;
-}
-
-export interface ListeningAnalyticsResponse<T> extends BaseResponse {
-  data?: T;
-}
-
-// Helper functions
-const getAuthHeaders = () => {
+// Function to get auth header with JWT token
+const getAuthHeader = () => {
   const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
   return {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: token ? `Bearer ${token}` : '',
     },
   };
 };
 
-const handleApiError = (error: any): BaseResponse => {
-  console.error('API Error:', error);
+// Simple in-memory cache for analytics data
+const cache: Record<string, { data: any; timestamp: number }> = {};
 
-  const isRateLimited = error.response?.status === 429;
-
-  if (error.response) {
-    return {
-      success: false,
-      error:
-        error.response.data?.error ||
-        error.response.data?.message ||
-        'An error occurred',
-      status: error.response.status,
-      isRateLimited,
+// Data interfaces
+export interface ListeningAnalyticsOverview {
+  overview: {
+    totalPlays: number;
+    uniqueUsers: number;
+    uniqueTracks: number;
+    totalListenTime: number;
+    listenRatio: number;
+    averageSessionLength: number;
+  };
+  completion: {
+    completionRate: number;
+    skippedTracks?: number;
+  };
+  sources: Array<{
+    source: string;
+    count: number;
+    averageListenDuration: number;
+  }>;
+  devices: Array<{
+    deviceType: string;
+    count: number;
+    averageListenDuration: number;
+  }>;
+  // New field for aggregated metrics
+  aggregated?: {
+    playMetrics: {
+      count: number;
+      totalDuration: number;
+      totalListenTime: number;
+      completions: number;
+      skips: number;
+      repeats: number;
+      likes: number;
+      shares: number;
     };
-  } else if (error.request) {
-    return {
-      success: false,
-      error: 'No response from server',
-      status: 0,
-      isRateLimited: false,
-    };
-  } else {
-    return {
-      success: false,
-      error: error.message || 'Unknown error',
-      status: 0,
-      isRateLimited: false,
-    };
-  }
-};
+  };
+}
 
-const getCachedData = <T>(
-  cacheKey: string,
-): ListeningAnalyticsResponse<T> | null => {
-  const cachedItem = responseCache.get(cacheKey);
-  if (cachedItem && Date.now() - cachedItem.timestamp < CACHE_TTL) {
-    return {
-      success: true,
-      data: cachedItem.data as T,
-    };
-  }
-  return null;
-};
+export interface UserBehavior {
+  userId: string;
+  username?: string;
+  email?: string;
+  totalPlays: number;
+  totalListenTime: number;
+  completionRate: number;
+  uniqueTracks: number;
+  likedTracks: number;
+}
 
-const cacheResponse = <T>(cacheKey: string, data: T): void => {
-  responseCache.set(cacheKey, {
-    data,
-    timestamp: Date.now(),
-  });
-};
+export interface UserListeningBehavior {
+  users: UserBehavior[];
+}
 
-/**
- * Service for fetching comprehensive listening analytics
- */
+export interface ListeningPatterns {
+  hourlyPattern: Array<{
+    hour: number;
+    plays: number;
+    averageListenDuration: number;
+  }>;
+  genrePattern: Array<{
+    genre: string;
+    plays: number;
+    averageCompletionRate: number;
+  }>;
+}
+
+export interface GeographicListeningAnalytics {
+  countries: Array<{
+    country: string;
+    plays: number;
+    uniqueUsers: number;
+  }>;
+  regions: Array<{
+    country: string;
+    region: string;
+    plays: number;
+    uniqueUsers: number;
+  }>;
+  cities: Array<{
+    country: string;
+    region: string;
+    city: string;
+    plays: number;
+    uniqueUsers: number;
+  }>;
+}
+
+export interface PlaylistAnalytics {
+  playlists: Array<{
+    playlistId: string;
+    plays: number;
+    uniqueUsers: number;
+    uniqueTracks: number;
+    completionRate: number;
+    totalListenTime: number;
+  }>;
+}
+
+export interface UserEngagementAnalytics {
+  engagement: {
+    totalUsers: number;
+    highEngagementUsers: number;
+    highEngagementRate: number;
+    averagePlaysPerUser: number;
+    averageListenTimePerUser: number;
+    likeRate: number;
+    shareRate: number;
+    repeatRate: number;
+    averageActiveDays: number;
+  };
+  retention: {
+    retentionRate: number;
+    newUsersLast7Days: number;
+    activeUsersLast7Days: number;
+    returningUsers: number;
+    newUserRetentionRate: number;
+  };
+  quality: {
+    bufferRate: number;
+    qualityIssueRate: number;
+    totalBufferEvents: number;
+    totalQualityDrops: number;
+    averageBufferCount: number;
+  };
+}
+
+// Service functions
 const listeningAnalyticsService = {
-  /**
-   * Fetch listening analytics overview
-   */
-  fetchOverview: async (
-    days: number = 7,
-    forceFresh = false,
-  ): Promise<ListeningAnalyticsResponse<ListeningAnalyticsOverview>> => {
-    const cacheKey = `listening-analytics-overview-${days}`;
+  // Fetch overview analytics with cache support
+  fetchOverview: async (days: number = 7, forceFresh: boolean = false) => {
+    const cacheKey = `overview_${days}`;
+    const cachedData = cache[cacheKey];
 
-    if (!forceFresh) {
-      const cachedData = getCachedData<ListeningAnalyticsOverview>(cacheKey);
-      if (cachedData) return cachedData;
+    // Use cache if available and not expired (5 minutes) and not forcing refresh
+    if (
+      !forceFresh &&
+      cachedData &&
+      Date.now() - cachedData.timestamp < 5 * 60 * 1000
+    ) {
+      return { success: true, data: cachedData.data };
     }
 
     try {
-      await checkAndFixToken();
+      // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
         `${API_BASE_URL}/analytics/overview?days=${days}`,
-        getAuthHeaders(),
+        getAuthHeader(),
       );
 
-      cacheResponse(cacheKey, response.data);
+      // Store in cache
+      if (response.data.success) {
+        cache[cacheKey] = {
+          data: response.data.data,
+          timestamp: Date.now(),
+        };
+      }
 
-      return {
-        success: true,
-        data: response.data as ListeningAnalyticsOverview,
-      };
+      return response.data;
     } catch (error) {
-      return handleApiError(error);
+      console.error('Failed to fetch listening analytics overview:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch analytics overview. Please try again later.',
+      };
     }
   },
 
-  /**
-   * Fetch user listening behavior analytics
-   */
+  // Fetch user behavior analytics
   fetchUserBehavior: async (
     days: number = 7,
     limit: number = 20,
-    forceFresh = false,
-  ): Promise<ListeningAnalyticsResponse<UserListeningBehavior>> => {
-    const cacheKey = `listening-analytics-user-behavior-${days}-${limit}`;
+    forceFresh: boolean = false,
+  ) => {
+    const cacheKey = `user_behavior_${days}_${limit}`;
+    const cachedData = cache[cacheKey];
 
-    if (!forceFresh) {
-      const cachedData = getCachedData<UserListeningBehavior>(cacheKey);
-      if (cachedData) return cachedData;
+    if (
+      !forceFresh &&
+      cachedData &&
+      Date.now() - cachedData.timestamp < 5 * 60 * 1000
+    ) {
+      return { success: true, data: cachedData.data };
     }
 
     try {
-      await checkAndFixToken();
+      // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
         `${API_BASE_URL}/analytics/user-behavior?days=${days}&limit=${limit}`,
-        getAuthHeaders(),
+        getAuthHeader(),
       );
 
-      cacheResponse(cacheKey, response.data);
+      if (response.data.success) {
+        cache[cacheKey] = {
+          data: response.data.data,
+          timestamp: Date.now(),
+        };
+      }
 
-      return {
-        success: true,
-        data: response.data as UserListeningBehavior,
-      };
+      return response.data;
     } catch (error) {
-      return handleApiError(error);
+      console.error('Failed to fetch user behavior analytics:', error);
+      return {
+        success: false,
+        error:
+          'Failed to fetch user behavior analytics. Please try again later.',
+      };
     }
   },
 
-  /**
-   * Fetch listening patterns analysis
-   */
-  fetchPatterns: async (
-    days: number = 7,
-    forceFresh = false,
-  ): Promise<ListeningAnalyticsResponse<ListeningPatterns>> => {
-    const cacheKey = `listening-analytics-patterns-${days}`;
+  // Fetch listening patterns
+  fetchPatterns: async (days: number = 7, forceFresh: boolean = false) => {
+    const cacheKey = `patterns_${days}`;
+    const cachedData = cache[cacheKey];
 
-    if (!forceFresh) {
-      const cachedData = getCachedData<ListeningPatterns>(cacheKey);
-      if (cachedData) return cachedData;
+    if (
+      !forceFresh &&
+      cachedData &&
+      Date.now() - cachedData.timestamp < 5 * 60 * 1000
+    ) {
+      return { success: true, data: cachedData.data };
     }
 
     try {
-      await checkAndFixToken();
-      const response = await axios.get(
-        `${API_BASE_URL}/analytics/patterns?days=${days}`,
-        getAuthHeaders(),
-      );
+      // Log the URL for debugging
+      const url = `${API_BASE_URL}/analytics/patterns?days=${days}`;
+      console.log(`Fetching patterns from: ${url}`);
 
-      cacheResponse(cacheKey, response.data);
+      // Use direct API_BASE_URL, not from config file
+      const response = await axios.get(url, getAuthHeader());
+
+      if (response.data.success) {
+        cache[cacheKey] = {
+          data: response.data.data,
+          timestamp: Date.now(),
+        };
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch listening patterns:', error);
+
+      // If we have cached data, return it as a fallback even if it's old
+      if (cachedData) {
+        console.log('Using cached patterns data as fallback');
+        return {
+          success: true,
+          data: cachedData.data,
+          fromCache: true,
+          stale: true,
+        };
+      }
 
       return {
-        success: true,
-        data: response.data as ListeningPatterns,
+        success: false,
+        error: 'Failed to fetch listening patterns. Please try again later.',
+        details: {
+          url: `${API_BASE_URL}/analytics/patterns`,
+          statusCode: error.response?.status,
+          isConnected: navigator.onLine,
+        },
       };
-    } catch (error) {
-      return handleApiError(error);
     }
   },
 
-  /**
-   * Fetch geographic listening analytics
-   */
-  fetchGeographic: async (
-    days: number = 7,
-    forceFresh = false,
-  ): Promise<ListeningAnalyticsResponse<GeographicListeningAnalytics>> => {
-    const cacheKey = `listening-analytics-geographic-${days}`;
+  // Fetch geographic analytics
+  fetchGeographic: async (days: number = 7, forceFresh: boolean = false) => {
+    const cacheKey = `geographic_${days}`;
+    const cachedData = cache[cacheKey];
 
-    if (!forceFresh) {
-      const cachedData = getCachedData<GeographicListeningAnalytics>(cacheKey);
-      if (cachedData) return cachedData;
+    if (
+      !forceFresh &&
+      cachedData &&
+      Date.now() - cachedData.timestamp < 5 * 60 * 1000
+    ) {
+      return { success: true, data: cachedData.data };
     }
 
     try {
-      await checkAndFixToken();
+      // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
         `${API_BASE_URL}/analytics/geographic?days=${days}`,
-        getAuthHeaders(),
+        getAuthHeader(),
       );
 
-      cacheResponse(cacheKey, response.data);
+      if (response.data.success) {
+        cache[cacheKey] = {
+          data: response.data.data,
+          timestamp: Date.now(),
+        };
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch geographic analytics:', error);
+
+      // If we have cached data, return it as a fallback even if it's old
+      if (cachedData) {
+        return {
+          success: true,
+          data: cachedData.data,
+          fromCache: true,
+          stale: true,
+        };
+      }
 
       return {
-        success: true,
-        data: response.data as GeographicListeningAnalytics,
+        success: false,
+        error: 'Failed to fetch geographic analytics. Please try again later.',
+        details: {
+          url: `${API_BASE_URL}/analytics/geographic`,
+          statusCode: error.response?.status,
+          isConnected: navigator.onLine,
+        },
       };
-    } catch (error) {
-      return handleApiError(error);
     }
   },
 
-  /**
-   * Fetch playlist usage analytics
-   */
+  // Fetch playlist analytics
   fetchPlaylistAnalytics: async (
     days: number = 7,
-    limit: number = 20,
-    forceFresh = false,
-  ): Promise<ListeningAnalyticsResponse<PlaylistAnalytics>> => {
-    const cacheKey = `listening-analytics-playlists-${days}-${limit}`;
+    limit: number = 15,
+    forceFresh: boolean = false,
+  ) => {
+    const cacheKey = `playlists_${days}_${limit}`;
+    const cachedData = cache[cacheKey];
 
-    if (!forceFresh) {
-      const cachedData = getCachedData<PlaylistAnalytics>(cacheKey);
-      if (cachedData) return cachedData;
+    if (
+      !forceFresh &&
+      cachedData &&
+      Date.now() - cachedData.timestamp < 5 * 60 * 1000
+    ) {
+      return { success: true, data: cachedData.data };
     }
 
     try {
-      await checkAndFixToken();
+      // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
         `${API_BASE_URL}/analytics/playlists?days=${days}&limit=${limit}`,
-        getAuthHeaders(),
+        getAuthHeader(),
       );
 
-      cacheResponse(cacheKey, response.data);
+      if (response.data.success) {
+        cache[cacheKey] = {
+          data: response.data.data,
+          timestamp: Date.now(),
+        };
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch playlist analytics:', error);
+
+      // If we have cached data, return it as a fallback even if it's old
+      if (cachedData) {
+        return {
+          success: true,
+          data: cachedData.data,
+          fromCache: true,
+          stale: true,
+        };
+      }
 
       return {
-        success: true,
-        data: response.data as PlaylistAnalytics,
+        success: false,
+        error: 'Failed to fetch playlist analytics. Please try again later.',
+        details: {
+          url: `${API_BASE_URL}/analytics/playlists`,
+          statusCode: error.response?.status,
+          isConnected: navigator.onLine,
+        },
       };
-    } catch (error) {
-      return handleApiError(error);
     }
   },
 
-  /**
-   * Fetch user engagement analytics
-   */
-  fetchEngagement: async (
-    days: number = 30,
-    forceFresh = false,
-  ): Promise<ListeningAnalyticsResponse<UserEngagementAnalytics>> => {
-    const cacheKey = `listening-analytics-engagement-${days}`;
+  // Fix the fetchEngagement function to handle network errors
+  fetchEngagement: async (days: number = 7, forceFresh: boolean = false) => {
+    const cacheKey = `engagement_${days}`;
+    const cachedData = cache[cacheKey];
 
-    if (!forceFresh) {
-      const cachedData = getCachedData<UserEngagementAnalytics>(cacheKey);
-      if (cachedData) return cachedData;
+    // Use cached data if available and not forcing refresh
+    if (
+      !forceFresh &&
+      cachedData &&
+      Date.now() - cachedData.timestamp < 5 * 60 * 1000
+    ) {
+      return { success: true, data: cachedData.data };
     }
 
     try {
-      await checkAndFixToken();
-      const response = await axios.get(
-        `${API_BASE_URL}/analytics/engagement?days=${days}`,
-        getAuthHeaders(),
-      );
+      // Log the URL being called (for debugging)
+      const url = `${API_BASE_URL}/analytics/engagement?days=${days}`;
+      console.log(`Fetching engagement analytics from: ${url}`);
 
-      cacheResponse(cacheKey, response.data);
+      // Set a longer timeout for this API call
+      const response = await axios.get(url, {
+        ...getAuthHeader(),
+        timeout: 15000, // 15 seconds timeout
+      });
 
+      if (response.data && response.data.success) {
+        cache[cacheKey] = {
+          data: response.data.data,
+          timestamp: Date.now(),
+        };
+        return response.data;
+      } else {
+        throw new Error(response.data?.error || 'Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch engagement analytics:', error);
+
+      // If we have cached data, return it as a fallback even if it's old
+      if (cachedData) {
+        console.log('Using cached engagement data as fallback');
+        return {
+          success: true,
+          data: cachedData.data,
+          fromCache: true,
+          stale: true,
+        };
+      }
+
+      // Provide more detailed error information
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to fetch engagement analytics';
+
+      // Return helpful error with connection details
       return {
-        success: true,
-        data: response.data as UserEngagementAnalytics,
+        success: false,
+        error: errorMessage,
+        details: {
+          url: `${API_BASE_URL}/analytics/engagement`,
+          statusCode: error.response?.status,
+          isConnected: navigator.onLine,
+        },
       };
-    } catch (error) {
-      return handleApiError(error);
     }
-  },
-
-  /**
-   * Enhanced play event logging with comprehensive analytics data
-   */
-  logPlay: async (
-    playEvent: EnhancedPlayEvent,
-  ): Promise<ListeningAnalyticsResponse<{ playEventId: string }>> => {
-    try {
-      await checkAndFixToken();
-      const response = await axios.post(
-        `${API_BASE_URL}/playlist/plays`,
-        playEvent,
-        getAuthHeaders(),
-      );
-
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Update play event with progress/completion data
-   */
-  updatePlayEvent: async (
-    playEventId: string,
-    updates: PlayEventUpdate,
-  ): Promise<ListeningAnalyticsResponse<void>> => {
-    try {
-      await checkAndFixToken();
-      const response = await axios.put(
-        `${API_BASE_URL}/playlist/plays/${playEventId}`,
-        updates,
-        getAuthHeaders(),
-      );
-
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Batch update multiple play events
-   */
-  batchUpdatePlayEvents: async (
-    updates: BatchPlayEventUpdate[],
-  ): Promise<ListeningAnalyticsResponse<{ modifiedCount: number }>> => {
-    try {
-      await checkAndFixToken();
-      const response = await axios.post(
-        `${API_BASE_URL}/playlist/plays/batch-update`,
-        { updates },
-        getAuthHeaders(),
-      );
-
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Log user interactions (like, share, repeat)
-   */
-  logInteraction: async (
-    trackUrl: string,
-    interactionType: 'like' | 'share' | 'repeat',
-    value: boolean,
-  ): Promise<ListeningAnalyticsResponse<void>> => {
-    try {
-      await checkAndFixToken();
-      const response = await axios.post(
-        `${API_BASE_URL}/playlist/interactions`,
-        { trackUrl, interactionType, value },
-        getAuthHeaders(),
-      );
-
-      return {
-        success: true,
-        data: response.data,
-      };
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  /**
-   * Clear cache for all listening analytics
-   */
-  clearCache: () => {
-    const keysToDelete = Array.from(responseCache.keys()).filter((key) =>
-      key.startsWith('listening-analytics'),
-    );
-    keysToDelete.forEach((key) => responseCache.delete(key));
   },
 };
 
