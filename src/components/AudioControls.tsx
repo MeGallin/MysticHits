@@ -48,7 +48,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
   onVolumeChange,
 }) => {
   return (
-    <>
+    <div className="bg-gradient-to-br from-indigo-900/90 via-purple-800/90 to-pink-900/90 backdrop-blur-sm p-3 rounded-lg">
       {/* Main Controls */}
       <div className="flex items-center justify-between">
         <button
@@ -176,6 +176,6 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
           <ListMusic className="h-5 w-5" />
         </button>
       </div>
-    </>
+    </div>
   );
 };

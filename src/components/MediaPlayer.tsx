@@ -1,4 +1,5 @@
 import React, { forwardRef, useState, useEffect } from 'react';
+import { Maximize, Minimize } from 'lucide-react';
 
 interface MediaPlayerProps {
   src: string;
@@ -51,6 +52,7 @@ const MediaPlayer = forwardRef<
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Reset error state when src changes
   useEffect(() => {
@@ -63,6 +65,65 @@ const MediaPlayer = forwardRef<
 
   // Determine media type from MIME string
   const isVideo = mime?.startsWith('video');
+
+  // Fullscreen functionality
+  const toggleFullscreen = async () => {
+    const videoElement = ref && 'current' in ref ? ref.current : null;
+
+    if (!videoElement || !isVideo) return;
+
+    try {
+      if (!isFullscreen) {
+        // Enter fullscreen
+        if (videoElement.requestFullscreen) {
+          await videoElement.requestFullscreen();
+        } else if ((videoElement as any).webkitRequestFullscreen) {
+          await (videoElement as any).webkitRequestFullscreen();
+        } else if ((videoElement as any).msRequestFullscreen) {
+          await (videoElement as any).msRequestFullscreen();
+        }
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen();
+        }
+      }
+    } catch (error) {
+      console.error('Fullscreen toggle failed:', error);
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener(
+        'webkitfullscreenchange',
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        'msfullscreenchange',
+        handleFullscreenChange,
+      );
+    };
+  }, []);
 
   // Format playlist items for display - but safely handle null/undefined
   const formattedPlaylist = Array.isArray(playlist)
@@ -121,7 +182,7 @@ const MediaPlayer = forwardRef<
   // Use a single video element for both audio and video content
   return (
     <div
-      className={`media-player-container ${
+      className={`media-player-container relative ${
         isVideo ? 'video-mode' : 'audio-mode'
       }`}
       data-player-type={isVideo ? 'video' : 'audio'} // Add a data attribute for debugging
@@ -149,6 +210,22 @@ const MediaPlayer = forwardRef<
         onPlay={onPlay}
         onEnded={onEnded}
       />
+
+      {/* Fullscreen Toggle Button - Only show for videos */}
+      {isVideo && (
+        <button
+          onClick={toggleFullscreen}
+          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-md backdrop-blur-sm transition-all duration-200 z-10"
+          aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        >
+          {isFullscreen ? (
+            <Minimize className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
+        </button>
+      )}
 
       {/* Error Message Display */}
       {hasError && (

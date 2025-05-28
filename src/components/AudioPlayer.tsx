@@ -600,17 +600,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <div className="text-white">
             <div className="overflow-hidden">
               <div className="flex items-center gap-2 mb-1">
-                <div className="bg-pink-500/30 px-2 py-0.5 rounded-md flex items-center">
-                  <span className="animate-pulse mr-1.5">●</span>
-                  <span className="text-xs font-medium text-pink-200">
-                    PLAYING
-                  </span>
-                  {typeof VideoIcon === 'function' && isVideoTrack && (
-                    <span className="ml-2 bg-blue-500/20 px-1.5 py-0.5 rounded text-blue-300 text-xs font-medium">
-                      VIDEO
+                {currentTrack && (
+                  <div className="bg-pink-500/30 px-2 py-0.5 rounded-md flex items-center">
+                    <span className="animate-pulse mr-1.5">●</span>
+                    <span className="text-xs font-medium text-pink-200">
+                      PLAYING
                     </span>
-                  )}
-                </div>
+                    {typeof VideoIcon === 'function' && isVideoTrack && (
+                      <span className="ml-2 bg-blue-500/20 px-1.5 py-0.5 rounded text-blue-300 text-xs font-medium">
+                        VIDEO
+                      </span>
+                    )}
+                  </div>
+                )}
                 {selectedFolder?.label && (
                   <div className="bg-blue-900/30 px-2 py-2 rounded-md flex items-center">
                     <span className="text-xs font-medium text-blue-300 uppercase">
@@ -854,7 +856,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <StaticAdvertisements />
           </div>
         ) : (
-          <div className="border border-pink-500 p-1 space-y-1 flex-grow flex flex-col justify-center">
+          <div
+            className={`bg-gradient-to-br from-indigo-900/90 via-purple-800/90 to-pink-900/90 backdrop-blur-sm  p-1 space-y-1 flex-grow flex flex-col justify-center ${
+              !isVideoTrack ? 'sticky top-0 z-40' : ''
+            }`}
+          >
             {/* Progress Bar */}
             <div className="space-y-0.5">
               <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
