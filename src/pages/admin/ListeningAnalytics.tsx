@@ -332,7 +332,7 @@ const ListeningAnalytics: React.FC = () => {
                 </Card>
               )}
 
-              {overview && !overviewLoading && (
+              {overview && overview.overview && !overviewLoading && (
                 <div className="space-y-6">
                   {/* Key Metrics */}
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -377,10 +377,10 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {formatPercentage(overview.completion.completionRate)}
+                          {overview.completion ? formatPercentage(overview.completion.completionRate) : 'N/A'}
                         </div>
                         <Progress
-                          value={overview.completion.completionRate * 100}
+                          value={overview.completion ? overview.completion.completionRate * 100 : 0}
                           className="mt-2 h-2"
                         />
                       </CardContent>
@@ -413,7 +413,7 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {overview.sources.slice(0, 5).map((source, index) => (
+                        {overview.sources && overview.sources.slice(0, 5).map((source, index) => (
                           <div
                             key={`source-${index}-${
                               source.source || 'unknown'
@@ -446,7 +446,7 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {overview.devices.slice(0, 5).map((device, index) => (
+                        {overview.devices && overview.devices.slice(0, 5).map((device, index) => (
                           <div
                             key={`device-${index}-${
                               device.deviceType || 'unknown'
@@ -528,7 +528,7 @@ const ListeningAnalytics: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="space-y-2">
-                          {userBehavior.users
+                          {userBehavior && userBehavior.users && userBehavior.users
                             .slice(0, 10)
                             .map((user, index) => (
                               <tr
@@ -591,7 +591,7 @@ const ListeningAnalytics: React.FC = () => {
                 </Card>
               )}
 
-              {patterns && !patternsLoading && (
+              {patterns && patterns.hourlyPattern && !patternsLoading && (
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Hourly Pattern */}
                   <Card className="bg-gray-800/50 border-gray-700">
@@ -602,7 +602,7 @@ const ListeningAnalytics: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {patterns.hourlyPattern.map((hour) => (
+                        {patterns.hourlyPattern && patterns.hourlyPattern.map((hour) => (
                           <div
                             key={hour.hour}
                             className="flex items-center space-x-3"
@@ -618,7 +618,7 @@ const ListeningAnalytics: React.FC = () => {
                                     5,
                                     (hour.plays /
                                       Math.max(
-                                        ...patterns.hourlyPattern.map(
+                                        ...(patterns.hourlyPattern || []).map(
                                           (h) => h.plays,
                                         ),
                                       )) *
@@ -642,7 +642,7 @@ const ListeningAnalytics: React.FC = () => {
                       <CardTitle className="text-white">Top Genres</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {patterns.genrePattern.slice(0, 8).map((genre, index) => (
+                      {patterns.genrePattern && patterns.genrePattern.slice(0, 8).map((genre, index) => (
                         <div
                           key={`genre-${index}-${genre.genre || 'unknown'}`}
                           className="flex justify-between items-center"
@@ -695,7 +695,7 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {geographic.countries
+                        {geographic && geographic.countries && geographic.countries
                           .slice(0, 8)
                           .map((country, index) => (
                             <div
@@ -731,7 +731,7 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {geographic.regions.slice(0, 8).map((region, index) => (
+                        {geographic && geographic.regions && geographic.regions.slice(0, 8).map((region, index) => (
                           <div
                             key={`region-${index}-${
                               region.country || 'unknown'
@@ -768,7 +768,7 @@ const ListeningAnalytics: React.FC = () => {
                         <CardTitle className="text-white">Top Cities</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {geographic.cities.slice(0, 8).map((city, index) => (
+                        {geographic && geographic.cities && geographic.cities.slice(0, 8).map((city, index) => (
                           <div
                             key={`city-${index}-${city.country || 'unknown'}-${
                               city.region || 'unknown'
@@ -853,7 +853,7 @@ const ListeningAnalytics: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {playlists.playlists.map((playlist, index) => (
+                            {playlists.playlists && playlists.playlists.map((playlist, index) => (
                               <tr
                                 key={playlist.playlistId}
                                 className="border-b border-gray-800"
@@ -922,10 +922,10 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {engagement.engagement.totalUsers}
+                          {engagement.engagement ? engagement.engagement.totalUsers : 'N/A'}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {engagement.engagement.highEngagementUsers} high
+                          {engagement.engagement ? engagement.engagement.highEngagementUsers : 0} high
                           engagement
                         </p>
                       </CardContent>
@@ -939,12 +939,12 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {engagement.engagement.averagePlaysPerUser}
+                          {engagement.engagement ? engagement.engagement.averagePlaysPerUser : 'N/A'}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {formatTime(
+                          {engagement.engagement ? formatTime(
                             engagement.engagement.averageListenTimePerUser,
-                          )}{' '}
+                          ) : 'N/A'}{' '}
                           listen time
                         </p>
                       </CardContent>
@@ -958,10 +958,10 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {formatPercentage(engagement.retention.retentionRate)}
+                          {engagement.retention ? formatPercentage(engagement.retention.retentionRate) : 'N/A'}
                         </div>
                         <Progress
-                          value={engagement.retention.retentionRate * 100}
+                          value={engagement.retention ? engagement.retention.retentionRate * 100 : 0}
                           className="mt-2 h-2"
                         />
                       </CardContent>
@@ -975,13 +975,13 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {Math.round(
+                          {engagement.quality ? Math.round(
                             (1 - engagement.quality.bufferRate) * 100,
-                          )}
+                          ) : 'N/A'}
                           %
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {engagement.quality.averageBufferCount.toFixed(1)} avg
+                          {engagement.quality ? engagement.quality.averageBufferCount.toFixed(1) : 'N/A'} avg
                           buffers
                         </p>
                       </CardContent>
@@ -1000,25 +1000,25 @@ const ListeningAnalytics: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-400">Like Rate</span>
                           <span className="text-white">
-                            {engagement.engagement.likeRate.toFixed(2)}
+                            {engagement.engagement ? engagement.engagement.likeRate.toFixed(2) : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Share Rate</span>
                           <span className="text-white">
-                            {engagement.engagement.shareRate.toFixed(2)}
+                            {engagement.engagement ? engagement.engagement.shareRate.toFixed(2) : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Repeat Rate</span>
                           <span className="text-white">
-                            {engagement.engagement.repeatRate.toFixed(2)}
+                            {engagement.engagement ? engagement.engagement.repeatRate.toFixed(2) : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Avg Active Days</span>
                           <span className="text-white">
-                            {engagement.engagement.averageActiveDays}
+                            {engagement.engagement ? engagement.engagement.averageActiveDays : 'N/A'}
                           </span>
                         </div>
                       </CardContent>
@@ -1034,7 +1034,7 @@ const ListeningAnalytics: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-400">New Users (7d)</span>
                           <span className="text-white">
-                            {engagement.retention.newUsersLast7Days}
+                            {engagement.retention ? engagement.retention.newUsersLast7Days : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1042,13 +1042,13 @@ const ListeningAnalytics: React.FC = () => {
                             Active Users (7d)
                           </span>
                           <span className="text-white">
-                            {engagement.retention.activeUsersLast7Days}
+                            {engagement.retention ? engagement.retention.activeUsersLast7Days : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Returning Users</span>
                           <span className="text-white">
-                            {engagement.retention.returningUsers}
+                            {engagement.retention ? engagement.retention.returningUsers : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1056,9 +1056,9 @@ const ListeningAnalytics: React.FC = () => {
                             New User Retention
                           </span>
                           <span className="text-white">
-                            {formatPercentage(
+                            {engagement.retention ? formatPercentage(
                               engagement.retention.newUserRetentionRate,
-                            )}
+                            ) : 'N/A'}
                           </span>
                         </div>
                       </CardContent>
@@ -1074,15 +1074,15 @@ const ListeningAnalytics: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-400">Buffer Rate</span>
                           <span className="text-white">
-                            {formatPercentage(engagement.quality.bufferRate)}
+                            {engagement.quality ? formatPercentage(engagement.quality.bufferRate) : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Quality Issues</span>
                           <span className="text-white">
-                            {formatPercentage(
+                            {engagement.quality ? formatPercentage(
                               engagement.quality.qualityIssueRate,
-                            )}
+                            ) : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1090,13 +1090,13 @@ const ListeningAnalytics: React.FC = () => {
                             Total Buffer Events
                           </span>
                           <span className="text-white">
-                            {engagement.quality.totalBufferEvents}
+                            {engagement.quality ? engagement.quality.totalBufferEvents : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Quality Drops</span>
                           <span className="text-white">
-                            {engagement.quality.totalQualityDrops}
+                            {engagement.quality ? engagement.quality.totalQualityDrops : 'N/A'}
                           </span>
                         </div>
                       </CardContent>

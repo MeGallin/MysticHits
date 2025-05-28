@@ -19,7 +19,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { LockIcon } from 'lucide-react';
-import { logPlay } from '../services/trackingService';
 import { VideoIcon } from './icons/VideoIcon';
 
 interface AudioPlayerProps {
@@ -394,6 +393,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     showingAd,
     currentAdId,
     closeAdvertisement,
+    logUserInteraction,
     controls,
   } = useAudioPlayer(combinedTracks);
 
@@ -403,6 +403,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // Enhanced analytics handlers for user interactions
+  const handleLike = async (liked: boolean) => {
+    await logUserInteraction('like', liked);
+  };
+
+  const handleShare = async () => {
+    await logUserInteraction('share', true);
   };
 
   // Helper function to detect video by extension
@@ -751,11 +760,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   onTimeUpdate={controls.handleTimeUpdate}
                   onLoadedMetadata={controls.handleLoadedMetadata}
                   onPlay={() => {
-                    logPlay({
-                      trackUrl: currentTrack.url,
-                      title: currentTrack.title,
-                      duration: audioRef.current?.duration || undefined,
-                    });
+                    // Enhanced analytics logging is handled in useAudioPlayer hook
+                    // when play state changes, so we don't need to call logPlay here
                   }}
                   onError={(e) => {
                     console.error('Media error:', e);
@@ -796,12 +802,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 onTimeUpdate={controls.handleTimeUpdate}
                 onLoadedMetadata={controls.handleLoadedMetadata}
                 onPlay={() => {
-                  // Log play event when track starts playing
-                  logPlay({
-                    trackUrl: currentTrack.url,
-                    title: currentTrack.title,
-                    duration: audioRef.current?.duration || undefined,
-                  });
+                  // Enhanced analytics logging is handled in useAudioPlayer hook
+                  // when play state changes, so we don't need to call logPlay here
                 }}
                 onError={(e) => {
                   console.error('Media error:', e);
@@ -917,6 +919,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               showPlaylist={showPlaylist}
               volume={volume}
               onVolumeChange={controls.handleVolumeChange}
+              onLike={handleLike}
+              onShare={handleShare}
+              currentTrack={currentTrack ? {
+                title: currentTrack.title,
+                artist: currentTrack.artist
+              } : null}
             />
           </div>
         )}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Play,
   Pause,
@@ -10,6 +10,7 @@ import {
   Heart,
   ListMusic,
   Square,
+  Share2,
 } from 'lucide-react';
 
 interface AudioControlsProps {
@@ -28,6 +29,12 @@ interface AudioControlsProps {
   onMute: () => void;
   onShowPlaylist: () => void;
   onVolumeChange: (value: number) => void;
+  onLike?: (liked: boolean) => void;
+  onShare?: () => void;
+  currentTrack?: {
+    title: string;
+    artist?: string;
+  } | null;
 }
 
 export const AudioControls: React.FC<AudioControlsProps> = ({
@@ -46,7 +53,47 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
   onShowPlaylist,
   volume,
   onVolumeChange,
+  onLike,
+  onShare,
+  currentTrack,
 }) => {
+  const [isLiked, setIsLiked] = useState(false);
+
+  const handleLike = () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    onLike?.(newLikedState);
+  };
+
+  const handleShare = () => {
+    onShare?.();
+    // Basic Web Share API implementation
+    if (navigator.share && currentTrack) {
+      navigator.share({
+        title: currentTrack.title,
+        text: `Check out this track: ${currentTrack.title}${currentTrack.artist ? ` by ${currentTrack.artist}` : ''}`,
+        url: window.location.href,
+      }).catch((error) => {
+        console.log('Error sharing:', error);
+        // Fallback: copy to clipboard
+        fallbackShare();
+      });
+    } else {
+      fallbackShare();
+    }
+  };
+
+  const fallbackShare = () => {
+    if (currentTrack) {
+      const shareText = `Check out this track: ${currentTrack.title}${currentTrack.artist ? ` by ${currentTrack.artist}` : ''} - ${window.location.href}`;
+      navigator.clipboard.writeText(shareText).then(() => {
+        // Could show a toast notification here
+        console.log('Track info copied to clipboard');
+      }).catch(() => {
+        console.log('Could not copy to clipboard');
+      });
+    }
+  };
   return (
     <div className="bg-gradient-to-br from-indigo-900/90 via-purple-800/90 to-pink-900/90 backdrop-blur-sm p-3 rounded-lg">
       {/* Main Controls */}
@@ -111,7 +158,35 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
 
       {/* Volume and Additional Controls */}
       <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center space-x-2 w-full">
+        <div className="flex items-center space-x-2">
+          {/* Like Button */}
+          <button
+            onClick={handleLike}
+            className={`p-2 rounded-full transition-all duration-200 ${
+              isLiked
+                ? 'text-red-400 bg-red-400/20 hover:bg-red-400/30'
+                : 'text-white/70 hover:text-red-300 hover:bg-white/10'
+            }`}
+            aria-label={isLiked ? 'Unlike Track' : 'Like Track'}
+            title={isLiked ? 'Unlike this track' : 'Like this track'}
+          >
+            <Heart 
+              className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} 
+            />
+          </button>
+
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            className="text-white/70 hover:text-blue-300 hover:bg-white/10 p-2 rounded-full transition-all duration-200"
+            aria-label="Share Track"
+            title="Share this track"
+          >
+            <Share2 className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-2 flex-1 mx-4">
           <button
             onClick={onMute}
             className="text-white/70 hover:text-pink-300"
@@ -139,7 +214,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             )}
           </button>
 
-          <div className="relative w-full">
+          <div className="relative flex-1">
             <input
               type="range"
               min="0"
@@ -166,15 +241,18 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             </div>
           </div>
         </div>
-        <button
-          className={`text-white/70 hover:text-pink-300 p-2 rounded-full ${
-            showPlaylist ? 'text-pink-400' : ''
-          }`}
-          onClick={onShowPlaylist}
-          aria-label="Show Playlist"
-        >
-          <ListMusic className="h-5 w-5" />
-        </button>
+        
+        <div className="flex items-center">
+          <button
+            className={`text-white/70 hover:text-pink-300 p-2 rounded-full ${
+              showPlaylist ? 'text-pink-400' : ''
+            }`}
+            onClick={onShowPlaylist}
+            aria-label="Show Playlist"
+          >
+            <ListMusic className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
