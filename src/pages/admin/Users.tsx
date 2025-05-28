@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { FiUserX, FiArrowLeft } from 'react-icons/fi';
+import { FiUserX, FiArrowLeft, FiFolder } from 'react-icons/fi';
 import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import services from '../../services/fetchServices';
 import { useAtom } from 'jotai';
 import { userAtom } from '../../state/authAtoms';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface User {
   _id: string;
@@ -34,6 +34,7 @@ const UsersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const [currentUser] = useAtom(userAtom);
+  const navigate = useNavigate();
 
   // Helper function to check if a user is the current user
   const isCurrentUser = (userId: string): boolean => {
@@ -130,6 +131,16 @@ const UsersPage: React.FC = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleManageFolders = (userId: string, userName: string) => {
+    // Navigate to admin folders page with user pre-selected
+    navigate('/admin/folders', {
+      state: {
+        selectedUserId: userId,
+        selectedUserName: userName,
+      },
+    });
   };
 
   // Renders a deletion alert dialog for a user
@@ -245,7 +256,17 @@ const UsersPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleManageFolders(user._id, user.username)}
+                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 h-8 px-2"
+                    title="Manage Folders"
+                  >
+                    <FiFolder size={16} />
+                  </Button>
+
                   {!user.isAdmin &&
                     currentUser &&
                     user._id !== currentUser.id &&
@@ -276,6 +297,9 @@ const UsersPage: React.FC = () => {
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Joined
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Manage
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Actions
@@ -314,6 +338,19 @@ const UsersPage: React.FC = () => {
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          handleManageFolders(user._id, user.username)
+                        }
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 h-8 px-2"
+                        title="Manage Folders"
+                      >
+                        <FiFolder size={16} />
+                      </Button>
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {!user.isAdmin &&

@@ -237,6 +237,91 @@ const folderServices = {
       };
     }
   },
+
+  // === ADMIN SERVICES ===
+
+  // Get all folders for a specific user (admin only)
+  getUserFolders: async (userId: string): Promise<ApiResponse<Folder[]>> => {
+    try {
+      const response = await axiosInstance.get(
+        `/admin/users/${userId}/folders`,
+      );
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to fetch user folders',
+      };
+    }
+  },
+
+  // Add a folder to a specific user (admin only)
+  addFolderToUser: async (
+    userId: string,
+    folderData: { label: string; path: string },
+  ): Promise<ApiResponse<Folder>> => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/folders`,
+        folderData,
+      );
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to add folder to user',
+      };
+    }
+  },
+
+  // Remove a folder from a specific user (admin only)
+  removeFolderFromUser: async (
+    userId: string,
+    folderId: string,
+  ): Promise<ApiResponse<null>> => {
+    try {
+      const response = await axiosInstance.delete(
+        `/admin/users/${userId}/folders/${folderId}`,
+      );
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to remove folder from user',
+      };
+    }
+  },
+
+  // Bulk add folders to multiple users (admin only)
+  bulkAddFolders: async (
+    userIds: string[],
+    folderData: { label: string; path: string },
+  ): Promise<ApiResponse<{ successful: any[]; failed: any[] }>> => {
+    try {
+      const response = await axiosInstance.post(`/admin/folders/bulk-add`, {
+        userIds,
+        ...folderData,
+      });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Failed to bulk add folders',
+      };
+    }
+  },
 };
 
 export default folderServices;

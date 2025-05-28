@@ -12,7 +12,7 @@ import {
 } from 'react-icons/fi';
 import { useToast } from '@/hooks/use-toast';
 import folderServices, { Folder } from '@/services/folderServices';
-import FolderFormDialog from '../folders/FolderFormDialog';
+import AdminFolderFormDialog from './AdminFolderFormDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +56,9 @@ const UserFolderList: React.FC<UserFolderListProps> = ({
       const response = await folderServices.getUserFolders(userId);
 
       if (response.success && response.data) {
-        setFolders(response.data);
+        // Extract folders from the nested data structure
+        const folders = response.data.folders || response.data;
+        setFolders(Array.isArray(folders) ? folders : []);
       } else {
         setError(response.error || 'Failed to fetch user folders');
         toast({
@@ -87,39 +89,62 @@ const UserFolderList: React.FC<UserFolderListProps> = ({
     path: string;
   }) => {
     try {
-      if (!editingFolder) {
-        return;
-      }
-
-      // Update existing folder
-      const response = await folderServices.updateFolder(
-        editingFolder._id,
-        folderData,
-      );
-
-      if (response.success) {
-        // Update the folder in our state
-        setFolders(
-          folders.map((folder) =>
-            folder._id === editingFolder._id
-              ? { ...folder, ...folderData }
-              : folder,
-          ),
+      if (editingFolder) {
+        // Update existing folder
+        const response = await folderServices.updateFolder(
+          editingFolder._id,
+          folderData,
         );
 
-        toast({
-          title: 'Folder updated',
-          description: `The folder has been updated successfully for ${userName}`,
-        });
+        if (response.success) {
+          // Update the folder in our state
+          setFolders(
+            folders.map((folder) =>
+              folder._id === editingFolder._id
+                ? { ...folder, ...folderData }
+                : folder,
+            ),
+          );
 
-        // Close the dialog
-        setIsFormDialogOpen(false);
+          toast({
+            title: 'Folder updated',
+            description: `The folder has been updated successfully for ${userName}`,
+          });
+
+          // Close the dialog
+          setIsFormDialogOpen(false);
+        } else {
+          toast({
+            title: 'Error',
+            description: response.error || 'Failed to update folder',
+            variant: 'destructive',
+          });
+        }
       } else {
-        toast({
-          title: 'Error',
-          description: response.error || 'Failed to update folder',
-          variant: 'destructive',
-        });
+        // Create new folder for this user
+        const response = await folderServices.addFolderToUser(
+          userId,
+          folderData,
+        );
+
+        if (response.success && response.data) {
+          // Add the new folder to our state
+          setFolders([...folders, response.data]);
+
+          toast({
+            title: 'Folder created',
+            description: `The folder has been created successfully for ${userName}`,
+          });
+
+          // Close the dialog
+          setIsFormDialogOpen(false);
+        } else {
+          toast({
+            title: 'Error',
+            description: response.error || 'Failed to create folder',
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error) {
       console.error('Error saving folder:', error);
@@ -181,18 +206,31 @@ const UserFolderList: React.FC<UserFolderListProps> = ({
         <h2 className="text-lg font-medium text-white">
           {userName}'s Folders ({folders.length})
         </h2>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={fetchUserFolders}
-          className="flex items-center gap-1"
-          disabled={isLoading}
-        >
-          <FiRefreshCw
-            className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingFolder(null);
+              setIsFormDialogOpen(true);
+            }}
+            className="flex items-center gap-1"
+          >
+            <FiPlus className="h-4 w-4" />
+            Add Folder
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={fetchUserFolders}
+            className="flex items-center gap-1"
+            disabled={isLoading}
+          >
+            <FiRefreshCw
+              className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -221,7 +259,7 @@ const UserFolderList: React.FC<UserFolderListProps> = ({
                   </div>
 
                   <div className="text-xs text-gray-500">
-                    {new Date(folder.created).toLocaleDateString()}
+                    {new Date(folder.createdAt).toLocaleDateString()}
                   </div>
                 </div>
 
@@ -284,13 +322,14 @@ const UserFolderList: React.FC<UserFolderListProps> = ({
         </div>
       )}
 
-      {/* Dialog for editing folders */}
-      <FolderFormDialog
-        isOpen={isFormDialogOpen}
-        onClose={() => setIsFormDialogOpen(false)}
+      {/* Dialog for adding/editing folders */}
+      <AdminFolderFormDialog
+        open={isFormDialogOpen}
+        onOpenChange={setIsFormDialogOpen}
         onSave={handleSaveFolder}
-        folder={editingFolder}
-        title={`Edit Folder for ${userName}`}
+        folderToEdit={editingFolder}
+        userName={userName}
+        title={editingFolder ? 'Edit Folder' : 'Add Folder'}
       />
     </div>
   );
