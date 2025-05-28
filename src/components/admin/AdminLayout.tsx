@@ -12,6 +12,7 @@ import {
   FiLogOut,
   FiHome,
   FiActivity,
+  FiFolder,
 } from 'react-icons/fi';
 
 interface AdminLayoutProps {
@@ -39,6 +40,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       name: 'Users',
       path: '/admin/users',
       icon: <FiUsers className="mr-3 h-5 w-5" />,
+    },
+    {
+      name: 'Folders',
+      path: '/admin/folders',
+      icon: <FiFolder className="mr-3 h-5 w-5 text-blue-400" />,
     },
     {
       name: 'Music',
