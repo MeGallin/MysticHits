@@ -921,10 +921,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               onVolumeChange={controls.handleVolumeChange}
               onLike={handleLike}
               onShare={handleShare}
-              currentTrack={currentTrack ? {
-                title: currentTrack.title,
-                artist: currentTrack.artist
-              } : null}
+              currentTrack={
+                currentTrack
+                  ? {
+                      title: currentTrack.title,
+                      artist: currentTrack.artist,
+                    }
+                  : null
+              }
             />
           </div>
         )}

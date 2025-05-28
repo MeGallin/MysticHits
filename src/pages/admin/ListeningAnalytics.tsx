@@ -34,6 +34,13 @@ import listeningAnalyticsService, {
   UserEngagementAnalytics,
 } from '@/services/listeningAnalyticsService';
 
+// Add this interface to handle aggregated data structures
+interface AggregatedAnalyticsData {
+  standard: any; // Original data structure
+  aggregated: any; // Aggregated data structure
+  combined?: any; // Combined view of both structures
+}
+
 const ListeningAnalytics: React.FC = () => {
   // State for different analytics sections
   const [overview, setOverview] = useState<ListeningAnalyticsOverview | null>(
@@ -70,6 +77,59 @@ const ListeningAnalytics: React.FC = () => {
   // Settings
   const [selectedDays, setSelectedDays] = useState(7);
 
+  // Process data to handle both aggregated and standard formats
+  const processOverviewData = (rawData: any): ListeningAnalyticsOverview => {
+    if (!rawData) return {} as ListeningAnalyticsOverview;
+
+    // Check for aggregated data structure
+    const hasAggregatedData =
+      rawData.aggregated &&
+      rawData.aggregated.playMetrics &&
+      Object.keys(rawData.aggregated.playMetrics).length > 0;
+
+    // If we have aggregated data, merge it into the overview
+    if (hasAggregatedData) {
+      const standardOverview = rawData.overview || {};
+      const aggregatedMetrics = rawData.aggregated.playMetrics || {};
+
+      // Create a combined view with priority to aggregated data
+      return {
+        ...rawData,
+        overview: {
+          ...standardOverview,
+          totalPlays:
+            aggregatedMetrics.count || standardOverview.totalPlays || 0,
+          totalListenTime:
+            aggregatedMetrics.totalListenTime ||
+            standardOverview.totalListenTime ||
+            0,
+          completions: aggregatedMetrics.completions || 0,
+          skips: aggregatedMetrics.skips || 0,
+          // Keep other metrics from standard data if they exist
+          uniqueUsers: standardOverview.uniqueUsers || 0,
+          uniqueTracks: standardOverview.uniqueTracks || 0,
+          listenRatio: standardOverview.listenRatio || 0,
+          averageSessionLength: standardOverview.averageSessionLength || 0,
+        },
+        // Update completion stats if we have aggregated data
+        completion: rawData.completion
+          ? {
+              ...rawData.completion,
+              completionRate:
+                aggregatedMetrics.count > 0
+                  ? aggregatedMetrics.completions / aggregatedMetrics.count
+                  : rawData.completion.completionRate || 0,
+            }
+          : {
+              completionRate: 0,
+            },
+      };
+    }
+
+    // Return original data if no aggregation
+    return rawData;
+  };
+
   // Fetch functions
   const fetchOverview = async (forceFresh = false) => {
     setOverviewLoading(true);
@@ -80,7 +140,9 @@ const ListeningAnalytics: React.FC = () => {
         forceFresh,
       );
       if (response.success && response.data) {
-        setOverview(response.data);
+        // Process the data to handle aggregated and standard formats
+        const processedData = processOverviewData(response.data);
+        setOverview(processedData);
       } else {
         setOverviewError(response.error || 'Failed to fetch overview');
       }
@@ -183,15 +245,31 @@ const ListeningAnalytics: React.FC = () => {
         selectedDays,
         forceFresh,
       );
-      if (response.success && response.data) {
+      if (response.success) {
         setEngagement(response.data);
+
+        // Show a stale data notice if we're using old cached data
+        if (response.stale) {
+          setEngagementError(
+            '⚠️ Using cached data - Unable to refresh from server',
+          );
+        }
       } else {
-        setEngagementError(
-          response.error || 'Failed to fetch engagement analytics',
-        );
+        // Enhanced error message with connection details
+        let errorMsg = response.error || 'Failed to fetch engagement analytics';
+        if (response.details) {
+          const { isConnected, statusCode } = response.details;
+          if (!isConnected) {
+            errorMsg += ' - Please check your internet connection';
+          } else if (statusCode) {
+            errorMsg += ` - Server returned status: ${statusCode}`;
+          }
+        }
+        setEngagementError(errorMsg);
       }
-    } catch (error) {
-      setEngagementError('An unexpected error occurred');
+    } catch (error: any) {
+      setEngagementError(`Error: ${error.message || 'Unknown error'}`);
+      console.error('Unexpected error in fetchEngagement:', error);
     } finally {
       setEngagementLoading(false);
     }
@@ -213,6 +291,7 @@ const ListeningAnalytics: React.FC = () => {
 
   // Helper function to format time in minutes/hours
   const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return '0m';
     if (seconds < 3600) {
       return `${Math.round(seconds / 60)}m`;
     }
@@ -221,8 +300,10 @@ const ListeningAnalytics: React.FC = () => {
 
   // Helper function to format percentage
   const formatPercentage = (value: number) => {
+    if (!value || isNaN(value)) return '0%';
     return `${Math.round(value * 100)}%`;
   };
+
   return (
     <AdminLayout>
       <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-full">
@@ -344,10 +425,10 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {overview.overview.totalPlays.toLocaleString()}
+                          {(overview.overview.totalPlays || 0).toLocaleString()}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {overview.overview.uniqueUsers} unique users
+                          {overview.overview.uniqueUsers || 0} unique users
                         </p>
                       </CardContent>
                     </Card>
@@ -360,10 +441,10 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {formatTime(overview.overview.totalListenTime)}
+                          {formatTime(overview.overview.totalListenTime || 0)}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {formatPercentage(overview.overview.listenRatio)}{' '}
+                          {formatPercentage(overview.overview.listenRatio || 0)}{' '}
                           completion
                         </p>
                       </CardContent>
@@ -377,10 +458,18 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {overview.completion ? formatPercentage(overview.completion.completionRate) : 'N/A'}
+                          {overview.completion &&
+                          typeof overview.completion.completionRate !==
+                            'undefined'
+                            ? formatPercentage(
+                                overview.completion.completionRate,
+                              )
+                            : 'N/A'}
                         </div>
                         <Progress
-                          value={overview.completion ? overview.completion.completionRate * 100 : 0}
+                          value={
+                            (overview.completion?.completionRate || 0) * 100
+                          }
                           className="mt-2 h-2"
                         />
                       </CardContent>
@@ -394,10 +483,12 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {overview.overview.uniqueTracks.toLocaleString()}
+                          {(
+                            overview.overview.uniqueTracks || 0
+                          ).toLocaleString()}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          Avg {overview.overview.averageSessionLength} per
+                          Avg {overview.overview.averageSessionLength || 0} per
                           session
                         </p>
                       </CardContent>
@@ -413,29 +504,30 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {overview.sources && overview.sources.slice(0, 5).map((source, index) => (
-                          <div
-                            key={`source-${index}-${
-                              source.source || 'unknown'
-                            }`}
-                            className="flex justify-between items-center"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="secondary">{index + 1}</Badge>
-                              <span className="text-white capitalize">
-                                {source.source}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-semibold">
-                                {source.count}
+                        {overview.sources &&
+                          overview.sources.slice(0, 5).map((source, index) => (
+                            <div
+                              key={`source-${index}-${
+                                source.source || 'unknown'
+                              }`}
+                              className="flex justify-between items-center"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary">{index + 1}</Badge>
+                                <span className="text-white capitalize">
+                                  {source.source}
+                                </span>
                               </div>
-                              <div className="text-xs text-gray-400">
-                                {formatTime(source.averageListenDuration)} avg
+                              <div className="text-right">
+                                <div className="text-white font-semibold">
+                                  {source.count}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {formatTime(source.averageListenDuration)} avg
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </CardContent>
                     </Card>
 
@@ -446,29 +538,30 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {overview.devices && overview.devices.slice(0, 5).map((device, index) => (
-                          <div
-                            key={`device-${index}-${
-                              device.deviceType || 'unknown'
-                            }`}
-                            className="flex justify-between items-center"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="secondary">{index + 1}</Badge>
-                              <span className="text-white capitalize">
-                                {device.deviceType}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-semibold">
-                                {device.count}
+                        {overview.devices &&
+                          overview.devices.slice(0, 5).map((device, index) => (
+                            <div
+                              key={`device-${index}-${
+                                device.deviceType || 'unknown'
+                              }`}
+                              className="flex justify-between items-center"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary">{index + 1}</Badge>
+                                <span className="text-white capitalize">
+                                  {device.deviceType}
+                                </span>
                               </div>
-                              <div className="text-xs text-gray-400">
-                                {formatTime(device.averageListenDuration)} avg
+                              <div className="text-right">
+                                <div className="text-white font-semibold">
+                                  {device.count}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {formatTime(device.averageListenDuration)} avg
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </CardContent>
                     </Card>
                   </div>
@@ -528,45 +621,47 @@ const ListeningAnalytics: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody className="space-y-2">
-                          {userBehavior && userBehavior.users && userBehavior.users
-                            .slice(0, 10)
-                            .map((user, index) => (
-                              <tr
-                                key={user.userId}
-                                className="border-b border-gray-800"
-                              >
-                                <td className="py-3">
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary">
-                                      {index + 1}
-                                    </Badge>
-                                    <div>
-                                      <div className="text-white font-medium">
-                                        {user.username}
-                                      </div>
-                                      <div className="text-xs text-gray-400">
-                                        {user.email}
+                          {userBehavior &&
+                            userBehavior.users &&
+                            userBehavior.users
+                              .slice(0, 10)
+                              .map((user, index) => (
+                                <tr
+                                  key={user.userId}
+                                  className="border-b border-gray-800"
+                                >
+                                  <td className="py-3">
+                                    <div className="flex items-center space-x-2">
+                                      <Badge variant="secondary">
+                                        {index + 1}
+                                      </Badge>
+                                      <div>
+                                        <div className="text-white font-medium">
+                                          {user.username}
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                          {user.email}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {user.totalPlays}
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {formatTime(user.totalListenTime)}
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {user.completionRate}%
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {user.uniqueTracks}
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {user.likedTracks}
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {user.totalPlays}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {formatTime(user.totalListenTime)}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {user.completionRate}%
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {user.uniqueTracks}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {user.likedTracks}
+                                  </td>
+                                </tr>
+                              ))}
                         </tbody>
                       </table>
                     </div>
@@ -602,36 +697,37 @@ const ListeningAnalytics: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {patterns.hourlyPattern && patterns.hourlyPattern.map((hour) => (
-                          <div
-                            key={hour.hour}
-                            className="flex items-center space-x-3"
-                          >
-                            <div className="w-12 text-sm text-gray-400">
-                              {hour.hour.toString().padStart(2, '0')}:00
+                        {patterns.hourlyPattern &&
+                          patterns.hourlyPattern.map((hour) => (
+                            <div
+                              key={hour.hour}
+                              className="flex items-center space-x-3"
+                            >
+                              <div className="w-12 text-sm text-gray-400">
+                                {hour.hour.toString().padStart(2, '0')}:00
+                              </div>
+                              <div className="flex-1">
+                                <div
+                                  className="bg-blue-600 h-2 rounded"
+                                  style={{
+                                    width: `${Math.max(
+                                      5,
+                                      (hour.plays /
+                                        Math.max(
+                                          ...(patterns.hourlyPattern || []).map(
+                                            (h) => h.plays,
+                                          ),
+                                        )) *
+                                        100,
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                              <div className="w-16 text-right text-sm text-white">
+                                {hour.plays}
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <div
-                                className="bg-blue-600 h-2 rounded"
-                                style={{
-                                  width: `${Math.max(
-                                    5,
-                                    (hour.plays /
-                                      Math.max(
-                                        ...(patterns.hourlyPattern || []).map(
-                                          (h) => h.plays,
-                                        ),
-                                      )) *
-                                      100,
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                            <div className="w-16 text-right text-sm text-white">
-                              {hour.plays}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -642,26 +738,33 @@ const ListeningAnalytics: React.FC = () => {
                       <CardTitle className="text-white">Top Genres</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {patterns.genrePattern && patterns.genrePattern.slice(0, 8).map((genre, index) => (
-                        <div
-                          key={`genre-${index}-${genre.genre || 'unknown'}`}
-                          className="flex justify-between items-center"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="secondary">{index + 1}</Badge>
-                            <span className="text-white">{genre.genre}</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-white font-semibold">
-                              {genre.plays}
+                      {patterns.genrePattern &&
+                        patterns.genrePattern
+                          .slice(0, 8)
+                          .map((genre, index) => (
+                            <div
+                              key={`genre-${index}-${genre.genre || 'unknown'}`}
+                              className="flex justify-between items-center"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary">{index + 1}</Badge>
+                                <span className="text-white">
+                                  {genre.genre}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-white font-semibold">
+                                  {genre.plays}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {formatPercentage(
+                                    genre.averageCompletionRate,
+                                  )}{' '}
+                                  completion
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-400">
-                              {formatPercentage(genre.averageCompletionRate)}{' '}
-                              completion
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          ))}
                     </CardContent>
                   </Card>
                 </div>
@@ -695,31 +798,33 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {geographic && geographic.countries && geographic.countries
-                          .slice(0, 8)
-                          .map((country, index) => (
-                            <div
-                              key={`country-${index}-${
-                                country.country || 'unknown'
-                              }`}
-                              className="flex justify-between items-center"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <Badge variant="secondary">{index + 1}</Badge>
-                                <span className="text-white">
-                                  {country.country}
-                                </span>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-white font-semibold">
-                                  {country.plays}
+                        {geographic &&
+                          geographic.countries &&
+                          geographic.countries
+                            .slice(0, 8)
+                            .map((country, index) => (
+                              <div
+                                key={`country-${index}-${
+                                  country.country || 'unknown'
+                                }`}
+                                className="flex justify-between items-center"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <Badge variant="secondary">{index + 1}</Badge>
+                                  <span className="text-white">
+                                    {country.country}
+                                  </span>
                                 </div>
-                                <div className="text-xs text-gray-400">
-                                  {country.uniqueUsers} users
+                                <div className="text-right">
+                                  <div className="text-white font-semibold">
+                                    {country.plays}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    {country.uniqueUsers} users
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
                       </CardContent>
                     </Card>
 
@@ -731,34 +836,38 @@ const ListeningAnalytics: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {geographic && geographic.regions && geographic.regions.slice(0, 8).map((region, index) => (
-                          <div
-                            key={`region-${index}-${
-                              region.country || 'unknown'
-                            }-${region.region || 'unknown'}`}
-                            className="flex justify-between items-center"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="secondary">{index + 1}</Badge>
-                              <div>
-                                <div className="text-white text-sm">
-                                  {region.region}
+                        {geographic &&
+                          geographic.regions &&
+                          geographic.regions
+                            .slice(0, 8)
+                            .map((region, index) => (
+                              <div
+                                key={`region-${index}-${
+                                  region.country || 'unknown'
+                                }-${region.region || 'unknown'}`}
+                                className="flex justify-between items-center"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <Badge variant="secondary">{index + 1}</Badge>
+                                  <div>
+                                    <div className="text-white text-sm">
+                                      {region.region}
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                      {region.country}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-xs text-gray-400">
-                                  {region.country}
+                                <div className="text-right">
+                                  <div className="text-white font-semibold">
+                                    {region.plays}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    {region.uniqueUsers} users
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-white font-semibold">
-                                {region.plays}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                {region.uniqueUsers} users
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                            ))}
                       </CardContent>
                     </Card>
 
@@ -768,34 +877,38 @@ const ListeningAnalytics: React.FC = () => {
                         <CardTitle className="text-white">Top Cities</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {geographic && geographic.cities && geographic.cities.slice(0, 8).map((city, index) => (
-                          <div
-                            key={`city-${index}-${city.country || 'unknown'}-${
-                              city.region || 'unknown'
-                            }-${city.city || 'unknown'}`}
-                            className="flex justify-between items-center"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="secondary">{index + 1}</Badge>
-                              <div>
-                                <div className="text-white text-sm">
-                                  {city.city}
+                        {geographic &&
+                          geographic.cities &&
+                          geographic.cities.slice(0, 8).map((city, index) => (
+                            <div
+                              key={`city-${index}-${
+                                city.country || 'unknown'
+                              }-${city.region || 'unknown'}-${
+                                city.city || 'unknown'
+                              }`}
+                              className="flex justify-between items-center"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary">{index + 1}</Badge>
+                                <div>
+                                  <div className="text-white text-sm">
+                                    {city.city}
+                                  </div>
+                                  <div className="text-xs text-gray-400">
+                                    {city.region}, {city.country}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-white font-semibold">
+                                  {city.plays}
                                 </div>
                                 <div className="text-xs text-gray-400">
-                                  {city.region}, {city.country}
+                                  {city.uniqueUsers} users
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-white font-semibold">
-                                {city.plays}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                {city.uniqueUsers} users
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
                       </CardContent>
                     </Card>
                   </div>
@@ -853,38 +966,39 @@ const ListeningAnalytics: React.FC = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {playlists.playlists && playlists.playlists.map((playlist, index) => (
-                              <tr
-                                key={playlist.playlistId}
-                                className="border-b border-gray-800"
-                              >
-                                <td className="py-3">
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant="secondary">
-                                      {index + 1}
-                                    </Badge>
-                                    <span className="text-white font-mono text-xs">
-                                      {playlist.playlistId.substring(0, 8)}...
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {playlist.plays}
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {playlist.uniqueUsers}
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {playlist.uniqueTracks}
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {playlist.completionRate}%
-                                </td>
-                                <td className="text-right py-3 text-white">
-                                  {formatTime(playlist.totalListenTime)}
-                                </td>
-                              </tr>
-                            ))}
+                            {playlists.playlists &&
+                              playlists.playlists.map((playlist, index) => (
+                                <tr
+                                  key={playlist.playlistId}
+                                  className="border-b border-gray-800"
+                                >
+                                  <td className="py-3">
+                                    <div className="flex items-center space-x-2">
+                                      <Badge variant="secondary">
+                                        {index + 1}
+                                      </Badge>
+                                      <span className="text-white font-mono text-xs">
+                                        {playlist.playlistId.substring(0, 8)}...
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {playlist.plays}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {playlist.uniqueUsers}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {playlist.uniqueTracks}
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {playlist.completionRate}%
+                                  </td>
+                                  <td className="text-right py-3 text-white">
+                                    {formatTime(playlist.totalListenTime)}
+                                  </td>
+                                </tr>
+                              ))}
                           </tbody>
                         </table>
                       </div>
@@ -903,9 +1017,19 @@ const ListeningAnalytics: React.FC = () => {
 
               {engagementError && (
                 <Card className="bg-red-900/20 border-red-700">
-                  <CardContent className="flex items-center p-6">
-                    <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                    <span className="text-red-400">{engagementError}</span>
+                  <CardContent className="flex items-center justify-between p-6">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                      <span className="text-red-400">{engagementError}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchEngagement(true)}
+                      className="ml-4"
+                    >
+                      <FiRefreshCw className="mr-2 h-4 w-4" /> Retry
+                    </Button>
                   </CardContent>
                 </Card>
               )}
@@ -922,11 +1046,15 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {engagement.engagement ? engagement.engagement.totalUsers : 'N/A'}
+                          {engagement.engagement
+                            ? engagement.engagement.totalUsers
+                            : 'N/A'}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {engagement.engagement ? engagement.engagement.highEngagementUsers : 0} high
-                          engagement
+                          {engagement.engagement
+                            ? engagement.engagement.highEngagementUsers
+                            : 0}{' '}
+                          high engagement
                         </p>
                       </CardContent>
                     </Card>
@@ -939,12 +1067,16 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {engagement.engagement ? engagement.engagement.averagePlaysPerUser : 'N/A'}
+                          {engagement.engagement
+                            ? engagement.engagement.averagePlaysPerUser
+                            : 'N/A'}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {engagement.engagement ? formatTime(
-                            engagement.engagement.averageListenTimePerUser,
-                          ) : 'N/A'}{' '}
+                          {engagement.engagement
+                            ? formatTime(
+                                engagement.engagement.averageListenTimePerUser,
+                              )
+                            : 'N/A'}{' '}
                           listen time
                         </p>
                       </CardContent>
@@ -958,10 +1090,18 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {engagement.retention ? formatPercentage(engagement.retention.retentionRate) : 'N/A'}
+                          {engagement.retention
+                            ? formatPercentage(
+                                engagement.retention.retentionRate,
+                              )
+                            : 'N/A'}
                         </div>
                         <Progress
-                          value={engagement.retention ? engagement.retention.retentionRate * 100 : 0}
+                          value={
+                            engagement.retention
+                              ? engagement.retention.retentionRate * 100
+                              : 0
+                          }
                           className="mt-2 h-2"
                         />
                       </CardContent>
@@ -975,14 +1115,18 @@ const ListeningAnalytics: React.FC = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-white">
-                          {engagement.quality ? Math.round(
-                            (1 - engagement.quality.bufferRate) * 100,
-                          ) : 'N/A'}
+                          {engagement.quality
+                            ? Math.round(
+                                (1 - engagement.quality.bufferRate) * 100,
+                              )
+                            : 'N/A'}
                           %
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          {engagement.quality ? engagement.quality.averageBufferCount.toFixed(1) : 'N/A'} avg
-                          buffers
+                          {engagement.quality
+                            ? engagement.quality.averageBufferCount.toFixed(1)
+                            : 'N/A'}{' '}
+                          avg buffers
                         </p>
                       </CardContent>
                     </Card>
@@ -1000,25 +1144,33 @@ const ListeningAnalytics: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-400">Like Rate</span>
                           <span className="text-white">
-                            {engagement.engagement ? engagement.engagement.likeRate.toFixed(2) : 'N/A'}
+                            {engagement.engagement
+                              ? engagement.engagement.likeRate.toFixed(2)
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Share Rate</span>
                           <span className="text-white">
-                            {engagement.engagement ? engagement.engagement.shareRate.toFixed(2) : 'N/A'}
+                            {engagement.engagement
+                              ? engagement.engagement.shareRate.toFixed(2)
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Repeat Rate</span>
                           <span className="text-white">
-                            {engagement.engagement ? engagement.engagement.repeatRate.toFixed(2) : 'N/A'}
+                            {engagement.engagement
+                              ? engagement.engagement.repeatRate.toFixed(2)
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Avg Active Days</span>
                           <span className="text-white">
-                            {engagement.engagement ? engagement.engagement.averageActiveDays : 'N/A'}
+                            {engagement.engagement
+                              ? engagement.engagement.averageActiveDays
+                              : 'N/A'}
                           </span>
                         </div>
                       </CardContent>
@@ -1034,7 +1186,9 @@ const ListeningAnalytics: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-400">New Users (7d)</span>
                           <span className="text-white">
-                            {engagement.retention ? engagement.retention.newUsersLast7Days : 'N/A'}
+                            {engagement.retention
+                              ? engagement.retention.newUsersLast7Days
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1042,13 +1196,17 @@ const ListeningAnalytics: React.FC = () => {
                             Active Users (7d)
                           </span>
                           <span className="text-white">
-                            {engagement.retention ? engagement.retention.activeUsersLast7Days : 'N/A'}
+                            {engagement.retention
+                              ? engagement.retention.activeUsersLast7Days
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Returning Users</span>
                           <span className="text-white">
-                            {engagement.retention ? engagement.retention.returningUsers : 'N/A'}
+                            {engagement.retention
+                              ? engagement.retention.returningUsers
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1056,9 +1214,11 @@ const ListeningAnalytics: React.FC = () => {
                             New User Retention
                           </span>
                           <span className="text-white">
-                            {engagement.retention ? formatPercentage(
-                              engagement.retention.newUserRetentionRate,
-                            ) : 'N/A'}
+                            {engagement.retention
+                              ? formatPercentage(
+                                  engagement.retention.newUserRetentionRate,
+                                )
+                              : 'N/A'}
                           </span>
                         </div>
                       </CardContent>
@@ -1074,15 +1234,19 @@ const ListeningAnalytics: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-400">Buffer Rate</span>
                           <span className="text-white">
-                            {engagement.quality ? formatPercentage(engagement.quality.bufferRate) : 'N/A'}
+                            {engagement.quality
+                              ? formatPercentage(engagement.quality.bufferRate)
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Quality Issues</span>
                           <span className="text-white">
-                            {engagement.quality ? formatPercentage(
-                              engagement.quality.qualityIssueRate,
-                            ) : 'N/A'}
+                            {engagement.quality
+                              ? formatPercentage(
+                                  engagement.quality.qualityIssueRate,
+                                )
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1090,13 +1254,17 @@ const ListeningAnalytics: React.FC = () => {
                             Total Buffer Events
                           </span>
                           <span className="text-white">
-                            {engagement.quality ? engagement.quality.totalBufferEvents : 'N/A'}
+                            {engagement.quality
+                              ? engagement.quality.totalBufferEvents
+                              : 'N/A'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Quality Drops</span>
                           <span className="text-white">
-                            {engagement.quality ? engagement.quality.totalQualityDrops : 'N/A'}
+                            {engagement.quality
+                              ? engagement.quality.totalQualityDrops
+                              : 'N/A'}
                           </span>
                         </div>
                       </CardContent>

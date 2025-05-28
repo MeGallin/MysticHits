@@ -42,7 +42,9 @@ class SessionManager {
   }
 
   getNextTrack(tracks: any[], currentIndex: number): string | undefined {
-    return currentIndex < tracks.length - 1 ? tracks[currentIndex + 1]?.url : undefined;
+    return currentIndex < tracks.length - 1
+      ? tracks[currentIndex + 1]?.url
+      : undefined;
   }
 
   resetSession(): void {
@@ -82,7 +84,7 @@ export const extractMetadata = (track: any): TrackMetadata => {
   // Try to extract from title if metadata is missing
   if (!metadata.artist && track.title) {
     const title = track.title.toLowerCase();
-    
+
     // Common patterns: "Artist - Title", "Artist: Title"
     const artistPattern = /^([^-:]+)[\s]*[-:]\s*(.+)$/;
     const match = title.match(artistPattern);
@@ -111,13 +113,19 @@ export const extractMetadata = (track: any): TrackMetadata => {
 /**
  * Detect network type (simplified detection)
  */
-export const detectNetworkType = (): 'wifi' | '4g' | '3g' | '2g' | 'ethernet' | 'unknown' => {
+export const detectNetworkType = ():
+  | 'wifi'
+  | '4g'
+  | '3g'
+  | '2g'
+  | 'ethernet'
+  | 'unknown' => {
   if (!('connection' in navigator)) {
     return 'unknown';
   }
 
   const connection = (navigator as any).connection;
-  
+
   if (!connection) {
     return 'unknown';
   }
@@ -147,8 +155,14 @@ export const detectNetworkType = (): 'wifi' | '4g' | '3g' | '2g' | 'ethernet' | 
 export const determinePlaybackSource = (
   isShuffled: boolean,
   isRepeating: boolean,
-  manualSelection: boolean = false
-): 'playlist' | 'search' | 'recommendation' | 'repeat' | 'shuffle' | 'direct' => {
+  manualSelection: boolean = false,
+):
+  | 'playlist'
+  | 'search'
+  | 'recommendation'
+  | 'repeat'
+  | 'shuffle'
+  | 'direct' => {
   if (isRepeating) return 'repeat';
   if (isShuffled) return 'shuffle';
   if (manualSelection) return 'direct';

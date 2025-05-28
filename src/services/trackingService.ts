@@ -12,8 +12,10 @@ import {
   qualityTracker,
   type TrackMetadata,
 } from '../utils/sessionManager';
+import { RATE_LIMIT_EVENT } from '../utils/apiErrorHandler';
 
 // API base URL from environment variables
+// Updated to match port 8000 as used in fetchServices.ts
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -23,23 +25,29 @@ export interface PlayEventPayload {
   title?: string;
   duration?: number;
   deviceType?: DeviceType;
-  
+
   // Enhanced analytics fields
   artist?: string;
   album?: string;
   genre?: string;
   year?: number;
-  
+
   // Playback context
-  source?: 'playlist' | 'search' | 'recommendation' | 'repeat' | 'shuffle' | 'direct';
+  source?:
+    | 'playlist'
+    | 'search'
+    | 'recommendation'
+    | 'repeat'
+    | 'shuffle'
+    | 'direct';
   playlistId?: string;
   previousTrack?: string;
   nextTrack?: string;
-  
+
   // Session data
   sessionId?: string;
   sessionPosition?: number;
-  
+
   // Quality metrics
   networkType?: 'wifi' | '4g' | '3g' | '2g' | 'ethernet' | 'unknown';
 }
@@ -76,7 +84,10 @@ export const logPlay = async (
     isRepeating?: boolean;
     manualSelection?: boolean;
     playlistId?: string;
-  }
+  },
+  attempt = 1,
+  maxRetries = 3,
+  initialDelay = 1000,
 ): Promise<string | void> => {
   try {
     // Check if we are authenticated before making the request
@@ -89,45 +100,46 @@ export const logPlay = async (
 
     // Extract metadata from track if available
     const metadata = context?.track ? extractMetadata(context.track) : {};
-    
+
     // Get session information
     const sessionId = sessionManager.getSessionId();
     const sessionPosition = sessionManager.addTrack(payload.trackUrl);
-    
+
     // Determine playback context
     const source = determinePlaybackSource(
       context?.isShuffled || false,
       context?.isRepeating || false,
-      context?.manualSelection || false
+      context?.manualSelection || false,
     );
-    
+
     // Get network type
     const networkType = detectNetworkType();
-    
+
     // Get previous and next tracks
     const previousTrack = sessionManager.getPreviousTrack();
-    const nextTrack = context?.tracks && context?.currentIndex !== undefined 
-      ? sessionManager.getNextTrack(context.tracks, context.currentIndex)
-      : undefined;
+    const nextTrack =
+      context?.tracks && context?.currentIndex !== undefined
+        ? sessionManager.getNextTrack(context.tracks, context.currentIndex)
+        : undefined;
 
     // Enhance payload with comprehensive analytics data
     const enhancedPayload = {
       ...payload,
       deviceType: payload.deviceType || getCurrentDeviceType(),
-      
+
       // Enhanced analytics fields
       ...metadata,
-      
+
       // Playback context
       source,
       playlistId: context?.playlistId,
       previousTrack,
       nextTrack,
-      
+
       // Session data
       sessionId,
       sessionPosition,
-      
+
       // Quality metrics
       networkType,
     };
@@ -138,10 +150,22 @@ export const logPlay = async (
       enhancedPayload,
       getAuthHeaders(),
     );
-    
+
     console.debug('Enhanced play event logged successfully', enhancedPayload);
     return response.data?.playEventId; // Return the playEventId for tracking updates
-  } catch (error) {
+  } catch (error: any) {
+    // Handle rate limiting with exponential backoff
+    if (error.response?.status === 429 && attempt <= maxRetries) {
+      const delay = initialDelay * Math.pow(2, attempt - 1);
+      console.log(
+        `Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`,
+      );
+
+      // Queue retry after delay with exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return logPlay(payload, context, attempt + 1, maxRetries, initialDelay);
+    }
+
     console.warn('Failed to log play event, adding to queue', error);
 
     // Add enhanced payload to queue
@@ -212,13 +236,18 @@ const retryQueuedEvents = async (): Promise<void> => {
       } else {
         isRetrying = false;
       }
-    } catch (error) {
-      // Increment retry count and try again after delay
+    } catch (error: any) {
+      // Use exponential backoff for retries
       retryCount++;
-      const delay = retryCount * 5000; // 5s, then 10s
+
+      // Use reasonable delay for all errors
+      const baseDelay = 5000; // 5 seconds base delay for all errors (including rate limiting)
+      const delay = baseDelay * Math.pow(2, retryCount - 1); // Exponential backoff
 
       console.debug(
-        `Retry ${retryCount} failed, will retry again in ${delay}ms`,
+        `Retry ${retryCount} failed${
+          error.response?.status === 429 ? ' (rate limited)' : ''
+        }, will retry again in ${delay}ms`,
       );
       setTimeout(attemptSend, delay);
     }
@@ -246,8 +275,12 @@ export const clearEventQueue = (): void => {
 
 /**
  * Update a play event with progress/completion data
+ * Includes retry logic with exponential backoff for rate limiting
  * @param playEventId The ID of the play event to update
  * @param updates Update data for the play event
+ * @param attempt Current retry attempt (for internal use)
+ * @param maxRetries Maximum number of retries
+ * @param initialDelay Initial delay in ms before first retry
  */
 export const updatePlayEvent = async (
   playEventId: string,
@@ -262,7 +295,10 @@ export const updatePlayEvent = async (
     bufferCount?: number;
     qualityDrops?: number;
     endedAt?: string;
-  }
+  },
+  attempt = 1,
+  maxRetries = 3,
+  initialDelay = 1000,
 ): Promise<void> => {
   try {
     const token = localStorage.getItem('token');
@@ -276,9 +312,28 @@ export const updatePlayEvent = async (
       updates,
       getAuthHeaders(),
     );
-    
+
     console.debug('Play event updated successfully', { playEventId, updates });
-  } catch (error) {
+  } catch (error: any) {
+    // Handle rate limiting with exponential backoff
+    if (error.response?.status === 429 && attempt <= maxRetries) {
+      const delay = initialDelay * Math.pow(2, attempt - 1);
+      console.log(
+        `Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`,
+      );
+
+      // Queue retry after delay with exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return updatePlayEvent(
+        playEventId,
+        updates,
+        attempt + 1,
+        maxRetries,
+        initialDelay,
+      );
+    }
+
+    // Log other errors or if we've exhausted retries
     console.warn('Failed to update play event', error);
   }
 };
@@ -292,7 +347,10 @@ export const updatePlayEvent = async (
 export const logInteraction = async (
   trackUrl: string,
   interactionType: 'like' | 'share' | 'repeat',
-  value: boolean
+  value: boolean,
+  attempt = 1,
+  maxRetries = 3,
+  initialDelay = 1000,
 ): Promise<void> => {
   try {
     const token = localStorage.getItem('token');
@@ -310,9 +368,32 @@ export const logInteraction = async (
       },
       getAuthHeaders(),
     );
-    
-    console.debug('Interaction logged successfully', { trackUrl, interactionType, value });
-  } catch (error) {
+
+    console.debug('Interaction logged successfully', {
+      trackUrl,
+      interactionType,
+      value,
+    });
+  } catch (error: any) {
+    // Handle rate limiting with exponential backoff
+    if (error.response?.status === 429 && attempt <= maxRetries) {
+      const delay = initialDelay * Math.pow(2, attempt - 1);
+      console.log(
+        `Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`,
+      );
+
+      // Queue retry after delay with exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return logInteraction(
+        trackUrl,
+        interactionType,
+        value,
+        attempt + 1,
+        maxRetries,
+        initialDelay,
+      );
+    }
+
     console.warn('Failed to log interaction', error);
   }
 };
@@ -336,7 +417,10 @@ export const batchUpdatePlayEvents = async (
       qualityDrops?: number;
       endedAt?: string;
     };
-  }>
+  }>,
+  attempt = 1,
+  maxRetries = 3,
+  initialDelay = 1000,
 ): Promise<void> => {
   try {
     const token = localStorage.getItem('token');
@@ -350,9 +434,26 @@ export const batchUpdatePlayEvents = async (
       { updates },
       getAuthHeaders(),
     );
-    
+
     console.debug('Play events batch updated successfully', updates);
-  } catch (error) {
+  } catch (error: any) {
+    // Handle rate limiting with exponential backoff
+    if (error.response?.status === 429 && attempt <= maxRetries) {
+      const delay = initialDelay * Math.pow(2, attempt - 1);
+      console.log(
+        `Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`,
+      );
+
+      // Queue retry after delay with exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return batchUpdatePlayEvents(
+        updates,
+        attempt + 1,
+        maxRetries,
+        initialDelay,
+      );
+    }
+
     console.warn('Failed to batch update play events', error);
   }
 };
