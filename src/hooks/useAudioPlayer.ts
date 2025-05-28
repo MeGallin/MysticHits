@@ -8,6 +8,8 @@ import {
 } from '../state/audioAtoms';
 import { Track } from '../types/audio';
 import { advertisements } from '../data/advertisements';
+import { logPlay, updatePlayEvent, logInteraction } from '../services/trackingService';
+import { sessionManager, qualityTracker } from '../utils/sessionManager';
 
 /**
  * Custom hook for audio player functionality
@@ -40,6 +42,95 @@ export const useAudioPlayer = (tracks: Track[]) => {
   const [showingAd, setShowingAd] = useState(false);
   const [currentAdId, setCurrentAdId] = useState<number | null>(null);
   const [trackDurations, setTrackDurations] = useAtom(trackDurationsAtom);
+  
+  // Enhanced analytics state
+  const [currentPlayEventId, setCurrentPlayEventId] = useState<string | null>(null);
+  const [trackStartTime, setTrackStartTime] = useState<number>(0);
+  const [lastProgressUpdate, setLastProgressUpdate] = useState<number>(0);
+
+  /**
+   * Log play event with enhanced analytics
+   */
+  const logPlayEvent = useCallback(async (track: Track, manualSelection: boolean = false) => {
+    try {
+      const playEventId = await logPlay(
+        {
+          trackUrl: track.url,
+          title: track.title,
+          duration: duration || track.duration,
+        },
+        {
+          track,
+          tracks,
+          currentIndex,
+          isShuffled,
+          isRepeating,
+          manualSelection,
+          playlistId: undefined, // TODO: Add playlist ID context if available
+        }
+      );
+      
+      if (playEventId) {
+        setCurrentPlayEventId(playEventId);
+        setTrackStartTime(Date.now());
+        console.debug('Play event logged with ID:', playEventId);
+      }
+    } catch (error) {
+      console.warn('Failed to log play event:', error);
+    }
+  }, [duration, tracks, currentIndex, isShuffled, isRepeating]);
+
+  /**
+   * Update current play event with progress data
+   */
+  const updateCurrentPlayEvent = useCallback(async (updates: {
+    listenDuration?: number;
+    completed?: boolean;
+    skipped?: boolean;
+    skipTime?: number;
+    repeated?: boolean;
+    liked?: boolean;
+    shared?: boolean;
+  }) => {
+    if (!currentPlayEventId) return;
+
+    try {
+      // Add quality metrics
+      const qualityMetrics = qualityTracker.getMetrics();
+      
+      await updatePlayEvent(currentPlayEventId, {
+        ...updates,
+        ...qualityMetrics,
+        endedAt: new Date().toISOString(),
+      });
+      
+      console.debug('Play event updated:', updates);
+    } catch (error) {
+      console.warn('Failed to update play event:', error);
+    }
+  }, [currentPlayEventId]);
+
+  /**
+   * Log user interaction
+   */
+  const logUserInteraction = useCallback(async (
+    interactionType: 'like' | 'share' | 'repeat',
+    value: boolean
+  ) => {
+    if (!currentTrack) return;
+
+    try {
+      await logInteraction(currentTrack.url, interactionType, value);
+      
+      // Also update the current play event
+      await updateCurrentPlayEvent({
+        [interactionType === 'like' ? 'liked' : 
+         interactionType === 'share' ? 'shared' : 'repeated']: value,
+      });
+    } catch (error) {
+      console.warn('Failed to log interaction:', error);
+    }
+  }, [currentTrack, updateCurrentPlayEvent]);
 
   /**
    * Initialize or update shuffled indices when tracks change or shuffle mode changes
@@ -98,7 +189,7 @@ export const useAudioPlayer = (tracks: Track[]) => {
   /**
    * Handle play/pause state changes
    * Plays or pauses the audio when isPlaying state changes
-   * Includes error handling for failed play attempts
+   * Includes error handling for failed play attempts and enhanced analytics
    */
   useEffect(() => {
     if (audioRef.current) {
@@ -107,11 +198,25 @@ export const useAudioPlayer = (tracks: Track[]) => {
           setError('Error playing audio: ' + error.message);
           setIsPlaying(false);
         });
+        
+        // Log play event when starting to play
+        if (currentTrack) {
+          logPlayEvent(currentTrack);
+        }
       } else {
         audioRef.current.pause();
+        
+        // Update play event with current progress when pausing
+        if (currentPlayEventId && trackStartTime > 0) {
+          const listenDuration = Math.floor((Date.now() - trackStartTime) / 1000);
+          updateCurrentPlayEvent({
+            listenDuration,
+            completed: false,
+          });
+        }
       }
     }
-  }, [isPlaying, currentTrack, setIsPlaying]);
+  }, [isPlaying, currentTrack, setIsPlaying, logPlayEvent, currentPlayEventId, trackStartTime, updateCurrentPlayEvent]);
 
   /**
    * Toggle play/pause state
@@ -123,12 +228,25 @@ export const useAudioPlayer = (tracks: Track[]) => {
   /**
    * Update progress state when audio time changes
    * Called by the audio element's timeupdate event
+   * Includes periodic analytics updates
    */
   const handleTimeUpdate = useCallback(() => {
     if (audioRef.current) {
-      setProgress(audioRef.current.currentTime);
+      const currentTime = audioRef.current.currentTime;
+      setProgress(currentTime);
+      
+      // Update analytics every 30 seconds
+      const now = Date.now();
+      if (now - lastProgressUpdate > 30000 && currentPlayEventId && trackStartTime > 0) {
+        const listenDuration = Math.floor((now - trackStartTime) / 1000);
+        updateCurrentPlayEvent({
+          listenDuration,
+          completed: false,
+        });
+        setLastProgressUpdate(now);
+      }
     }
-  }, []);
+  }, [currentPlayEventId, trackStartTime, lastProgressUpdate, updateCurrentPlayEvent]);
 
   /**
    * Play the next track in the playlist
@@ -186,11 +304,15 @@ export const useAudioPlayer = (tracks: Track[]) => {
   /**
    * Handle audio metadata loading
    * Updates duration state and track duration when audio metadata is loaded
+   * Sets up quality tracking
    */
   const handleLoadedMetadata = useCallback(() => {
     if (audioRef.current) {
       const audioDuration = audioRef.current.duration;
       setDuration(audioDuration);
+
+      // Set up quality tracking
+      qualityTracker.setAudioElement(audioRef.current);
 
       // Update the track's duration if it's not set
       if (currentTrack && currentIndex >= 0 && currentIndex < tracks.length) {
@@ -251,8 +373,18 @@ export const useAudioPlayer = (tracks: Track[]) => {
    * - If repeat is on, restarts the current track
    * - Otherwise, may show an ad (30% chance) before playing the next track
    * - Or plays the next track immediately
+   * - Logs completion analytics
    */
   const handleTrackEnd = useCallback(() => {
+    // Log track completion
+    if (currentPlayEventId && trackStartTime > 0) {
+      const listenDuration = Math.floor((Date.now() - trackStartTime) / 1000);
+      updateCurrentPlayEvent({
+        listenDuration,
+        completed: true,
+      });
+    }
+
     if (isRepeating && audioRef.current) {
       // If repeat is on, restart the current track
       audioRef.current.currentTime = 0;
@@ -260,7 +392,17 @@ export const useAudioPlayer = (tracks: Track[]) => {
         setError('Error playing audio: ' + error.message);
         setIsPlaying(false);
       });
+      
+      // Log repeat interaction
+      if (currentTrack) {
+        logUserInteraction('repeat', true);
+      }
     } else {
+      // Reset analytics state for next track
+      setCurrentPlayEventId(null);
+      setTrackStartTime(0);
+      qualityTracker.reset();
+
       // Show an advertisement before playing the next track
       // 30% chance to show an ad between tracks
       const shouldShowAd = Math.random() < 0.3;
@@ -283,6 +425,11 @@ export const useAudioPlayer = (tracks: Track[]) => {
     setIsPlaying,
     showAdvertisement,
     closeAdvertisement,
+    currentPlayEventId,
+    trackStartTime,
+    updateCurrentPlayEvent,
+    currentTrack,
+    logUserInteraction,
   ]);
 
   /**
@@ -336,6 +483,24 @@ export const useAudioPlayer = (tracks: Track[]) => {
    */
   const handleTrackSelect = useCallback(
     (index: number) => {
+      // Update current play event before switching tracks
+      if (currentPlayEventId && trackStartTime > 0) {
+        const listenDuration = Math.floor((Date.now() - trackStartTime) / 1000);
+        const completed = duration > 0 && listenDuration >= duration * 0.8; // 80% completion threshold
+        
+        updateCurrentPlayEvent({
+          listenDuration,
+          completed,
+          skipped: !completed,
+          skipTime: completed ? undefined : listenDuration,
+        });
+      }
+
+      // Reset analytics state for new track
+      setCurrentPlayEventId(null);
+      setTrackStartTime(0);
+      qualityTracker.reset();
+
       // Disable shuffle mode when manually selecting a track
       if (isShuffled) {
         setIsShuffled(false);
@@ -346,7 +511,7 @@ export const useAudioPlayer = (tracks: Track[]) => {
       setProgress(0);
       setError(null);
     },
-    [tracks, setCurrentTrack, setIsPlaying, isShuffled],
+    [tracks, setCurrentTrack, setIsPlaying, isShuffled, currentPlayEventId, trackStartTime, duration, updateCurrentPlayEvent],
   );
 
   /**
@@ -400,6 +565,7 @@ export const useAudioPlayer = (tracks: Track[]) => {
     currentAdId,
     showAdvertisement,
     closeAdvertisement,
+    logUserInteraction,
     controls: {
       togglePlay,
       handleTimeUpdate,

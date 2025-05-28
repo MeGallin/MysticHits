@@ -206,7 +206,7 @@ const InsightsPage: React.FC = () => {
         {!loading && !error && (
           <div className="space-y-6">
             {/* Key Metrics Overview */}
-            {overview && (
+            {overview && overview.overview && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MetricCard
                   title="Total Plays"
@@ -226,8 +226,8 @@ const InsightsPage: React.FC = () => {
                 />
                 <MetricCard
                   title="Completion Rate"
-                  value={formatPercentage(overview.completion.completionRate)}
-                  subtitle={`${overview.completion.skippedTracks} skipped`}
+                  value={overview.completion ? formatPercentage(overview.completion.completionRate) : 'N/A'}
+                  subtitle={overview.completion ? `${overview.completion.skippedTracks} skipped` : 'N/A'}
                   icon={<FiClock className="w-6 h-6 text-purple-400" />}
                   color="purple"
                 />
@@ -244,7 +244,7 @@ const InsightsPage: React.FC = () => {
             )}
 
             {/* Engagement Metrics */}
-            {engagement && (
+            {engagement && engagement.engagement && (
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
                 <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                   <FiHeart className="mr-2 text-red-400" /> User Engagement
@@ -309,13 +309,12 @@ const InsightsPage: React.FC = () => {
                             engagement.engagement.averageListenTimePerUser,
                           )}
                         </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Retention Rate</span>
-                        <span className="text-white">
-                          {formatPercentage(engagement.retention.retentionRate)}
-                        </span>
-                      </div>
+                      </div>                        <div className="flex justify-between">
+                          <span className="text-gray-400">Retention Rate</span>
+                          <span className="text-white">
+                            {engagement.retention ? formatPercentage(engagement.retention.retentionRate) : 'N/A'}
+                          </span>
+                        </div>
                     </div>
                   </div>
                 </div>
@@ -323,7 +322,7 @@ const InsightsPage: React.FC = () => {
             )}
 
             {/* Listening Patterns */}
-            {patterns && patterns.hourlyPattern.length > 0 && (
+            {patterns && patterns.hourlyPattern && patterns.hourlyPattern.length > 0 && (
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
                 <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                   <FiBarChart2 className="mr-2 text-blue-400" /> Listening
@@ -335,7 +334,7 @@ const InsightsPage: React.FC = () => {
                       Peak Hours
                     </h3>
                     <div className="space-y-2">
-                      {patterns.hourlyPattern
+                      {patterns.hourlyPattern && patterns.hourlyPattern
                         .sort((a, b) => b.plays - a.plays)
                         .slice(0, 6)
                         .map((hour, index) => (
@@ -354,9 +353,9 @@ const InsightsPage: React.FC = () => {
                                     width: `${
                                       (hour.plays /
                                         Math.max(
-                                          ...patterns.hourlyPattern.map(
+                                          ...(patterns.hourlyPattern ? patterns.hourlyPattern.map(
                                             (h) => h.plays,
-                                          ),
+                                          ) : [1]),
                                         )) *
                                       100
                                     }%`,
@@ -376,7 +375,7 @@ const InsightsPage: React.FC = () => {
                       Popular Genres
                     </h3>
                     <div className="space-y-2">
-                      {patterns.genrePattern
+                      {patterns.genrePattern && patterns.genrePattern
                         .sort((a, b) => b.plays - a.plays)
                         .slice(0, 6)
                         .map((genre, index) => (
@@ -395,9 +394,9 @@ const InsightsPage: React.FC = () => {
                                     width: `${
                                       (genre.plays /
                                         Math.max(
-                                          ...patterns.genrePattern.map(
+                                          ...(patterns.genrePattern ? patterns.genrePattern.map(
                                             (g) => g.plays,
-                                          ),
+                                          ) : [1]),
                                         )) *
                                       100
                                     }%`,

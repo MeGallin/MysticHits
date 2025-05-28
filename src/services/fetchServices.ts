@@ -82,7 +82,7 @@ interface PlaylistServices {
 }
 
 interface HitsServices {
-  getPageHits: (readonly?: boolean) => Promise<ApiResponse>;
+  getPageHits: () => Promise<ApiResponse>;
 }
 
 interface AdminServices {
@@ -138,9 +138,11 @@ const handleApiError = (error: AxiosError): ApiResponse => {
   if (error.response) {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
+    const responseData = error.response.data as any;
     return {
       success: false,
-      error: error.response.data?.error || 'An error occurred',
+      error:
+        responseData?.error || responseData?.message || 'An error occurred',
       status: error.response.status,
     };
   } else if (error.request) {
@@ -303,15 +305,23 @@ export const playlistServices: PlaylistServices = {
 
 // Hits/visitor count services
 export const hitsServices: HitsServices = {
-  // Get page hit count
-  getPageHits: async (readonly = false) => {
+  // Get page hit count - simplified with backend handling duplicate prevention
+  getPageHits: async () => {
     try {
-      const response: AxiosResponse = await api.get('/hits/page-hits', {
-        params: { readonly: readonly ? 'true' : undefined },
-      });
+      const response: AxiosResponse = await api.get('/hits/page-hits');
 
-      // Validate response structure
+      // Check for new simplified response format
       if (
+        response?.data?.success &&
+        response?.data?.data?.hitCount !== undefined
+      ) {
+        return {
+          success: true,
+          data: response.data.data,
+        };
+      }
+      // Fallback for old response format
+      else if (
         response?.data?.uniqueHitCount !== undefined ||
         response?.data?.totalHitCount !== undefined
       ) {
@@ -320,11 +330,10 @@ export const hitsServices: HitsServices = {
           data: response.data,
         };
       } else {
-        // Handle valid response with missing data
         return {
           success: false,
           error: 'Invalid response format',
-          data: { uniqueHitCount: 0, totalHitCount: 0 }, // Provide fallback data
+          data: { hitCount: 0 },
         };
       }
     } catch (error) {
@@ -332,7 +341,7 @@ export const hitsServices: HitsServices = {
       const errorResponse = handleApiError(error as AxiosError);
       return {
         ...errorResponse,
-        data: { uniqueHitCount: 0, totalHitCount: 0 }, // Provide fallback data with both fields
+        data: { hitCount: 0 },
       };
     }
   },

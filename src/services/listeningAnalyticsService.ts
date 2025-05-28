@@ -192,6 +192,47 @@ export interface UserEngagementAnalytics {
   updatedAt: string;
 }
 
+// Enhanced play event interface for logging
+export interface EnhancedPlayEvent {
+  trackUrl: string;
+  title?: string;
+  duration?: number;
+  deviceType?: string;
+  // Enhanced analytics fields
+  artist?: string;
+  album?: string;
+  genre?: string;
+  year?: number;
+  // Playback context
+  source?: 'playlist' | 'search' | 'recommendation' | 'repeat' | 'shuffle' | 'direct';
+  playlistId?: string;
+  previousTrack?: string;
+  nextTrack?: string;
+  // Session data
+  sessionId?: string;
+  sessionPosition?: number;
+  // Quality metrics
+  networkType?: 'wifi' | '4g' | '3g' | '2g' | 'ethernet' | 'unknown';
+}
+
+export interface PlayEventUpdate {
+  listenDuration?: number;
+  completed?: boolean;
+  skipped?: boolean;
+  skipTime?: number;
+  repeated?: boolean;
+  liked?: boolean;
+  shared?: boolean;
+  bufferCount?: number;
+  qualityDrops?: number;
+  endedAt?: string;
+}
+
+export interface BatchPlayEventUpdate {
+  playEventId: string;
+  updateData: PlayEventUpdate;
+}
+
 export interface BaseResponse {
   success: boolean;
   error?: string;
@@ -289,7 +330,7 @@ const listeningAnalyticsService = {
     try {
       await checkAndFixToken();
       const response = await axios.get(
-        `${API_BASE_URL}/admin/listening-analytics/overview?days=${days}`,
+        `${API_BASE_URL}/analytics/overview?days=${days}`,
         getAuthHeaders(),
       );
 
@@ -322,7 +363,7 @@ const listeningAnalyticsService = {
     try {
       await checkAndFixToken();
       const response = await axios.get(
-        `${API_BASE_URL}/admin/listening-analytics/user-behavior?days=${days}&limit=${limit}`,
+        `${API_BASE_URL}/analytics/user-behavior?days=${days}&limit=${limit}`,
         getAuthHeaders(),
       );
 
@@ -354,7 +395,7 @@ const listeningAnalyticsService = {
     try {
       await checkAndFixToken();
       const response = await axios.get(
-        `${API_BASE_URL}/admin/listening-analytics/patterns?days=${days}`,
+        `${API_BASE_URL}/analytics/patterns?days=${days}`,
         getAuthHeaders(),
       );
 
@@ -386,7 +427,7 @@ const listeningAnalyticsService = {
     try {
       await checkAndFixToken();
       const response = await axios.get(
-        `${API_BASE_URL}/admin/listening-analytics/geographic?days=${days}`,
+        `${API_BASE_URL}/analytics/geographic?days=${days}`,
         getAuthHeaders(),
       );
 
@@ -419,7 +460,7 @@ const listeningAnalyticsService = {
     try {
       await checkAndFixToken();
       const response = await axios.get(
-        `${API_BASE_URL}/admin/listening-analytics/playlists?days=${days}&limit=${limit}`,
+        `${API_BASE_URL}/analytics/playlists?days=${days}&limit=${limit}`,
         getAuthHeaders(),
       );
 
@@ -451,7 +492,7 @@ const listeningAnalyticsService = {
     try {
       await checkAndFixToken();
       const response = await axios.get(
-        `${API_BASE_URL}/admin/listening-analytics/engagement?days=${days}`,
+        `${API_BASE_URL}/analytics/engagement?days=${days}`,
         getAuthHeaders(),
       );
 
@@ -460,6 +501,101 @@ const listeningAnalyticsService = {
       return {
         success: true,
         data: response.data as UserEngagementAnalytics,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Enhanced play event logging with comprehensive analytics data
+   */
+  logPlay: async (
+    playEvent: EnhancedPlayEvent,
+  ): Promise<ListeningAnalyticsResponse<{ playEventId: string }>> => {
+    try {
+      await checkAndFixToken();
+      const response = await axios.post(
+        `${API_BASE_URL}/playlist/plays`,
+        playEvent,
+        getAuthHeaders(),
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Update play event with progress/completion data
+   */
+  updatePlayEvent: async (
+    playEventId: string,
+    updates: PlayEventUpdate,
+  ): Promise<ListeningAnalyticsResponse<void>> => {
+    try {
+      await checkAndFixToken();
+      const response = await axios.put(
+        `${API_BASE_URL}/playlist/plays/${playEventId}`,
+        updates,
+        getAuthHeaders(),
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Batch update multiple play events
+   */
+  batchUpdatePlayEvents: async (
+    updates: BatchPlayEventUpdate[],
+  ): Promise<ListeningAnalyticsResponse<{ modifiedCount: number }>> => {
+    try {
+      await checkAndFixToken();
+      const response = await axios.post(
+        `${API_BASE_URL}/playlist/plays/batch-update`,
+        { updates },
+        getAuthHeaders(),
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Log user interactions (like, share, repeat)
+   */
+  logInteraction: async (
+    trackUrl: string,
+    interactionType: 'like' | 'share' | 'repeat',
+    value: boolean,
+  ): Promise<ListeningAnalyticsResponse<void>> => {
+    try {
+      await checkAndFixToken();
+      const response = await axios.post(
+        `${API_BASE_URL}/playlist/interactions`,
+        { trackUrl, interactionType, value },
+        getAuthHeaders(),
+      );
+
+      return {
+        success: true,
+        data: response.data,
       };
     } catch (error) {
       return handleApiError(error);

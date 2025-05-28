@@ -88,7 +88,7 @@ export interface PlaylistServices {
 // Define the hits/visitor count services
 export interface HitsServices {
   getPageHits: () => Promise<
-    ApiSuccessResponse<{ uniqueHitCount: number }> | ApiErrorResponse
+    ApiSuccessResponse<{ hitCount: number }> | ApiErrorResponse
   >;
 }
 
