@@ -163,7 +163,7 @@ const listeningAnalyticsService = {
     try {
       // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
-        `${API_BASE_URL}/analytics/overview?days=${days}`,
+        `${API_BASE_URL}/analytics/listening-overview?days=${days}`,
         getAuthHeader(),
       );
 
@@ -205,7 +205,7 @@ const listeningAnalyticsService = {
     try {
       // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
-        `${API_BASE_URL}/analytics/user-behavior?days=${days}&limit=${limit}`,
+        `${API_BASE_URL}/analytics/user-listening-behavior?days=${days}&limit=${limit}`,
         getAuthHeader(),
       );
 
@@ -242,7 +242,7 @@ const listeningAnalyticsService = {
 
     try {
       // Log the URL for debugging
-      const url = `${API_BASE_URL}/analytics/patterns?days=${days}`;
+      const url = `${API_BASE_URL}/analytics/listening-patterns?days=${days}`;
       console.log(`Fetching patterns from: ${url}`);
 
       // Use direct API_BASE_URL, not from config file
@@ -274,7 +274,7 @@ const listeningAnalyticsService = {
         success: false,
         error: 'Failed to fetch listening patterns. Please try again later.',
         details: {
-          url: `${API_BASE_URL}/analytics/patterns`,
+          url: `${API_BASE_URL}/analytics/listening-patterns`,
           statusCode: error.response?.status,
           isConnected: navigator.onLine,
         },
@@ -298,7 +298,7 @@ const listeningAnalyticsService = {
     try {
       // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
-        `${API_BASE_URL}/analytics/geographic?days=${days}`,
+        `${API_BASE_URL}/analytics/geographic-listening?days=${days}`,
         getAuthHeader(),
       );
 
@@ -327,7 +327,7 @@ const listeningAnalyticsService = {
         success: false,
         error: 'Failed to fetch geographic analytics. Please try again later.',
         details: {
-          url: `${API_BASE_URL}/analytics/geographic`,
+          url: `${API_BASE_URL}/analytics/geographic-listening`,
           statusCode: error.response?.status,
           isConnected: navigator.onLine,
         },
@@ -355,7 +355,7 @@ const listeningAnalyticsService = {
     try {
       // Use direct API_BASE_URL, not from config file
       const response = await axios.get(
-        `${API_BASE_URL}/analytics/playlists?days=${days}&limit=${limit}`,
+        `${API_BASE_URL}/analytics/playlist-analytics?days=${days}&limit=${limit}`,
         getAuthHeader(),
       );
 
@@ -384,7 +384,7 @@ const listeningAnalyticsService = {
         success: false,
         error: 'Failed to fetch playlist analytics. Please try again later.',
         details: {
-          url: `${API_BASE_URL}/analytics/playlists`,
+          url: `${API_BASE_URL}/analytics/playlist-analytics`,
           statusCode: error.response?.status,
           isConnected: navigator.onLine,
         },
@@ -408,7 +408,7 @@ const listeningAnalyticsService = {
 
     try {
       // Log the URL being called (for debugging)
-      const url = `${API_BASE_URL}/analytics/engagement?days=${days}`;
+      const url = `${API_BASE_URL}/analytics/user-engagement?days=${days}`;
       console.log(`Fetching engagement analytics from: ${url}`);
 
       // Set a longer timeout for this API call
@@ -451,7 +451,7 @@ const listeningAnalyticsService = {
         success: false,
         error: errorMessage,
         details: {
-          url: `${API_BASE_URL}/analytics/engagement`,
+          url: `${API_BASE_URL}/analytics/user-engagement`,
           statusCode: error.response?.status,
           isConnected: navigator.onLine,
         },

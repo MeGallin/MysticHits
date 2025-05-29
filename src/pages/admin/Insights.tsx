@@ -217,17 +217,33 @@ const InsightsPage: React.FC = () => {
                 />
                 <MetricCard
                   title="Listen Time"
-                  value={formatTime(overview.overview.totalListenTime)}
-                  subtitle={`${formatPercentage(
-                    overview.overview.listenRatio,
-                  )} completion`}
+                  value={
+                    overview.overview?.totalListenTime
+                      ? formatTime(overview.overview.totalListenTime)
+                      : '0m'
+                  }
+                  subtitle={
+                    overview.overview?.listenRatio
+                      ? `${formatPercentage(
+                          overview.overview.listenRatio,
+                        )} completion`
+                      : 'No data'
+                  }
                   icon={<FiHeadphones className="w-6 h-6 text-green-400" />}
                   color="green"
                 />
                 <MetricCard
                   title="Completion Rate"
-                  value={overview.completion ? formatPercentage(overview.completion.completionRate) : 'N/A'}
-                  subtitle={overview.completion ? `${overview.completion.skippedTracks} skipped` : 'N/A'}
+                  value={
+                    overview.completion?.completionRate !== undefined
+                      ? formatPercentage(overview.completion.completionRate)
+                      : 'N/A'
+                  }
+                  subtitle={
+                    overview.completion?.skippedTracks !== undefined
+                      ? `${overview.completion.skippedTracks} skipped`
+                      : 'No data'
+                  }
                   icon={<FiClock className="w-6 h-6 text-purple-400" />}
                   color="purple"
                 />
@@ -309,12 +325,17 @@ const InsightsPage: React.FC = () => {
                             engagement.engagement.averageListenTimePerUser,
                           )}
                         </span>
-                      </div>                        <div className="flex justify-between">
-                          <span className="text-gray-400">Retention Rate</span>
-                          <span className="text-white">
-                            {engagement.retention ? formatPercentage(engagement.retention.retentionRate) : 'N/A'}
-                          </span>
-                        </div>
+                      </div>{' '}
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Retention Rate</span>
+                        <span className="text-white">
+                          {engagement.retention
+                            ? formatPercentage(
+                                engagement.retention.retentionRate,
+                              )
+                            : 'N/A'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -322,98 +343,106 @@ const InsightsPage: React.FC = () => {
             )}
 
             {/* Listening Patterns */}
-            {patterns && patterns.hourlyPattern && patterns.hourlyPattern.length > 0 && (
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-                <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <FiBarChart2 className="mr-2 text-blue-400" /> Listening
-                  Patterns
-                </h2>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-3">
-                      Peak Hours
-                    </h3>
-                    <div className="space-y-2">
-                      {patterns.hourlyPattern && patterns.hourlyPattern
-                        .sort((a, b) => b.plays - a.plays)
-                        .slice(0, 6)
-                        .map((hour, index) => (
-                          <div
-                            key={hour.hour}
-                            className="flex items-center justify-between"
-                          >
-                            <span className="text-gray-400">
-                              {hour.hour}:00 - {hour.hour + 1}:00
-                            </span>
-                            <div className="flex items-center">
-                              <div className="w-20 bg-gray-700 rounded-full h-2 mr-2">
-                                <div
-                                  className="bg-blue-500 h-2 rounded-full"
-                                  style={{
-                                    width: `${
-                                      (hour.plays /
-                                        Math.max(
-                                          ...(patterns.hourlyPattern ? patterns.hourlyPattern.map(
-                                            (h) => h.plays,
-                                          ) : [1]),
-                                        )) *
-                                      100
-                                    }%`,
-                                  }}
-                                />
+            {patterns &&
+              patterns.hourlyPattern &&
+              patterns.hourlyPattern.length > 0 && (
+                <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <FiBarChart2 className="mr-2 text-blue-400" /> Listening
+                    Patterns
+                  </h2>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-3">
+                        Peak Hours
+                      </h3>
+                      <div className="space-y-2">
+                        {patterns.hourlyPattern &&
+                          patterns.hourlyPattern
+                            .sort((a, b) => b.plays - a.plays)
+                            .slice(0, 6)
+                            .map((hour, index) => (
+                              <div
+                                key={hour.hour}
+                                className="flex items-center justify-between"
+                              >
+                                <span className="text-gray-400">
+                                  {hour.hour}:00 - {hour.hour + 1}:00
+                                </span>
+                                <div className="flex items-center">
+                                  <div className="w-20 bg-gray-700 rounded-full h-2 mr-2">
+                                    <div
+                                      className="bg-blue-500 h-2 rounded-full"
+                                      style={{
+                                        width: `${
+                                          (hour.plays /
+                                            Math.max(
+                                              ...(patterns.hourlyPattern
+                                                ? patterns.hourlyPattern.map(
+                                                    (h) => h.plays,
+                                                  )
+                                                : [1]),
+                                            )) *
+                                          100
+                                        }%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-white text-sm">
+                                    {hour.plays}
+                                  </span>
+                                </div>
                               </div>
-                              <span className="text-white text-sm">
-                                {hour.plays}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                            ))}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-white mb-3">
-                      Popular Genres
-                    </h3>
-                    <div className="space-y-2">
-                      {patterns.genrePattern && patterns.genrePattern
-                        .sort((a, b) => b.plays - a.plays)
-                        .slice(0, 6)
-                        .map((genre, index) => (
-                          <div
-                            key={genre.genre}
-                            className="flex items-center justify-between"
-                          >
-                            <span className="text-gray-400 capitalize">
-                              {genre.genre || 'Unknown'}
-                            </span>
-                            <div className="flex items-center">
-                              <div className="w-20 bg-gray-700 rounded-full h-2 mr-2">
-                                <div
-                                  className="bg-purple-500 h-2 rounded-full"
-                                  style={{
-                                    width: `${
-                                      (genre.plays /
-                                        Math.max(
-                                          ...(patterns.genrePattern ? patterns.genrePattern.map(
-                                            (g) => g.plays,
-                                          ) : [1]),
-                                        )) *
-                                      100
-                                    }%`,
-                                  }}
-                                />
+                    <div>
+                      <h3 className="text-lg font-medium text-white mb-3">
+                        Popular Genres
+                      </h3>
+                      <div className="space-y-2">
+                        {patterns.genrePattern &&
+                          patterns.genrePattern
+                            .sort((a, b) => b.plays - a.plays)
+                            .slice(0, 6)
+                            .map((genre, index) => (
+                              <div
+                                key={genre.genre}
+                                className="flex items-center justify-between"
+                              >
+                                <span className="text-gray-400 capitalize">
+                                  {genre.genre || 'Unknown'}
+                                </span>
+                                <div className="flex items-center">
+                                  <div className="w-20 bg-gray-700 rounded-full h-2 mr-2">
+                                    <div
+                                      className="bg-purple-500 h-2 rounded-full"
+                                      style={{
+                                        width: `${
+                                          (genre.plays /
+                                            Math.max(
+                                              ...(patterns.genrePattern
+                                                ? patterns.genrePattern.map(
+                                                    (g) => g.plays,
+                                                  )
+                                                : [1]),
+                                            )) *
+                                          100
+                                        }%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-white text-sm">
+                                    {genre.plays}
+                                  </span>
+                                </div>
                               </div>
-                              <span className="text-white text-sm">
-                                {genre.plays}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                            ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Original User Activity Stats Section - Enhanced */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 sm:p-6 border border-gray-700">
