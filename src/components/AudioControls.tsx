@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -12,6 +12,8 @@ import {
   Square,
   Share2,
 } from 'lucide-react';
+import { logInteraction } from '@services/trackingService';
+import { playlistServices } from '@services/fetchServices';
 
 interface AudioControlsProps {
   isPlaying: boolean;
@@ -58,26 +60,114 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
   currentTrack,
 }) => {
   const [isLiked, setIsLiked] = useState(false);
+  const [userLikes, setUserLikes] = useState<
+    Record<string, { liked: boolean; timestamp: string }>
+  >({});
+  const [likesLoaded, setLikesLoaded] = useState(false);
 
-  const handleLike = () => {
+  // Load user's liked tracks when component mounts
+  useEffect(() => {
+    const loadUserLikes = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLikesLoaded(true);
+          return;
+        }
+
+        const response = await playlistServices.getUserLikes();
+        if (response.success && response.data?.data?.likes) {
+          setUserLikes(response.data.data.likes);
+        }
+      } catch (error) {
+        console.error('Error loading user likes:', error);
+      } finally {
+        setLikesLoaded(true);
+      }
+    };
+
+    loadUserLikes();
+  }, []);
+
+  // Update like state when current track changes
+  useEffect(() => {
+    if (currentTrack && likesLoaded) {
+      const trackId = currentTrack.title; // Using title as trackId as per the logInteraction call
+      const isTrackLiked = userLikes[trackId]?.liked || false;
+      setIsLiked(isTrackLiked);
+    }
+  }, [currentTrack, userLikes, likesLoaded]);
+
+  const handleLike = async () => {
     const newLikedState = !isLiked;
     setIsLiked(newLikedState);
     onLike?.(newLikedState);
+
+    // Update local userLikes state to keep UI in sync
+    if (currentTrack) {
+      const trackId = currentTrack.title;
+      setUserLikes((prev) => {
+        const updated = { ...prev };
+        if (newLikedState) {
+          updated[trackId] = {
+            liked: true,
+            timestamp: new Date().toISOString(),
+          };
+        } else {
+          delete updated[trackId];
+        }
+        return updated;
+      });
+
+      // Log the interaction using the tracking service
+      try {
+        await logInteraction(
+          currentTrack.title, // trackUrl/trackId
+          'like',
+          newLikedState,
+        );
+        console.log('Like interaction logged successfully');
+      } catch (error: any) {
+        console.error('Error logging interaction:', error);
+
+        // Handle authentication errors
+        if (
+          error.response?.status === 401 ||
+          error.message?.includes('not authenticated')
+        ) {
+          console.warn(
+            'User not authenticated - like action UI updated but not saved to database',
+          );
+          // You might want to show a toast notification here
+          // For now, we'll just keep the UI state but warn the user
+        } else {
+          // For other errors, you might want to revert the UI state
+          console.error('Failed to save like to database:', error.message);
+          // Optionally revert the UI state on error
+          // setIsLiked(!newLikedState);
+          // setUserLikes(prev => { ... }); // revert the change
+        }
+      }
+    }
   };
 
   const handleShare = () => {
     onShare?.();
     // Basic Web Share API implementation
     if (navigator.share && currentTrack) {
-      navigator.share({
-        title: currentTrack.title,
-        text: `Check out this track: ${currentTrack.title}${currentTrack.artist ? ` by ${currentTrack.artist}` : ''}`,
-        url: window.location.href,
-      }).catch((error) => {
-        console.log('Error sharing:', error);
-        // Fallback: copy to clipboard
-        fallbackShare();
-      });
+      navigator
+        .share({
+          title: currentTrack.title,
+          text: `Check out this track: ${currentTrack.title}${
+            currentTrack.artist ? ` by ${currentTrack.artist}` : ''
+          }`,
+          url: window.location.href,
+        })
+        .catch((error) => {
+          console.log('Error sharing:', error);
+          // Fallback: copy to clipboard
+          fallbackShare();
+        });
     } else {
       fallbackShare();
     }
@@ -85,13 +175,18 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
 
   const fallbackShare = () => {
     if (currentTrack) {
-      const shareText = `Check out this track: ${currentTrack.title}${currentTrack.artist ? ` by ${currentTrack.artist}` : ''} - ${window.location.href}`;
-      navigator.clipboard.writeText(shareText).then(() => {
-        // Could show a toast notification here
-        console.log('Track info copied to clipboard');
-      }).catch(() => {
-        console.log('Could not copy to clipboard');
-      });
+      const shareText = `Check out this track: ${currentTrack.title}${
+        currentTrack.artist ? ` by ${currentTrack.artist}` : ''
+      } - ${window.location.href}`;
+      navigator.clipboard
+        .writeText(shareText)
+        .then(() => {
+          // Could show a toast notification here
+          console.log('Track info copied to clipboard');
+        })
+        .catch(() => {
+          console.log('Could not copy to clipboard');
+        });
     }
   };
   return (
@@ -170,9 +265,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             aria-label={isLiked ? 'Unlike Track' : 'Like Track'}
             title={isLiked ? 'Unlike this track' : 'Like this track'}
           >
-            <Heart 
-              className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} 
-            />
+            <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
           </button>
 
           {/* Share Button */}
@@ -241,7 +334,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center">
           <button
             className={`text-white/70 hover:text-pink-300 p-2 rounded-full ${

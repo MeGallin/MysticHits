@@ -359,22 +359,29 @@ export const logInteraction = async (
       return;
     }
 
-    await axios.post(
+    console.debug('Attempting to log interaction:', {
+      trackUrl,
+      interactionType,
+      value,
+      endpoint: `${API_BASE_URL}/playlist/interactions`,
+    });
+
+    const response = await axios.post(
       `${API_BASE_URL}/playlist/interactions`,
       {
-        trackUrl,
+        trackId: trackUrl,
         interactionType,
-        value,
+        timestamp: Date.now(),
       },
       getAuthHeaders(),
     );
 
-    console.debug('Interaction logged successfully', {
-      trackUrl,
-      interactionType,
-      value,
-    });
+    console.debug('Interaction logged successfully:', response.data);
   } catch (error: any) {
+    console.error('Failed to log interaction - Full error:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+
     // Handle rate limiting with exponential backoff
     if (error.response?.status === 429 && attempt <= maxRetries) {
       const delay = initialDelay * Math.pow(2, attempt - 1);
@@ -382,7 +389,6 @@ export const logInteraction = async (
         `Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`,
       );
 
-      // Queue retry after delay with exponential backoff
       await new Promise((resolve) => setTimeout(resolve, delay));
       return logInteraction(
         trackUrl,
@@ -394,7 +400,7 @@ export const logInteraction = async (
       );
     }
 
-    console.warn('Failed to log interaction', error);
+    console.warn('Failed to log interaction after all retries');
   }
 };
 

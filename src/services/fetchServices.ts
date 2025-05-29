@@ -79,6 +79,7 @@ interface ContactServices {
 
 interface PlaylistServices {
   getPlaylistFromUrl: (url: string) => Promise<ApiResponse>;
+  getUserLikes: () => Promise<ApiResponse>;
 }
 
 interface HitsServices {
@@ -301,14 +302,41 @@ export const playlistServices: PlaylistServices = {
       return handleApiError(error as AxiosError);
     }
   },
+
+  // Get user's liked tracks
+  getUserLikes: async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return {
+          success: false,
+          error: 'Authentication required',
+          status: 401,
+        };
+      }
+
+      const response: AxiosResponse = await api.get('/playlist/likes', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return handleApiError(error as AxiosError);
+    }
+  },
 };
 
 // Hits/visitor count services
 export const hitsServices: HitsServices = {
   // Get page hit count - simplified with backend handling duplicate prevention
-  getPageHits: async () => {
+  getPageHits: async (page?: string) => {
     try {
-      const response: AxiosResponse = await api.get('/hits/page-hits');
+      const params = page ? `?page=${encodeURIComponent(page)}` : '';
+      const response: AxiosResponse = await api.get(`/hits/page-hits${params}`);
 
       // Check for new simplified response format
       if (
