@@ -56,6 +56,15 @@ const ListeningAnalytics: React.FC = () => {
     null,
   );
 
+  console.log(
+    'ListeningAnalytics component mounted - initial state:',
+    overview,
+    userBehavior,
+    patterns,
+    geographic,
+    playlists,
+    engagement,
+  );
   // Loading states
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [userBehaviorLoading, setUserBehaviorLoading] = useState(false);
