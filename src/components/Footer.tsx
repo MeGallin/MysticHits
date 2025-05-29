@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { hitsServices } from '@services/fetchServices';
 
 const Footer: React.FC = () => {
   const [hitCount, setHitCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     const fetchViewCount = async () => {
       try {
-        const response = await hitsServices.getPageHits();
+        // Get current page path, default to 'home' for root
+        const currentPage = location.pathname === '/' ? 'home' : location.pathname.slice(1);
+        const response = await hitsServices.getPageHits(currentPage);
 
         if (response.success && response.data?.hitCount !== undefined) {
           setHitCount(response.data.hitCount);
@@ -26,7 +29,7 @@ const Footer: React.FC = () => {
     };
 
     fetchViewCount();
-  }, []);
+  }, [location.pathname]);
 
   return (
     <footer className="w-full size-auto bg-gradient-to-r from-custom-blue via-custom-orange to-custom-green text-white text-center shadow-lg shrink-0 border-t-2 border-gray-900">
