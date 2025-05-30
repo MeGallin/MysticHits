@@ -307,15 +307,15 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
             )}
           </button>
 
-          <div className="relative flex-1">
+          <div className="relative flex-1 group">
             <input
               type="range"
               min="0"
               max="1"
-              step="0.005"
+              step="0.01"
               value={volume}
               onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-8 appearance-none bg-transparent rounded-full outline-none cursor-pointer z-10 relative opacity-70 hover:opacity-100 transition-opacity volume-range"
+              className="w-full h-8 appearance-none bg-transparent rounded-full outline-none cursor-pointer z-10 relative opacity-70 group-hover:opacity-100 transition-opacity volume-range"
               aria-label="Volume control"
             />
             <div className="absolute top-1/2 left-0 w-full h-3 bg-white/20 rounded-full -translate-y-1/2 pointer-events-none">
@@ -331,6 +331,59 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
                   boxShadow: '0 0 5px rgba(255, 255, 255, 0.5)',
                 }}
               ></div>
+            </div>
+
+            {/* Volume preset buttons - moved closer with -bottom-3 */}
+            <div className="absolute -bottom-3 left-0 w-full flex justify-between px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => onVolumeChange(0)}
+                className="w-3 h-3 rounded-full bg-white/20 hover:bg-pink-500/50 transition-colors"
+                aria-label="Mute"
+                title="Mute"
+              ></button>
+              <button
+                onClick={() => onVolumeChange(0.2)}
+                className="w-3 h-3 rounded-full bg-white/20 hover:bg-pink-500/50 transition-colors"
+                aria-label="20% volume"
+                title="20%"
+              ></button>
+              <button
+                onClick={() => onVolumeChange(0.4)}
+                className="w-3 h-3 rounded-full bg-white/20 hover:bg-pink-500/50 transition-colors"
+                aria-label="40% volume"
+                title="40%"
+              ></button>
+              <button
+                onClick={() => onVolumeChange(0.6)}
+                className="w-3 h-3 rounded-full bg-white/20 hover:bg-pink-500/50 transition-colors"
+                aria-label="60% volume"
+                title="60%"
+              ></button>
+              <button
+                onClick={() => onVolumeChange(0.8)}
+                className="w-3 h-3 rounded-full bg-white/20 hover:bg-pink-500/50 transition-colors"
+                aria-label="80% volume"
+                title="80%"
+              ></button>
+              <button
+                onClick={() => onVolumeChange(1)}
+                className="w-3 h-3 rounded-full bg-white/20 hover:bg-pink-500/50 transition-colors"
+                aria-label="Maximum volume"
+                title="100%"
+              ></button>
+            </div>
+
+            {/* Volume percentage tooltip - moved closer with -top-4 */}
+            <div className="absolute -top-4 left-0 w-full flex justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <div
+                className="px-2 py-0.5 bg-black/70 rounded text-xs text-white"
+                style={{
+                  left: `${volume * 100}%`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                {Math.round(volume * 100)}%
+              </div>
             </div>
           </div>
         </div>

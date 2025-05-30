@@ -747,189 +747,272 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <>
             {isVideoTrack ? (
               <div
-                className={`video-container sticky top-0 z-40 w-full ${
+                className={`sticky top-0 z-40 w-full ${
                   isVideoTrack ? 'bg-black' : ''
                 }`}
               >
+                <div className="video-container w-full">
+                  <MediaPlayer
+                    ref={audioRef}
+                    src={currentTrack.url}
+                    mime={currentTrack.mime || 'video/mp4'}
+                    className="w-full h-[300px]"
+                    showControls={false}
+                    onTimeUpdate={controls.handleTimeUpdate}
+                    onLoadedMetadata={controls.handleLoadedMetadata}
+                    onPlay={() => {
+                      // Enhanced analytics logging is handled in useAudioPlayer hook
+                    }}
+                    onError={(e) => {
+                      console.error('Media error:', e);
+                      console.error('Failed to load track:', currentTrack);
+
+                      // Fallback: If video fails, try to play as audio
+                      if (isVideoTrack) {
+                        const updatedTracks = combinedTracks.map((track, idx) =>
+                          idx === currentIndex
+                            ? { ...track, mime: 'audio/mpeg' }
+                            : track,
+                        );
+                        setCombinedTracks(updatedTracks);
+
+                        if (
+                          remotePlaylist.some(
+                            (track) => track.url === currentTrack.url,
+                          )
+                        ) {
+                          const updatedRemotePlaylist = remotePlaylist.map(
+                            (track) =>
+                              track.url === currentTrack.url
+                                ? { ...track, mime: 'audio/mpeg' }
+                                : track,
+                          );
+                          setRemotePlaylist(updatedRemotePlaylist);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                {combinedTracks.length > 0 && (
+                  <div className="bg-gradient-to-br from-indigo-900/90 via-purple-800/90 to-pink-900/90 backdrop-blur-sm p-1 space-y-1 flex-grow flex flex-col justify-center">
+                    {/* Progress Bar */}
+                    <div className="space-y-0.5">
+                      <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                        <input
+                          type="range"
+                          min="0"
+                          max={duration || 100}
+                          value={progress}
+                          onChange={(e) =>
+                            controls.handleProgressChange(
+                              parseFloat(e.target.value),
+                            )
+                          }
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          aria-label="Seek"
+                        />
+                        <div
+                          className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-full pointer-events-none"
+                          style={{
+                            width: `${
+                              duration > 0 ? (progress / duration) * 100 : 0
+                            }%`,
+                          }}
+                        ></div>
+                        <div
+                          className="absolute top-1/2 h-4 w-4 rounded-full bg-white shadow-lg -translate-y-1/2 pointer-events-none"
+                          style={{
+                            left: `${
+                              duration > 0 ? (progress / duration) * 100 : 0
+                            }%`,
+                            transform: 'translateX(-50%) translateY(-50%)',
+                            boxShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span className="text-pink-200 font-medium">
+                          {formatTime(progress)}
+                        </span>
+                        <span className="text-blue-200 font-medium">
+                          {formatTime(duration)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Controls */}
+                    <AudioControls
+                      isPlaying={isPlaying}
+                      onPlayPause={controls.togglePlay}
+                      onPrevious={controls.playPreviousTrack}
+                      onNext={controls.playNextTrack}
+                      onStop={controls.handleStop}
+                      isShuffled={controls.isShuffled}
+                      onShuffle={controls.toggleShuffle}
+                      isRepeating={controls.isRepeating}
+                      onRepeat={controls.toggleRepeat}
+                      isMuted={controls.isMuted}
+                      onMute={controls.toggleMute}
+                      onShowPlaylist={() => setShowPlaylist(!showPlaylist)}
+                      showPlaylist={showPlaylist}
+                      volume={volume}
+                      onVolumeChange={controls.handleVolumeChange}
+                      onLike={handleLike}
+                      onShare={handleShare}
+                      currentTrack={
+                        currentTrack
+                          ? {
+                              title: currentTrack.title,
+                              artist: currentTrack.artist,
+                            }
+                          : null
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
                 <MediaPlayer
                   ref={audioRef}
                   src={currentTrack.url}
-                  mime={currentTrack.mime || 'video/mp4'}
-                  className="w-full max-h-[300px]"
+                  mime={currentTrack.mime || 'audio/mpeg'}
                   showControls={false}
                   onTimeUpdate={controls.handleTimeUpdate}
                   onLoadedMetadata={controls.handleLoadedMetadata}
                   onPlay={() => {
                     // Enhanced analytics logging is handled in useAudioPlayer hook
-                    // when play state changes, so we don't need to call logPlay here
                   }}
                   onError={(e) => {
                     console.error('Media error:', e);
                     console.error('Failed to load track:', currentTrack);
 
-                    // Fallback: If video fails, try to play as audio
-                    if (isVideoTrack) {
-                      const updatedTracks = combinedTracks.map((track, idx) =>
-                        idx === currentIndex
-                          ? { ...track, mime: 'audio/mpeg' }
-                          : track,
+                    // Try to create a fallback audio element to test the source
+                    const testAudio = new Audio();
+                    testAudio.src = currentTrack.url;
+                    testAudio.onerror = () => {
+                      console.error(
+                        'Fallback audio test failed for URL:',
+                        currentTrack.url,
                       );
-                      setCombinedTracks(updatedTracks);
 
-                      if (
-                        remotePlaylist.some(
-                          (track) => track.url === currentTrack.url,
-                        )
-                      ) {
-                        const updatedRemotePlaylist = remotePlaylist.map(
-                          (track) =>
-                            track.url === currentTrack.url
-                              ? { ...track, mime: 'audio/mpeg' }
-                              : track,
+                      // Try with a different MIME type if the current one fails
+                      if (currentTrack.mime !== 'audio/mpeg') {
+                        // Try with audio/mpeg MIME type as fallback
+
+                        // Update the track in the combined tracks array with audio/mpeg MIME type
+                        const updatedTracks = combinedTracks.map((track, idx) =>
+                          idx === currentIndex
+                            ? { ...track, mime: 'audio/mpeg' }
+                            : track,
                         );
-                        setRemotePlaylist(updatedRemotePlaylist);
+
+                        setCombinedTracks(updatedTracks);
+
+                        // If this is a remote track, also update it in the remote playlist
+                        if (
+                          remotePlaylist.some(
+                            (track) => track.url === currentTrack.url,
+                          )
+                        ) {
+                          const updatedRemotePlaylist = remotePlaylist.map(
+                            (track) =>
+                              track.url === currentTrack.url
+                                ? { ...track, mime: 'audio/mpeg' }
+                                : track,
+                          );
+                          setRemotePlaylist(updatedRemotePlaylist);
+                        }
                       }
-                    }
+                    };
                   }}
                 />
-              </div>
-            ) : (
-              <MediaPlayer
-                ref={audioRef}
-                src={currentTrack.url}
-                mime={currentTrack.mime || 'audio/mpeg'}
-                showControls={false}
-                onTimeUpdate={controls.handleTimeUpdate}
-                onLoadedMetadata={controls.handleLoadedMetadata}
-                onPlay={() => {
-                  // Enhanced analytics logging is handled in useAudioPlayer hook
-                  // when play state changes, so we don't need to call logPlay here
-                }}
-                onError={(e) => {
-                  console.error('Media error:', e);
-                  console.error('Failed to load track:', currentTrack);
 
-                  // Try to create a fallback audio element to test the source
-                  const testAudio = new Audio();
-                  testAudio.src = currentTrack.url;
-                  testAudio.onerror = () => {
-                    console.error(
-                      'Fallback audio test failed for URL:',
-                      currentTrack.url,
-                    );
+                {combinedTracks.length > 0 && (
+                  <div className="bg-gradient-to-br from-indigo-900/90 via-purple-800/90 to-pink-900/90 backdrop-blur-sm p-1 space-y-1 flex-grow flex flex-col justify-center sticky top-0 z-40">
+                    {/* Progress Bar */}
+                    <div className="space-y-0.5">
+                      <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                        <input
+                          type="range"
+                          min="0"
+                          max={duration || 100}
+                          value={progress}
+                          onChange={(e) =>
+                            controls.handleProgressChange(
+                              parseFloat(e.target.value),
+                            )
+                          }
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          aria-label="Seek"
+                        />
+                        <div
+                          className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-full pointer-events-none"
+                          style={{
+                            width: `${
+                              duration > 0 ? (progress / duration) * 100 : 0
+                            }%`,
+                          }}
+                        ></div>
+                        <div
+                          className="absolute top-1/2 h-4 w-4 rounded-full bg-white shadow-lg -translate-y-1/2 pointer-events-none"
+                          style={{
+                            left: `${
+                              duration > 0 ? (progress / duration) * 100 : 0
+                            }%`,
+                            transform: 'translateX(-50%) translateY(-50%)',
+                            boxShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span className="text-pink-200 font-medium">
+                          {formatTime(progress)}
+                        </span>
+                        <span className="text-blue-200 font-medium">
+                          {formatTime(duration)}
+                        </span>
+                      </div>
+                    </div>
 
-                    // Try with a different MIME type if the current one fails
-                    if (currentTrack.mime !== 'audio/mpeg') {
-                      // Try with audio/mpeg MIME type as fallback
-
-                      // Update the track in the combined tracks array with audio/mpeg MIME type
-                      const updatedTracks = combinedTracks.map((track, idx) =>
-                        idx === currentIndex
-                          ? { ...track, mime: 'audio/mpeg' }
-                          : track,
-                      );
-
-                      setCombinedTracks(updatedTracks);
-
-                      // If this is a remote track, also update it in the remote playlist
-                      if (
-                        remotePlaylist.some(
-                          (track) => track.url === currentTrack.url,
-                        )
-                      ) {
-                        const updatedRemotePlaylist = remotePlaylist.map(
-                          (track) =>
-                            track.url === currentTrack.url
-                              ? { ...track, mime: 'audio/mpeg' }
-                              : track,
-                        );
-                        setRemotePlaylist(updatedRemotePlaylist);
+                    {/* Controls */}
+                    <AudioControls
+                      isPlaying={isPlaying}
+                      onPlayPause={controls.togglePlay}
+                      onPrevious={controls.playPreviousTrack}
+                      onNext={controls.playNextTrack}
+                      onStop={controls.handleStop}
+                      isShuffled={controls.isShuffled}
+                      onShuffle={controls.toggleShuffle}
+                      isRepeating={controls.isRepeating}
+                      onRepeat={controls.toggleRepeat}
+                      isMuted={controls.isMuted}
+                      onMute={controls.toggleMute}
+                      onShowPlaylist={() => setShowPlaylist(!showPlaylist)}
+                      showPlaylist={showPlaylist}
+                      volume={volume}
+                      onVolumeChange={controls.handleVolumeChange}
+                      onLike={handleLike}
+                      onShare={handleShare}
+                      currentTrack={
+                        currentTrack
+                          ? {
+                              title: currentTrack.title,
+                              artist: currentTrack.artist,
+                            }
+                          : null
                       }
-                    }
-                  };
-                }}
-              />
+                    />
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
 
-        {combinedTracks.length === 0 ? (
+        {combinedTracks.length === 0 && (
           <div className="p-6 space-y-4 flex-grow flex items-center justify-center">
             <StaticAdvertisements />
-          </div>
-        ) : (
-          <div
-            className={`bg-gradient-to-br from-indigo-900/90 via-purple-800/90 to-pink-900/90 backdrop-blur-sm  p-1 space-y-1 flex-grow flex flex-col justify-center ${
-              !isVideoTrack ? 'sticky top-0 z-40' : ''
-            }`}
-          >
-            {/* Progress Bar */}
-            <div className="space-y-0.5">
-              <div className="relative w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 100}
-                  value={progress}
-                  onChange={(e) =>
-                    controls.handleProgressChange(parseFloat(e.target.value))
-                  }
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  aria-label="Seek"
-                />
-                <div
-                  className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-full pointer-events-none"
-                  style={{
-                    width: `${duration > 0 ? (progress / duration) * 100 : 0}%`,
-                  }}
-                ></div>
-                <div
-                  className="absolute top-1/2 h-4 w-4 rounded-full bg-white shadow-lg -translate-y-1/2 pointer-events-none"
-                  style={{
-                    left: `${duration > 0 ? (progress / duration) * 100 : 0}%`,
-                    transform: 'translateX(-50%) translateY(-50%)',
-                    boxShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
-                  }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span className="text-pink-200 font-medium">
-                  {formatTime(progress)}
-                </span>
-                <span className="text-blue-200 font-medium">
-                  {formatTime(duration)}
-                </span>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <AudioControls
-              isPlaying={isPlaying}
-              onPlayPause={controls.togglePlay}
-              onPrevious={controls.playPreviousTrack}
-              onNext={controls.playNextTrack}
-              onStop={controls.handleStop}
-              isShuffled={controls.isShuffled}
-              onShuffle={controls.toggleShuffle}
-              isRepeating={controls.isRepeating}
-              onRepeat={controls.toggleRepeat}
-              isMuted={controls.isMuted}
-              onMute={controls.toggleMute}
-              onShowPlaylist={() => setShowPlaylist(!showPlaylist)}
-              showPlaylist={showPlaylist}
-              volume={volume}
-              onVolumeChange={controls.handleVolumeChange}
-              onLike={handleLike}
-              onShare={handleShare}
-              currentTrack={
-                currentTrack
-                  ? {
-                      title: currentTrack.title,
-                      artist: currentTrack.artist,
-                    }
-                  : null
-              }
-            />
           </div>
         )}
 
