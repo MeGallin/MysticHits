@@ -3,9 +3,21 @@ import axios from 'axios';
 // Simple in-memory cache for analytics data
 const cache: Record<string, { data: any; timestamp: number }> = {};
 
-// API configuration - use same variable as other services
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// API configuration - fix production environment detection
+const getApiBaseUrl = () => {
+  // Check if we're in production mode
+  if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
+    // Use production URL
+    return (
+      import.meta.env.VITE_API_URL || 'https://mystichits.onrender.com/api'
+    );
+  }
+
+  // Use development URL
+  return import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // API response interface
 interface ApiResponse<T> {
@@ -190,7 +202,10 @@ class ListeningAnalyticsService {
    * Check if analytics is available in current environment
    */
   private isAnalyticsAvailable(): boolean {
-    // Enable analytics in all environments since we have the backend setup
+    // Disable analytics in production until backend analytics routes are deployed
+    if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
+      return false;
+    }
     return true;
   }
 
@@ -201,6 +216,16 @@ class ListeningAnalyticsService {
     days = 7,
     forceFresh: boolean = false,
   ): Promise<ApiResponse<ListeningAnalyticsOverview>> {
+    // Check availability first
+    if (!this.isAnalyticsAvailable()) {
+      return {
+        success: false,
+        error:
+          'Analytics not available in production yet - feature coming soon!',
+        data: null,
+      };
+    }
+
     const cacheKey = `overview_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -258,6 +283,15 @@ class ListeningAnalyticsService {
     limit = 20,
     forceFresh: boolean = false,
   ): Promise<ApiResponse<UserListeningBehavior>> {
+    if (!this.isAnalyticsAvailable()) {
+      return {
+        success: false,
+        error:
+          'Analytics not available in production yet - feature coming soon!',
+        data: null,
+      };
+    }
+
     const cacheKey = `user_behavior_${days}_${limit}`;
     const cachedData = cache[cacheKey];
 
@@ -308,6 +342,15 @@ class ListeningAnalyticsService {
     days = 7,
     forceFresh: boolean = false,
   ): Promise<ApiResponse<ListeningPatterns>> {
+    if (!this.isAnalyticsAvailable()) {
+      return {
+        success: false,
+        error:
+          'Analytics not available in production yet - feature coming soon!',
+        data: null,
+      };
+    }
+
     const cacheKey = `patterns_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -354,6 +397,15 @@ class ListeningAnalyticsService {
     days = 7,
     forceFresh: boolean = false,
   ): Promise<ApiResponse<GeographicAnalytics>> {
+    if (!this.isAnalyticsAvailable()) {
+      return {
+        success: false,
+        error:
+          'Analytics not available in production yet - feature coming soon!',
+        data: null,
+      };
+    }
+
     const cacheKey = `geographic_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -401,6 +453,15 @@ class ListeningAnalyticsService {
     limit = 15,
     forceFresh: boolean = false,
   ): Promise<ApiResponse<PlaylistAnalytics>> {
+    if (!this.isAnalyticsAvailable()) {
+      return {
+        success: false,
+        error:
+          'Analytics not available in production yet - feature coming soon!',
+        data: null,
+      };
+    }
+
     const cacheKey = `playlists_${days}_${limit}`;
     const cachedData = cache[cacheKey];
 
@@ -447,6 +508,15 @@ class ListeningAnalyticsService {
     days = 7,
     forceFresh: boolean = false,
   ): Promise<ApiResponse<UserEngagementAnalytics>> {
+    if (!this.isAnalyticsAvailable()) {
+      return {
+        success: false,
+        error:
+          'Analytics not available in production yet - feature coming soon!',
+        data: null,
+      };
+    }
+
     const cacheKey = `engagement_${days}`;
     const cachedData = cache[cacheKey];
 
