@@ -1,49 +1,15 @@
 import axios from 'axios';
-import { checkAndFixToken } from '../utils/tokenFixer';
 
 // Simple in-memory cache for analytics data
 const cache: Record<string, { data: any; timestamp: number }> = {};
 
-// API base URL from environment variables with production URL hardcoded as fallback
-const getApiBaseUrl = () => {
-  // Get environment variables
-  const envApiUrl = import.meta.env.VITE_API_URL;
-  const isProd = import.meta.env.PROD;
-  const isLocalhost =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
+// API base URL from environment variables
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-  // In production or when not on localhost, always use production URL
-  if (isProd || !isLocalhost) {
-    return envApiUrl || 'https://mystichits.onrender.com/api';
-  }
-
-  // In development, use environment variable or localhost fallback
-  return envApiUrl || 'http://localhost:8000/api';
-};
-
-const API_BASE_URL = getApiBaseUrl();
-
-// Temporary debug logging for production issues
-if (typeof window !== 'undefined') {
-  console.log('[Analytics Debug] API_BASE_URL:', API_BASE_URL);
-  console.log('[Analytics Debug] Environment check:', {
-    hostname: window.location.hostname,
-    href: window.location.href,
-    isProd: import.meta.env.PROD,
-    envUrl: import.meta.env.VITE_API_URL,
-    mode: import.meta.env.MODE,
-  });
-}
-
-// Get authentication headers - MATCH the pattern from trackingService.ts
+// Get authentication headers - retrieve token at call time, not initialization time
 const getAuthHeaders = () => {
-  // Check and fix token format if needed
-  checkAndFixToken();
-
-  // Get the (potentially fixed) token
   const token = localStorage.getItem('token');
-
   return {
     headers: {
       'Content-Type': 'application/json',
