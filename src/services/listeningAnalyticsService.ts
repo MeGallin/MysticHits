@@ -1,23 +1,29 @@
 import axios from 'axios';
+import { checkAndFixToken } from '../utils/tokenFixer';
 
 // Simple in-memory cache for analytics data
 const cache: Record<string, { data: any; timestamp: number }> = {};
 
-// API configuration - fix production environment detection
-const getApiBaseUrl = () => {
-  // Check if we're in production mode
-  if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
-    // Use production URL
-    return (
-      import.meta.env.VITE_API_URL || 'https://mystichits.onrender.com/api'
-    );
-  }
+// API base URL from environment variables - MATCH the pattern from trackingService.ts
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-  // Use development URL
-  return import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Get authentication headers - MATCH the pattern from trackingService.ts
+const getAuthHeaders = () => {
+  // Check and fix token format if needed
+  checkAndFixToken();
+
+  // Get the (potentially fixed) token
+  const token = localStorage.getItem('token');
+
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token ? `Bearer ${token}` : '',
+    },
+    withCredentials: true, // Include credentials for cross-origin requests
+  };
 };
-
-const API_BASE_URL = getApiBaseUrl();
 
 // API response interface
 interface ApiResponse<T> {
@@ -29,24 +35,6 @@ interface ApiResponse<T> {
   stale?: boolean;
   details?: any;
 }
-
-// Create axios instance
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 // Data interfaces
 export interface ListeningAnalyticsOverview {
@@ -238,9 +226,14 @@ class ListeningAnalyticsService {
     }
 
     try {
-      const response = await api.get(`${this.BASE_URL}/listening-overview`, {
-        params: { days },
-      });
+      // Use axios.get with authHeaders like trackingService.ts
+      const response = await axios.get(
+        `${API_BASE_URL}${this.BASE_URL}/listening-overview`,
+        {
+          ...getAuthHeaders(),
+          params: { days },
+        },
+      );
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -304,9 +297,10 @@ class ListeningAnalyticsService {
     }
 
     try {
-      const response = await api.get(
-        `${this.BASE_URL}/user-listening-behavior`,
+      const response = await axios.get(
+        `${API_BASE_URL}${this.BASE_URL}/user-listening-behavior`,
         {
+          ...getAuthHeaders(),
           params: { days, limit },
         },
       );
@@ -363,9 +357,13 @@ class ListeningAnalyticsService {
     }
 
     try {
-      const response = await api.get(`${this.BASE_URL}/listening-patterns`, {
-        params: { days },
-      });
+      const response = await axios.get(
+        `${API_BASE_URL}${this.BASE_URL}/listening-patterns`,
+        {
+          ...getAuthHeaders(),
+          params: { days },
+        },
+      );
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -418,9 +416,13 @@ class ListeningAnalyticsService {
     }
 
     try {
-      const response = await api.get(`${this.BASE_URL}/geographic-listening`, {
-        params: { days },
-      });
+      const response = await axios.get(
+        `${API_BASE_URL}${this.BASE_URL}/geographic-listening`,
+        {
+          ...getAuthHeaders(),
+          params: { days },
+        },
+      );
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -474,9 +476,13 @@ class ListeningAnalyticsService {
     }
 
     try {
-      const response = await api.get(`${this.BASE_URL}/playlist-analytics`, {
-        params: { days, limit },
-      });
+      const response = await axios.get(
+        `${API_BASE_URL}${this.BASE_URL}/playlist-analytics`,
+        {
+          ...getAuthHeaders(),
+          params: { days, limit },
+        },
+      );
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -530,9 +536,13 @@ class ListeningAnalyticsService {
     }
 
     try {
-      const response = await api.get(`${this.BASE_URL}/user-engagement`, {
-        params: { days },
-      });
+      const response = await axios.get(
+        `${API_BASE_URL}${this.BASE_URL}/user-engagement`,
+        {
+          ...getAuthHeaders(),
+          params: { days },
+        },
+      );
 
       if (response.data && response.data.success) {
         cache[cacheKey] = {
