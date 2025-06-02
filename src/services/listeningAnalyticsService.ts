@@ -3,9 +3,9 @@ import axios from 'axios';
 // Simple in-memory cache for analytics data
 const cache: Record<string, { data: any; timestamp: number }> = {};
 
-// API configuration
+// API configuration - use same variable as other services
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // API response interface
 interface ApiResponse<T> {
@@ -184,7 +184,15 @@ export interface UserEngagementAnalytics {
 
 // Service functions
 class ListeningAnalyticsService {
-  private readonly BASE_URL = '/api/analytics';
+  private readonly BASE_URL = '/analytics';
+
+  /**
+   * Check if analytics is available in current environment
+   */
+  private isAnalyticsAvailable(): boolean {
+    // Enable analytics in all environments since we have the backend setup
+    return true;
+  }
 
   /**
    * Fetch listening analytics overview
@@ -196,7 +204,6 @@ class ListeningAnalyticsService {
     const cacheKey = `overview_${days}`;
     const cachedData = cache[cacheKey];
 
-    // Use cache if available and not expired (5 minutes) and not forcing refresh
     if (
       !forceFresh &&
       cachedData &&
@@ -210,7 +217,6 @@ class ListeningAnalyticsService {
         params: { days },
       });
 
-      // Store in cache
       if (response.data.success) {
         cache[cacheKey] = {
           data: response.data.data,
@@ -229,11 +235,17 @@ class ListeningAnalyticsService {
         'Full URL attempted:',
         `${API_BASE_URL}${this.BASE_URL}/listening-overview`,
       );
+
       return {
         success: false,
         error:
           error.response?.data?.error || 'Failed to fetch analytics overview',
         data: null,
+        details: {
+          url: `${API_BASE_URL}${this.BASE_URL}/listening-overview`,
+          statusCode: error.response?.status,
+          environment: import.meta.env.PROD ? 'production' : 'development',
+        },
       };
     }
   }
