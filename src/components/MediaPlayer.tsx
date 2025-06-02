@@ -1,5 +1,6 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 import { Maximize, Minimize } from 'lucide-react';
+import './MediaPlayer.css';
 
 interface MediaPlayerProps {
   src: string;
@@ -65,6 +66,29 @@ const MediaPlayer = forwardRef<
 
   // Determine media type from MIME string
   const isVideo = mime?.startsWith('video');
+
+  // Download prevention handlers
+  const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent long-press on mobile
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+  };
+
+  const handleSelectStart = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    return false;
+  };
 
   // Fullscreen functionality
   const toggleFullscreen = async () => {
@@ -186,6 +210,14 @@ const MediaPlayer = forwardRef<
         isVideo ? 'video-mode' : 'audio-mode'
       }`}
       data-player-type={isVideo ? 'video' : 'audio'} // Add a data attribute for debugging
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'manipulation',
+      }}
     >
       {/* Media Player Element - with specific styling based on media type */}
       <video
@@ -201,8 +233,20 @@ const MediaPlayer = forwardRef<
           display: isVideo ? 'block' : 'none', // Hide audio element completely, we'll use our custom UI
           height: isVideo ? 'auto' : '0', // Force height for audio mode
           minHeight: isVideo ? '200px' : '0', // Set minimum height based on content type
+          // Enhanced mobile protection
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          msUserSelect: 'none',
+          touchAction: 'manipulation',
         }}
         controls={props.showControls !== false}
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture
+        preload="metadata"
+        onContextMenu={handleContextMenu}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onError={handleMediaError}
         onLoadedData={handleLoadedData}
         onTimeUpdate={onTimeUpdate}
@@ -210,6 +254,23 @@ const MediaPlayer = forwardRef<
         onPlay={onPlay}
         onEnded={onEnded}
       />
+
+      {/* Enhanced mobile overlay protection - Only for videos */}
+      {isVideo && (
+        <div
+          className="absolute inset-0"
+          style={{
+            zIndex: 1,
+            pointerEvents: 'none',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+          }}
+          onContextMenu={handleContextMenu}
+          onTouchStart={handleTouchStart}
+        />
+      )}
 
       {/* Fullscreen Toggle Button - Only show for videos */}
       {isVideo && (
