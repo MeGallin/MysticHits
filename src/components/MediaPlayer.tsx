@@ -69,12 +69,30 @@ const MediaPlayer = forwardRef<
 
   // Download prevention handlers
   const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    // Allow fullscreen button clicks to pass through
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button[aria-label*="Fullscreen"]') ||
+      target.closest('.fullscreen-button')
+    ) {
+      return true;
+    }
+
     e.preventDefault();
     e.stopPropagation();
     return false;
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Allow fullscreen button touches to pass through
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button[aria-label*="Fullscreen"]') ||
+      target.closest('.fullscreen-button')
+    ) {
+      return true;
+    }
+
     // Prevent long-press on mobile
     if (e.touches.length > 1) {
       e.preventDefault();
@@ -82,6 +100,15 @@ const MediaPlayer = forwardRef<
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    // Allow fullscreen button touches to pass through
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button[aria-label*="Fullscreen"]') ||
+      target.closest('.fullscreen-button')
+    ) {
+      return true;
+    }
+
     e.preventDefault();
   };
 
@@ -266,6 +293,9 @@ const MediaPlayer = forwardRef<
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
             userSelect: 'none',
+            // Exclude fullscreen button area (top-right corner)
+            clipPath:
+              'polygon(0% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 100%, 0% 100%)',
           }}
           onContextMenu={handleContextMenu}
           onTouchStart={handleTouchStart}
@@ -276,7 +306,7 @@ const MediaPlayer = forwardRef<
       {isVideo && (
         <button
           onClick={toggleFullscreen}
-          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-md backdrop-blur-sm transition-all duration-200 z-10"
+          className="fullscreen-button absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-md backdrop-blur-sm transition-all duration-200 z-20"
           aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
         >

@@ -34,3 +34,26 @@ video::-webkit-media-controls-download-button {
 video::-webkit-media-controls-enclosure {
   overflow: hidden;
 }
+
+/* Ensure fullscreen button remains fully functional */
+.fullscreen-button {
+  pointer-events: auto !important;
+  -webkit-touch-callout: auto !important;
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
+  touch-action: auto !important;
+  position: relative;
+  z-index: 999 !important;
+  /* Add larger click area for better accessibility */
+  padding: 12px !important;
+  margin: -4px;
+}
+
+.fullscreen-button:hover {
+  cursor: pointer !important;
+}
+
+/* Ensure fullscreen button area is not affected by overlays */
+.fullscreen-button * {
+  pointer-events: auto !important;
+}
