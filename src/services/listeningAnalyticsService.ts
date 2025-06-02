@@ -1,21 +1,40 @@
 import axios from 'axios';
 
-// Use direct environment variable approach, NOT importing from api.ts
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
-// Function to get auth header with JWT token
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-    },
-  };
-};
-
 // Simple in-memory cache for analytics data
 const cache: Record<string, { data: any; timestamp: number }> = {};
+
+// API configuration
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+// API response interface
+interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  error?: string;
+  message?: string;
+  fromCache?: boolean;
+  stale?: boolean;
+  details?: any;
+}
+
+// Create axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Data interfaces
 export interface ListeningAnalyticsOverview {
@@ -41,6 +60,23 @@ export interface ListeningAnalyticsOverview {
     count: number;
     averageListenDuration: number;
   }>;
+  debug?: {
+    message: string;
+    totalDocumentsInDB: number;
+    eventsInDateRange: number;
+    estimatedListenTime?: number;
+    estimationMethod?: string;
+    aggregatedData?: {
+      totalPlays: number;
+      actualListenTime: number;
+      totalDuration: number;
+      completions: number;
+      skips: number;
+      likes: number;
+      shares: number;
+      repeats: number;
+    };
+  };
   // New field for aggregated metrics
   aggregated?: {
     playMetrics: {
@@ -84,7 +120,7 @@ export interface ListeningPatterns {
   }>;
 }
 
-export interface GeographicListeningAnalytics {
+export interface GeographicAnalytics {
   countries: Array<{
     country: string;
     plays: number;
@@ -104,6 +140,8 @@ export interface GeographicListeningAnalytics {
     uniqueUsers: number;
   }>;
 }
+
+export interface GeographicListeningAnalytics extends GeographicAnalytics {}
 
 export interface PlaylistAnalytics {
   playlists: Array<{
@@ -145,9 +183,16 @@ export interface UserEngagementAnalytics {
 }
 
 // Service functions
-const listeningAnalyticsService = {
-  // Fetch overview analytics with cache support
-  fetchOverview: async (days: number = 7, forceFresh: boolean = false) => {
+class ListeningAnalyticsService {
+  private readonly BASE_URL = '/api/analytics';
+
+  /**
+   * Fetch listening analytics overview
+   */
+  async fetchOverview(
+    days = 7,
+    forceFresh: boolean = false,
+  ): Promise<ApiResponse<ListeningAnalyticsOverview>> {
     const cacheKey = `overview_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -161,11 +206,9 @@ const listeningAnalyticsService = {
     }
 
     try {
-      // Use direct API_BASE_URL, not from config file
-      const response = await axios.get(
-        `${API_BASE_URL}/analytics/listening-overview?days=${days}`,
-        getAuthHeader(),
-      );
+      const response = await api.get(`${this.BASE_URL}/listening-overview`, {
+        params: { days },
+      });
 
       // Store in cache
       if (response.data.success) {
@@ -175,22 +218,34 @@ const listeningAnalyticsService = {
         };
       }
 
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch listening analytics overview:', error);
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Analytics overview fetched successfully',
+      };
+    } catch (error: any) {
+      console.error('Error fetching analytics overview:', error);
+      console.error(
+        'Full URL attempted:',
+        `${API_BASE_URL}${this.BASE_URL}/listening-overview`,
+      );
       return {
         success: false,
-        error: 'Failed to fetch analytics overview. Please try again later.',
+        error:
+          error.response?.data?.error || 'Failed to fetch analytics overview',
+        data: null,
       };
     }
-  },
+  }
 
-  // Fetch user behavior analytics
-  fetchUserBehavior: async (
-    days: number = 7,
-    limit: number = 20,
+  /**
+   * Fetch user behavior analytics
+   */
+  async fetchUserBehavior(
+    days = 7,
+    limit = 20,
     forceFresh: boolean = false,
-  ) => {
+  ): Promise<ApiResponse<UserListeningBehavior>> {
     const cacheKey = `user_behavior_${days}_${limit}`;
     const cachedData = cache[cacheKey];
 
@@ -203,10 +258,11 @@ const listeningAnalyticsService = {
     }
 
     try {
-      // Use direct API_BASE_URL, not from config file
-      const response = await axios.get(
-        `${API_BASE_URL}/analytics/user-listening-behavior?days=${days}&limit=${limit}`,
-        getAuthHeader(),
+      const response = await api.get(
+        `${this.BASE_URL}/user-listening-behavior`,
+        {
+          params: { days, limit },
+        },
       );
 
       if (response.data.success) {
@@ -216,19 +272,30 @@ const listeningAnalyticsService = {
         };
       }
 
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch user behavior analytics:', error);
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'User behavior analytics fetched successfully',
+      };
+    } catch (error: any) {
+      console.error('Error fetching user behavior analytics:', error);
       return {
         success: false,
         error:
-          'Failed to fetch user behavior analytics. Please try again later.',
+          error.response?.data?.error ||
+          'Failed to fetch user behavior analytics',
+        data: null,
       };
     }
-  },
+  }
 
-  // Fetch listening patterns
-  fetchPatterns: async (days: number = 7, forceFresh: boolean = false) => {
+  /**
+   * Fetch listening patterns analytics
+   */
+  async fetchPatterns(
+    days = 7,
+    forceFresh: boolean = false,
+  ): Promise<ApiResponse<ListeningPatterns>> {
     const cacheKey = `patterns_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -241,12 +308,9 @@ const listeningAnalyticsService = {
     }
 
     try {
-      // Log the URL for debugging
-      const url = `${API_BASE_URL}/analytics/listening-patterns?days=${days}`;
-      console.log(`Fetching patterns from: ${url}`);
-
-      // Use direct API_BASE_URL, not from config file
-      const response = await axios.get(url, getAuthHeader());
+      const response = await api.get(`${this.BASE_URL}/listening-patterns`, {
+        params: { days },
+      });
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -255,35 +319,29 @@ const listeningAnalyticsService = {
         };
       }
 
-      return response.data;
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Listening patterns fetched successfully',
+      };
     } catch (error: any) {
-      console.error('Failed to fetch listening patterns:', error);
-
-      // If we have cached data, return it as a fallback even if it's old
-      if (cachedData) {
-        console.log('Using cached patterns data as fallback');
-        return {
-          success: true,
-          data: cachedData.data,
-          fromCache: true,
-          stale: true,
-        };
-      }
-
+      console.error('Error fetching listening patterns:', error);
       return {
         success: false,
-        error: 'Failed to fetch listening patterns. Please try again later.',
-        details: {
-          url: `${API_BASE_URL}/analytics/listening-patterns`,
-          statusCode: error.response?.status,
-          isConnected: navigator.onLine,
-        },
+        error:
+          error.response?.data?.error || 'Failed to fetch listening patterns',
+        data: null,
       };
     }
-  },
+  }
 
-  // Fetch geographic analytics
-  fetchGeographic: async (days: number = 7, forceFresh: boolean = false) => {
+  /**
+   * Fetch geographic analytics
+   */
+  async fetchGeographic(
+    days = 7,
+    forceFresh: boolean = false,
+  ): Promise<ApiResponse<GeographicAnalytics>> {
     const cacheKey = `geographic_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -296,11 +354,9 @@ const listeningAnalyticsService = {
     }
 
     try {
-      // Use direct API_BASE_URL, not from config file
-      const response = await axios.get(
-        `${API_BASE_URL}/analytics/geographic-listening?days=${days}`,
-        getAuthHeader(),
-      );
+      const response = await api.get(`${this.BASE_URL}/geographic-listening`, {
+        params: { days },
+      });
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -309,38 +365,30 @@ const listeningAnalyticsService = {
         };
       }
 
-      return response.data;
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Geographic analytics fetched successfully',
+      };
     } catch (error: any) {
-      console.error('Failed to fetch geographic analytics:', error);
-
-      // If we have cached data, return it as a fallback even if it's old
-      if (cachedData) {
-        return {
-          success: true,
-          data: cachedData.data,
-          fromCache: true,
-          stale: true,
-        };
-      }
-
+      console.error('Error fetching geographic analytics:', error);
       return {
         success: false,
-        error: 'Failed to fetch geographic analytics. Please try again later.',
-        details: {
-          url: `${API_BASE_URL}/analytics/geographic-listening`,
-          statusCode: error.response?.status,
-          isConnected: navigator.onLine,
-        },
+        error:
+          error.response?.data?.error || 'Failed to fetch geographic analytics',
+        data: null,
       };
     }
-  },
+  }
 
-  // Fetch playlist analytics
-  fetchPlaylistAnalytics: async (
-    days: number = 7,
-    limit: number = 15,
+  /**
+   * Fetch playlist analytics
+   */
+  async fetchPlaylists(
+    days = 7,
+    limit = 15,
     forceFresh: boolean = false,
-  ) => {
+  ): Promise<ApiResponse<PlaylistAnalytics>> {
     const cacheKey = `playlists_${days}_${limit}`;
     const cachedData = cache[cacheKey];
 
@@ -353,11 +401,9 @@ const listeningAnalyticsService = {
     }
 
     try {
-      // Use direct API_BASE_URL, not from config file
-      const response = await axios.get(
-        `${API_BASE_URL}/analytics/playlist-analytics?days=${days}&limit=${limit}`,
-        getAuthHeader(),
-      );
+      const response = await api.get(`${this.BASE_URL}/playlist-analytics`, {
+        params: { days, limit },
+      });
 
       if (response.data.success) {
         cache[cacheKey] = {
@@ -366,34 +412,29 @@ const listeningAnalyticsService = {
         };
       }
 
-      return response.data;
+      return {
+        success: true,
+        data: response.data.data,
+        message: 'Playlist analytics fetched successfully',
+      };
     } catch (error: any) {
-      console.error('Failed to fetch playlist analytics:', error);
-
-      // If we have cached data, return it as a fallback even if it's old
-      if (cachedData) {
-        return {
-          success: true,
-          data: cachedData.data,
-          fromCache: true,
-          stale: true,
-        };
-      }
-
+      console.error('Error fetching playlist analytics:', error);
       return {
         success: false,
-        error: 'Failed to fetch playlist analytics. Please try again later.',
-        details: {
-          url: `${API_BASE_URL}/analytics/playlist-analytics`,
-          statusCode: error.response?.status,
-          isConnected: navigator.onLine,
-        },
+        error:
+          error.response?.data?.error || 'Failed to fetch playlist analytics',
+        data: null,
       };
     }
-  },
+  }
 
-  // Fix the fetchEngagement function to handle network errors
-  fetchEngagement: async (days: number = 7, forceFresh: boolean = false) => {
+  /**
+   * Fetch engagement analytics
+   */
+  async fetchEngagement(
+    days = 7,
+    forceFresh: boolean = false,
+  ): Promise<ApiResponse<UserEngagementAnalytics>> {
     const cacheKey = `engagement_${days}`;
     const cachedData = cache[cacheKey];
 
@@ -407,14 +448,8 @@ const listeningAnalyticsService = {
     }
 
     try {
-      // Log the URL being called (for debugging)
-      const url = `${API_BASE_URL}/analytics/user-engagement?days=${days}`;
-      console.log(`Fetching engagement analytics from: ${url}`);
-
-      // Set a longer timeout for this API call
-      const response = await axios.get(url, {
-        ...getAuthHeader(),
-        timeout: 15000, // 15 seconds timeout
+      const response = await api.get(`${this.BASE_URL}/user-engagement`, {
+        params: { days },
       });
 
       if (response.data && response.data.success) {
@@ -427,7 +462,7 @@ const listeningAnalyticsService = {
         throw new Error(response.data?.error || 'Invalid response from server');
       }
     } catch (error: any) {
-      console.error('Failed to fetch engagement analytics:', error);
+      console.error('Error fetching engagement analytics:', error);
 
       // If we have cached data, return it as a fallback even if it's old
       if (cachedData) {
@@ -450,6 +485,7 @@ const listeningAnalyticsService = {
       return {
         success: false,
         error: errorMessage,
+        data: null,
         details: {
           url: `${API_BASE_URL}/analytics/user-engagement`,
           statusCode: error.response?.status,
@@ -457,7 +493,7 @@ const listeningAnalyticsService = {
         },
       };
     }
-  },
-};
+  }
+}
 
-export default listeningAnalyticsService;
+export default new ListeningAnalyticsService();

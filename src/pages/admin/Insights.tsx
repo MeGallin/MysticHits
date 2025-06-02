@@ -65,7 +65,6 @@ const InsightsPage: React.FC = () => {
         }
       } catch (err) {
         setError('Failed to load analytics data');
-        console.error('Error fetching analytics:', err);
       } finally {
         setLoading(false);
       }
@@ -194,17 +193,69 @@ const InsightsPage: React.FC = () => {
         {loading && (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <span className="ml-3 text-gray-400">
+              Loading analytics data...
+            </span>
           </div>
         )}
 
         {error && (
           <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
             <p className="text-red-300">{error}</p>
+            <p className="text-red-400 text-sm mt-1">
+              Check console for more details
+            </p>
           </div>
         )}
 
         {!loading && !error && (
           <div className="space-y-6">
+            {/* Debug Information (remove in production) */}
+            {process.env.NODE_ENV === 'development' && overview?.debug && (
+              <div className="bg-gray-900/50 border border-gray-600 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-medium text-gray-300 mb-2">
+                  Debug Information
+                </h3>
+                <div className="text-xs text-gray-400 space-y-1">
+                  <p>
+                    <strong>Message:</strong> {overview.debug.message}
+                  </p>
+                  <p>
+                    <strong>Documents in DB:</strong>{' '}
+                    {overview.debug.totalDocumentsInDB}
+                  </p>
+                  <p>
+                    <strong>Events in Range:</strong>{' '}
+                    {overview.debug.eventsInDateRange}
+                  </p>
+                  {overview.debug.estimatedListenTime && (
+                    <p>
+                      <strong>Estimated Listen Time:</strong>{' '}
+                      {overview.debug.estimatedListenTime}s (
+                      {overview.debug.estimationMethod})
+                    </p>
+                  )}
+                  {overview.debug.aggregatedData && (
+                    <div>
+                      <p>
+                        <strong>Real Data:</strong>
+                      </p>
+                      <ul className="ml-4 list-disc">
+                        <li>
+                          Plays: {overview.debug.aggregatedData.totalPlays}
+                        </li>
+                        <li>Likes: {overview.debug.aggregatedData.likes}</li>
+                        <li>Shares: {overview.debug.aggregatedData.shares}</li>
+                        <li>
+                          Repeats: {overview.debug.aggregatedData.repeats}
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Key Metrics Overview */}
             {overview && overview.overview && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -217,33 +268,21 @@ const InsightsPage: React.FC = () => {
                 />
                 <MetricCard
                   title="Listen Time"
-                  value={
-                    overview.overview?.totalListenTime
-                      ? formatTime(overview.overview.totalListenTime)
-                      : '0m'
-                  }
-                  subtitle={
-                    overview.overview?.listenRatio
-                      ? `${formatPercentage(
-                          overview.overview.listenRatio,
-                        )} completion`
-                      : 'No data'
-                  }
+                  value={formatTime(overview.overview.totalListenTime || 0)}
+                  subtitle={`${formatPercentage(
+                    overview.overview.listenRatio || 0,
+                  )} completion`}
                   icon={<FiHeadphones className="w-6 h-6 text-green-400" />}
                   color="green"
                 />
                 <MetricCard
                   title="Completion Rate"
-                  value={
-                    overview.completion?.completionRate !== undefined
-                      ? formatPercentage(overview.completion.completionRate)
-                      : 'N/A'
-                  }
-                  subtitle={
-                    overview.completion?.skippedTracks !== undefined
-                      ? `${overview.completion.skippedTracks} skipped`
-                      : 'No data'
-                  }
+                  value={formatPercentage(
+                    overview.completion?.completionRate || 0,
+                  )}
+                  subtitle={`${
+                    overview.completion?.skippedTracks || 0
+                  } skipped`}
                   icon={<FiClock className="w-6 h-6 text-purple-400" />}
                   color="purple"
                 />
@@ -251,11 +290,96 @@ const InsightsPage: React.FC = () => {
                   title="Unique Tracks"
                   value={overview.overview.uniqueTracks.toLocaleString()}
                   subtitle={`${Math.round(
-                    overview.overview.averageSessionLength,
+                    overview.overview.averageSessionLength || 0,
                   )}min avg session`}
                   icon={<FiMusic className="w-6 h-6 text-orange-400" />}
                   color="orange"
                 />
+              </div>
+            )}
+
+            {/* Enhanced Sources & Devices */}
+            {overview && (overview.sources || overview.devices) && (
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Sources */}
+                {overview.sources && overview.sources.length > 0 && (
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+                    <h3 className="text-lg font-medium text-white mb-4">
+                      Traffic Sources
+                    </h3>
+                    <div className="space-y-3">
+                      {overview.sources.map((source, index) => (
+                        <div
+                          key={source.source}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-gray-400 capitalize">
+                            {source.source}
+                          </span>
+                          <div className="flex items-center">
+                            <div className="w-24 bg-gray-700 rounded-full h-2 mr-3">
+                              <div
+                                className="bg-blue-500 h-2 rounded-full"
+                                style={{
+                                  width: `${
+                                    (source.count /
+                                      Math.max(
+                                        ...overview.sources.map((s) => s.count),
+                                      )) *
+                                    100
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-white text-sm w-12 text-right">
+                              {source.count}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Devices */}
+                {overview.devices && overview.devices.length > 0 && (
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+                    <h3 className="text-lg font-medium text-white mb-4">
+                      Device Types
+                    </h3>
+                    <div className="space-y-3">
+                      {overview.devices.map((device, index) => (
+                        <div
+                          key={device.deviceType}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-gray-400 capitalize">
+                            {device.deviceType}
+                          </span>
+                          <div className="flex items-center">
+                            <div className="w-24 bg-gray-700 rounded-full h-2 mr-3">
+                              <div
+                                className="bg-green-500 h-2 rounded-full"
+                                style={{
+                                  width: `${
+                                    (device.count /
+                                      Math.max(
+                                        ...overview.devices.map((d) => d.count),
+                                      )) *
+                                    100
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-white text-sm w-12 text-right">
+                              {device.count}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

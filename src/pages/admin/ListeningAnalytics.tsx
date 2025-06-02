@@ -56,15 +56,6 @@ const ListeningAnalytics: React.FC = () => {
     null,
   );
 
-  console.log(
-    'ListeningAnalytics component mounted - initial state:',
-    overview,
-    userBehavior,
-    patterns,
-    geographic,
-    playlists,
-    engagement,
-  );
   // Loading states
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [userBehaviorLoading, setUserBehaviorLoading] = useState(false);
@@ -227,7 +218,7 @@ const ListeningAnalytics: React.FC = () => {
     setPlaylistsLoading(true);
     setPlaylistsError(null);
     try {
-      const response = await listeningAnalyticsService.fetchPlaylistAnalytics(
+      const response = await listeningAnalyticsService.fetchPlaylists(
         selectedDays,
         15,
         forceFresh,
