@@ -54,6 +54,51 @@ const MediaPlayer = forwardRef<
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [deviceOrientation, setDeviceOrientation] = useState('portrait');
+  const [showFullscreenHint, setShowFullscreenHint] = useState(false);
+
+  // Enhanced mobile detection and handling
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobileDevice =
+        /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+          userAgent,
+        );
+      const isSmallScreen = window.innerWidth <= 768;
+      setIsMobile(isMobileDevice || isSmallScreen);
+    };
+
+    const checkOrientation = () => {
+      if (window.innerHeight > window.innerWidth) {
+        setDeviceOrientation('portrait');
+      } else {
+        setDeviceOrientation('landscape');
+      }
+    };
+
+    checkMobile();
+    checkOrientation();
+
+    const handleResize = () => {
+      checkMobile();
+      checkOrientation();
+    };
+
+    const handleOrientationChange = () => {
+      // Small delay to allow for orientation change to complete
+      setTimeout(checkOrientation, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
 
   // Reset error state when src changes
   useEffect(() => {
@@ -93,8 +138,21 @@ const MediaPlayer = forwardRef<
       return true;
     }
 
-    // Prevent long-press on mobile
-    if (e.touches.length > 1) {
+    // Prevent long-press on mobile (context menu)
+    if (e.touches.length === 1) {
+      // Single touch - prevent long press context menu
+      const preventLongPress = setTimeout(() => {
+        e.preventDefault();
+      }, 500); // Prevent context menu after 500ms
+
+      // Clear timeout if touch ends quickly
+      const handleTouchEnd = () => {
+        clearTimeout(preventLongPress);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+      document.addEventListener('touchend', handleTouchEnd, { once: true });
+    } else if (e.touches.length > 1) {
+      // Multi-touch - prevent immediately
       e.preventDefault();
     }
   };
@@ -117,7 +175,7 @@ const MediaPlayer = forwardRef<
     return false;
   };
 
-  // Fullscreen functionality
+  // Fullscreen functionality with enhanced mobile support
   const toggleFullscreen = async () => {
     const videoElement = ref && 'current' in ref ? ref.current : null;
 
@@ -125,11 +183,14 @@ const MediaPlayer = forwardRef<
 
     try {
       if (!isFullscreen) {
-        // Enter fullscreen
+        // Enter fullscreen - try different methods for mobile compatibility
         if (videoElement.requestFullscreen) {
           await videoElement.requestFullscreen();
         } else if ((videoElement as any).webkitRequestFullscreen) {
           await (videoElement as any).webkitRequestFullscreen();
+        } else if ((videoElement as any).webkitEnterFullscreen) {
+          // iOS Safari
+          (videoElement as any).webkitEnterFullscreen();
         } else if ((videoElement as any).msRequestFullscreen) {
           await (videoElement as any).msRequestFullscreen();
         }
@@ -157,6 +218,15 @@ const MediaPlayer = forwardRef<
         (document as any).msFullscreenElement
       );
       setIsFullscreen(isCurrentlyFullscreen);
+
+      // Show hint when entering fullscreen on mobile
+      if (isCurrentlyFullscreen && isMobile) {
+        setShowFullscreenHint(true);
+        // Hide hint after 4 seconds
+        setTimeout(() => setShowFullscreenHint(false), 4000);
+      } else {
+        setShowFullscreenHint(false);
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -235,7 +305,7 @@ const MediaPlayer = forwardRef<
     <div
       className={`media-player-container relative ${
         isVideo ? 'video-mode' : 'audio-mode'
-      }`}
+      } ${isMobile ? 'mobile-device' : 'desktop-device'} ${deviceOrientation}`}
       data-player-type={isVideo ? 'video' : 'audio'} // Add a data attribute for debugging
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
@@ -244,6 +314,8 @@ const MediaPlayer = forwardRef<
         WebkitTouchCallout: 'none',
         WebkitUserSelect: 'none',
         touchAction: 'manipulation',
+        // Enhanced mobile protection
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       {/* Media Player Element - with specific styling based on media type */}
@@ -259,7 +331,13 @@ const MediaPlayer = forwardRef<
           objectFit: isVideo ? 'contain' : 'none', // Set proper object-fit for video content
           display: isVideo ? 'block' : 'none', // Hide audio element completely, we'll use our custom UI
           height: isVideo ? 'auto' : '0', // Force height for audio mode
-          minHeight: isVideo ? '200px' : '0', // Set minimum height based on content type
+          minHeight: isVideo
+            ? isMobile
+              ? deviceOrientation === 'portrait'
+                ? '180px'
+                : '150px'
+              : '200px'
+            : '0',
           // Enhanced mobile protection
           userSelect: 'none',
           WebkitUserSelect: 'none',
@@ -268,9 +346,10 @@ const MediaPlayer = forwardRef<
           touchAction: 'manipulation',
         }}
         controls={props.showControls !== false}
-        controlsList="nodownload nofullscreen noremoteplayback"
+        controlsList="nodownload nofullscreen noremoteplaybook"
         disablePictureInPicture
         preload="metadata"
+        playsInline // Important for mobile Safari
         onContextMenu={handleContextMenu}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -293,9 +372,12 @@ const MediaPlayer = forwardRef<
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
             userSelect: 'none',
-            // Exclude fullscreen button area (top-right corner)
-            clipPath:
-              'polygon(0% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 100%, 0% 100%)',
+            // Dynamic clip path based on device and orientation
+            clipPath: isMobile
+              ? deviceOrientation === 'portrait'
+                ? 'polygon(0% 0%, 75% 0%, 75% 25%, 100% 25%, 100% 100%, 0% 100%)'
+                : 'polygon(0% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 100%, 0% 100%)'
+              : 'polygon(0% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 100%, 0% 100%)',
           }}
           onContextMenu={handleContextMenu}
           onTouchStart={handleTouchStart}
@@ -306,16 +388,58 @@ const MediaPlayer = forwardRef<
       {isVideo && (
         <button
           onClick={toggleFullscreen}
-          className="fullscreen-button absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-md backdrop-blur-sm transition-all duration-200 z-20"
-          aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          className={`fullscreen-button absolute ${
+            isMobile
+              ? deviceOrientation === 'portrait'
+                ? 'top-3 right-3'
+                : 'top-2 right-2'
+              : 'top-3 right-3'
+          } ${
+            isFullscreen
+              ? 'bg-black/80 hover:bg-black/90 text-white border-2 border-white/50 opacity-90 hover:opacity-100'
+              : 'bg-black/20 hover:bg-black/40 text-white/80 hover:text-white opacity-60 hover:opacity-100'
+          } rounded-lg backdrop-blur-sm transition-all duration-300 z-20 flex items-center justify-center ${
+            isMobile
+              ? deviceOrientation === 'portrait'
+                ? 'p-3 min-w-[52px] min-h-[52px]'
+                : 'p-2 min-w-[44px] min-h-[44px]'
+              : 'p-2 min-w-[44px] min-h-[44px]'
+          } ${isFullscreen && isMobile ? 'scale-110 shadow-lg' : ''}`}
+          aria-label={
+            isFullscreen ? 'Exit Fullscreen (Tap to Exit)' : 'Enter Fullscreen'
+          }
+          title={
+            isFullscreen ? 'Exit Fullscreen (Tap to Exit)' : 'Enter Fullscreen'
+          }
         >
           {isFullscreen ? (
-            <Minimize className="h-4 w-4" />
+            <Minimize
+              className={`${
+                isMobile && deviceOrientation === 'portrait'
+                  ? 'h-5 w-5'
+                  : 'h-4 w-4'
+              }`}
+            />
           ) : (
-            <Maximize className="h-4 w-4" />
+            <Maximize
+              className={`${
+                isMobile && deviceOrientation === 'portrait'
+                  ? 'h-5 w-5'
+                  : 'h-4 w-4'
+              }`}
+            />
           )}
         </button>
+      )}
+
+      {/* Mobile Fullscreen Exit Hint - Only show briefly when entering fullscreen on mobile */}
+      {isVideo && showFullscreenHint && isMobile && (
+        <div className="mobile-fullscreen-hint absolute top-16 left-1/2 transform -translate-x-1/2 bg-black/90 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm border border-white/30 z-30 pointer-events-none">
+          <div className="flex items-center space-x-2">
+            <Minimize className="h-4 w-4" />
+            <span>Tap the exit button to leave fullscreen</span>
+          </div>
+        </div>
       )}
 
       {/* Error Message Display */}

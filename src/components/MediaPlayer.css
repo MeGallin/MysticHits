@@ -2,18 +2,52 @@
 .video-player {
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  user-select: none !important;
   -webkit-user-drag: none;
   -moz-user-drag: none;
-  user-drag: none;
+  /* Enhanced mobile drag prevention */
+  pointer-events: auto;
+  -webkit-touch-callout: none;
+}
+
+/* Enhanced mobile-specific video player adjustments */
+@media (max-width: 768px) {
+  .video-player {
+    min-height: 200px !important;
+    border-radius: 8px;
+    /* Prevent zoom on double tap */
+    touch-action: manipulation;
+    /* Better mobile video rendering */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  .audio-player {
+    height: 48px !important;
+    /* Prevent accidental interaction */
+    touch-action: manipulation;
+  }
+
+  /* Better mobile container behavior */
+  .media-player-container {
+    /* Prevent scroll bounce */
+    overscroll-behavior: contain;
+    /* Smoother interactions */
+    will-change: transform;
+  }
 }
 
 /* Prevent mobile browser download prompts */
 video {
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
   touch-action: manipulation !important;
 }
 
@@ -22,7 +56,30 @@ video {
   .media-player-container {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
+  }
+
+  /* Enhanced mobile fullscreen button */
+  .fullscreen-button {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 12px !important;
+    /* Better touch target for mobile */
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Adjust mobile overlay to ensure fullscreen button area is clear */
+  .media-player-container .absolute.inset-0 {
+    clip-path: polygon(
+      0% 0%,
+      80% 0%,
+      80% 20%,
+      100% 20%,
+      100% 100%,
+      0% 100%
+    ) !important;
   }
 }
 
@@ -40,20 +97,224 @@ video::-webkit-media-controls-enclosure {
   pointer-events: auto !important;
   -webkit-touch-callout: auto !important;
   -webkit-user-select: auto !important;
+  -moz-user-select: auto !important;
+  -ms-user-select: auto !important;
   user-select: auto !important;
   touch-action: auto !important;
   position: relative;
   z-index: 999 !important;
-  /* Add larger click area for better accessibility */
-  padding: 12px !important;
-  margin: -4px;
+  /* Better mobile touch experience */
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
 }
 
 .fullscreen-button:hover {
   cursor: pointer !important;
+  transform: scale(1.05);
+}
+
+.fullscreen-button:active {
+  transform: scale(0.95);
+  background-color: rgba(0, 0, 0, 0.8) !important;
 }
 
 /* Ensure fullscreen button area is not affected by overlays */
 .fullscreen-button * {
   pointer-events: auto !important;
+}
+
+/* Enhanced mobile video controls and touch handling */
+@media (max-width: 480px) {
+  /* Extra small screens - phones in portrait */
+  .video-player {
+    min-height: 180px !important;
+    max-width: 100vw;
+    /* Prevent horizontal overflow */
+    overflow: hidden;
+  }
+
+  .fullscreen-button {
+    min-width: 52px !important;
+    min-height: 52px !important;
+    padding: 14px !important;
+    top: 8px !important;
+    right: 8px !important;
+    /* Larger touch target for small screens */
+    border-radius: 8px;
+  }
+
+  /* Adjust overlay clip-path for smaller screens */
+  .media-player-container .absolute.inset-0 {
+    clip-path: polygon(
+      0% 0%,
+      75% 0%,
+      75% 25%,
+      100% 25%,
+      100% 100%,
+      0% 100%
+    ) !important;
+  }
+}
+
+/* Landscape mode optimizations for mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .video-player {
+    min-height: 150px !important;
+    max-height: 90vh;
+    /* Prevent video from being too tall in landscape */
+  }
+
+  .fullscreen-button {
+    top: 4px !important;
+    right: 4px !important;
+    /* Smaller positioning in landscape to save space */
+  }
+}
+
+/* High DPI screen optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .fullscreen-button {
+    /* Crisp icons on retina displays */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .video-player {
+    /* Better video rendering on high DPI */
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Dark mode considerations for mobile */
+@media (prefers-color-scheme: dark) {
+  .fullscreen-button {
+    background-color: rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .fullscreen-button:hover {
+    background-color: rgba(0, 0, 0, 0.9) !important;
+  }
+}
+
+/* Enhanced fullscreen mode styling for better visibility */
+.video-player:fullscreen ~ .fullscreen-button,
+.video-player:-webkit-full-screen ~ .fullscreen-button,
+.video-player:-moz-full-screen ~ .fullscreen-button {
+  /* Make button more visible in fullscreen mode */
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  opacity: 0.9 !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Mobile fullscreen exit enhancements */
+@media (max-width: 768px) {
+  .video-player:fullscreen ~ .fullscreen-button,
+  .video-player:-webkit-full-screen ~ .fullscreen-button,
+  .video-player:-moz-full-screen ~ .fullscreen-button {
+    /* Larger, more visible exit button on mobile */
+    min-width: 56px !important;
+    min-height: 56px !important;
+    padding: 16px !important;
+    top: 20px !important;
+    right: 20px !important;
+    background-color: rgba(0, 0, 0, 0.9) !important;
+    border: 3px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  }
+}
+
+/* Light mode considerations for mobile */
+@media (prefers-color-scheme: light) {
+  .fullscreen-button {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    color: #000 !important;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .fullscreen-button:hover {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* Accessibility improvements for mobile */
+@media (max-width: 768px) {
+  .fullscreen-button:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    /* Better focus visibility on mobile */
+  }
+
+  /* Improve tap targets for better accessibility */
+  .fullscreen-button {
+    /* Ensure minimum 44px touch target as per WCAG guidelines */
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Prevent mobile browser zoom on form elements */
+.media-player-container input,
+.media-player-container button,
+.media-player-container select {
+  font-size: 16px !important;
+  /* Prevents zoom on iOS Safari */
+}
+
+/* Enhanced video loading states for mobile */
+.video-player::-webkit-media-controls-play-button,
+.video-player::-webkit-media-controls-start-playback-button {
+  /* Larger play button for mobile */
+  transform: scale(1.2);
+}
+
+/* Mobile-specific video fullscreen handling */
+.video-player:fullscreen {
+  object-fit: contain;
+  background: #000;
+  /* Better fullscreen experience */
+}
+
+.video-player:-webkit-full-screen {
+  object-fit: contain;
+  background: #000;
+}
+
+.video-player:-moz-full-screen {
+  object-fit: contain;
+  background: #000;
+}
+
+/* Mobile fullscreen exit hint animation */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+}
+
+.mobile-fullscreen-hint {
+  animation: fadeInOut 4s ease-in-out forwards;
+}
+
+/* Enhanced mobile exit instructions */
+@media (max-width: 768px) {
+  .mobile-fullscreen-hint {
+    font-size: 14px !important;
+    padding: 8px 12px !important;
+  }
 }
