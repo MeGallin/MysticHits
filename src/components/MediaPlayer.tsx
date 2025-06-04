@@ -123,8 +123,11 @@ const MediaPlayer = forwardRef<
       return true;
     }
 
-    e.preventDefault();
-    e.stopPropagation();
+    // Check if the event is cancelable before preventing default
+    if (e.cancelable) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     return false;
   };
 
@@ -140,20 +143,17 @@ const MediaPlayer = forwardRef<
 
     // Prevent long-press on mobile (context menu)
     if (e.touches.length === 1) {
-      // Single touch - prevent long press context menu
-      const preventLongPress = setTimeout(() => {
-        e.preventDefault();
-      }, 500); // Prevent context menu after 500ms
-
-      // Clear timeout if touch ends quickly
-      const handleTouchEnd = () => {
-        clearTimeout(preventLongPress);
-        document.removeEventListener('touchend', handleTouchEnd);
-      };
-      document.addEventListener('touchend', handleTouchEnd, { once: true });
+      // Single touch - check if we can prevent the event
+      if (e.cancelable) {
+        // Use CSS touch-action to prevent long press context menu
+        const target = e.currentTarget as HTMLElement;
+        target.style.touchAction = 'manipulation';
+      }
     } else if (e.touches.length > 1) {
-      // Multi-touch - prevent immediately
-      e.preventDefault();
+      // Multi-touch - prevent immediately if cancelable
+      if (e.cancelable) {
+        e.preventDefault();
+      }
     }
   };
 
@@ -167,7 +167,10 @@ const MediaPlayer = forwardRef<
       return true;
     }
 
-    e.preventDefault();
+    // Only prevent default if the event is cancelable
+    if (e.cancelable) {
+      e.preventDefault();
+    }
   };
 
   const handleSelectStart = (e: React.SyntheticEvent) => {
@@ -175,7 +178,7 @@ const MediaPlayer = forwardRef<
     return false;
   };
 
-  // Fullscreen functionality with enhanced mobile support
+  // Fullscreen functionality with enhanced mobile support and controls visibility
   const toggleFullscreen = async () => {
     const videoElement = ref && 'current' in ref ? ref.current : null;
 
@@ -183,6 +186,10 @@ const MediaPlayer = forwardRef<
 
     try {
       if (!isFullscreen) {
+        // Pre-configure controls before entering fullscreen
+        videoElement.setAttribute('controls', 'true');
+        (videoElement as any).controls = true;
+
         // Enter fullscreen - try different methods for mobile compatibility
         if (videoElement.requestFullscreen) {
           await videoElement.requestFullscreen();
@@ -193,6 +200,19 @@ const MediaPlayer = forwardRef<
           (videoElement as any).webkitEnterFullscreen();
         } else if ((videoElement as any).msRequestFullscreen) {
           await (videoElement as any).msRequestFullscreen();
+        }
+
+        // Simple post-fullscreen configuration for mobile
+        if (isMobile) {
+          setTimeout(() => {
+            try {
+              // Just ensure controls are enabled - tap-to-show will handle the rest
+              videoElement.setAttribute('controls', 'true');
+              (videoElement as any).controls = true;
+            } catch (error) {
+              // Ignore errors
+            }
+          }, 200);
         }
       } else {
         // Exit fullscreen
@@ -209,7 +229,7 @@ const MediaPlayer = forwardRef<
     }
   };
 
-  // Listen for fullscreen changes
+  // Enhanced fullscreen change handler with controls visibility enforcement
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!(
@@ -219,13 +239,58 @@ const MediaPlayer = forwardRef<
       );
       setIsFullscreen(isCurrentlyFullscreen);
 
-      // Show hint when entering fullscreen on mobile
+      // Simple mobile controls setup when entering fullscreen
       if (isCurrentlyFullscreen && isMobile) {
         setShowFullscreenHint(true);
         // Hide hint after 4 seconds
         setTimeout(() => setShowFullscreenHint(false), 4000);
+
+        // Simply ensure controls are enabled - let tap-to-show handle the rest
+        const videoElement = ref && 'current' in ref ? ref.current : null;
+        if (videoElement) {
+          setTimeout(() => {
+            try {
+              videoElement.setAttribute('controls', 'true');
+              (videoElement as any).controls = true;
+            } catch (error) {
+              // Ignore errors
+            }
+          }, 100);
+        }
       } else {
         setShowFullscreenHint(false);
+
+        // Restore normal controls behavior when exiting fullscreen
+        if (!isCurrentlyFullscreen && isMobile) {
+          const videoElement = ref && 'current' in ref ? ref.current : null;
+          if (videoElement) {
+            try {
+              // Restore normal auto-hide behavior
+              const videoStyle = (videoElement as any).style;
+              if (videoStyle) {
+                videoStyle.removeProperty(
+                  '-webkit-media-controls-auto-hide-time',
+                );
+                videoStyle.removeProperty(
+                  '-webkit-media-controls-auto-hide-delay',
+                );
+                // Set normal auto-hide timing for mobile
+                videoStyle.setProperty(
+                  '-webkit-media-controls-auto-hide-time',
+                  '3s',
+                  'important',
+                );
+                videoStyle.setProperty(
+                  '-webkit-media-controls-auto-hide-delay',
+                  '3s',
+                  'important',
+                );
+              }
+            } catch (error) {
+              // Ignore errors
+            }
+          }
+        }
       }
     };
 
@@ -245,6 +310,238 @@ const MediaPlayer = forwardRef<
       );
     };
   }, []);
+
+  // Optimized tap-to-show-controls for mobile fullscreen - Performance-optimized to prevent loops
+  useEffect(() => {
+    let controlsTimeoutId: number | null = null;
+    let lastTapTime = 0;
+    let isProcessingTap = false;
+
+    // Debounced tap handler with anti-loop protection
+    const handleFullscreenTap = (e: TouchEvent | MouseEvent) => {
+      if (!isFullscreen || !isMobile) return;
+
+      const videoElement = ref && 'current' in ref ? ref.current : null;
+      if (!videoElement) return;
+
+      // Don't interfere with fullscreen button clicks
+      const target = e.target as HTMLElement;
+      if (target.closest('.fullscreen-button')) return;
+
+      // Prevent event bubbling and default to stop loops (only if cancelable)
+      if (e.cancelable) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Enhanced debouncing: prevent rapid-fire calls
+      const now = Date.now();
+      if (isProcessingTap || now - lastTapTime < 1000) {
+        // Increased to 1 second
+        return;
+      }
+
+      lastTapTime = now;
+      isProcessingTap = true;
+
+      // Clear any existing timeout
+      if (controlsTimeoutId) {
+        clearTimeout(controlsTimeoutId);
+      }
+
+      console.log('Fullscreen tap detected - showing controls');
+
+      try {
+        // Strategy 1: Force controls visibility (NO EVENT DISPATCHING to prevent loops)
+        videoElement.setAttribute('controls', 'true');
+        (videoElement as any).controls = true;
+        videoElement.setAttribute('data-controls-forced', 'true');
+
+        // Strategy 2: Webkit controls visibility without event dispatching
+        const videoStyle = (videoElement as any).style;
+        if (videoStyle) {
+          videoStyle.setProperty(
+            '-webkit-media-controls-auto-hide-time',
+            '15s',
+            'important',
+          );
+          videoStyle.setProperty(
+            '-webkit-media-controls-auto-hide-delay',
+            '0s',
+            'important',
+          );
+          videoStyle.setProperty(
+            '-webkit-media-controls-show',
+            'true',
+            'important',
+          );
+          videoStyle.setProperty('--media-controls-show', 'true', 'important');
+        }
+
+        // Strategy 3: Focus without triggering additional events
+        videoElement.focus();
+
+        // Strategy 4: CSS class manipulation for control visibility
+        videoElement.classList.add('force-controls-visible');
+        setTimeout(() => {
+          if (videoElement) {
+            videoElement.classList.remove('force-controls-visible');
+          }
+        }, 15000);
+
+        // Set a timeout to reduce aggressive control showing after 15 seconds
+        controlsTimeoutId = window.setTimeout(() => {
+          try {
+            if (videoStyle) {
+              videoStyle.setProperty(
+                '-webkit-media-controls-auto-hide-time',
+                '5s',
+                'important',
+              );
+            }
+          } catch (error) {
+            // Ignore errors
+          }
+          isProcessingTap = false; // Reset processing flag
+        }, 15000);
+      } catch (error) {
+        console.warn('Error showing video controls:', error);
+        isProcessingTap = false;
+      }
+
+      // Reset processing flag after a longer delay
+      setTimeout(() => {
+        isProcessingTap = false;
+      }, 500); // Increased delay
+    };
+
+    // Enhanced container tap handler with area detection
+    const handleContainerTap = (e: TouchEvent | MouseEvent) => {
+      if (!isFullscreen || !isMobile) return;
+
+      const target = e.target as HTMLElement;
+
+      // Only handle taps on the video or container, not UI elements
+      if (
+        target.closest('.fullscreen-button') ||
+        target.closest('.mobile-fullscreen-hint') ||
+        target.closest('button') ||
+        target.tagName === 'BUTTON'
+      ) {
+        return;
+      }
+
+      // Trigger the same logic as video tap
+      handleFullscreenTap(e);
+    };
+
+    if (isFullscreen && isMobile) {
+      const videoElement = ref && 'current' in ref ? ref.current : null;
+      if (videoElement) {
+        console.log('Setting up optimized fullscreen controls for mobile');
+
+        // Strategy 1: Add event listeners for tap detection (passive: false only for touchend to allow preventDefault)
+        videoElement.addEventListener(
+          'touchend',
+          handleFullscreenTap as EventListener,
+          { passive: false },
+        );
+        videoElement.addEventListener(
+          'click',
+          handleFullscreenTap as EventListener,
+          { passive: true },
+        );
+
+        // Strategy 2: Container listeners (fallback)
+        const container = videoElement.parentElement;
+        if (container) {
+          container.addEventListener(
+            'touchend',
+            handleContainerTap as EventListener,
+            { passive: false },
+          );
+          container.addEventListener(
+            'click',
+            handleContainerTap as EventListener,
+            { passive: true },
+          );
+        }
+
+        // Strategy 3: Initial controls setup (no loops, just one-time setup)
+        videoElement.setAttribute('controls', 'true');
+        (videoElement as any).controls = true;
+        videoElement.setAttribute('data-controls-forced', 'true');
+
+        // Strategy 4: CSS class for permanent control visibility
+        videoElement.classList.add('fullscreen-mobile-controls-visible');
+      }
+    }
+
+    // Cleanup function
+    return () => {
+      const videoElement = ref && 'current' in ref ? ref.current : null;
+
+      // Clear timeouts
+      if (controlsTimeoutId) {
+        clearTimeout(controlsTimeoutId);
+      }
+
+      if (videoElement) {
+        console.log('Cleaning up fullscreen control listeners');
+
+        // Remove all event listeners
+        videoElement.removeEventListener(
+          'touchend',
+          handleFullscreenTap as EventListener,
+        );
+        videoElement.removeEventListener(
+          'click',
+          handleFullscreenTap as EventListener,
+        );
+
+        const container = videoElement.parentElement;
+        if (container) {
+          container.removeEventListener(
+            'touchend',
+            handleContainerTap as EventListener,
+          );
+          container.removeEventListener(
+            'click',
+            handleContainerTap as EventListener,
+          );
+        }
+
+        // Remove CSS classes
+        videoElement.classList.remove('force-controls-visible');
+        videoElement.classList.remove('fullscreen-mobile-controls-visible');
+        videoElement.removeAttribute('data-controls-forced');
+
+        // Restore normal video behavior when exiting fullscreen
+        if (isMobile && !isFullscreen) {
+          try {
+            const videoStyle = (videoElement as any).style;
+            if (videoStyle) {
+              videoStyle.removeProperty(
+                '-webkit-media-controls-auto-hide-time',
+              );
+              videoStyle.removeProperty(
+                '-webkit-media-controls-auto-hide-delay',
+              );
+              videoStyle.removeProperty('-webkit-media-controls-show');
+              videoStyle.removeProperty('--media-controls-show');
+              videoStyle.setProperty(
+                '-webkit-media-controls-auto-hide-time',
+                '3s',
+                'important',
+              );
+            }
+          } catch (error) {
+            // Ignore errors
+          }
+        }
+      }
+    };
+  }, [isFullscreen, isMobile, ref]);
 
   // Format playlist items for display - but safely handle null/undefined
   const formattedPlaylist = Array.isArray(playlist)
@@ -346,7 +643,11 @@ const MediaPlayer = forwardRef<
           touchAction: 'manipulation',
         }}
         controls={props.showControls !== false}
-        controlsList="nodownload nofullscreen noremoteplaybook"
+        controlsList={
+          isMobile
+            ? 'nodownload noremoteplaybook'
+            : 'nodownload nofullscreen noremoteplaybook'
+        }
         disablePictureInPicture
         preload="metadata"
         playsInline // Important for mobile Safari
@@ -388,15 +689,11 @@ const MediaPlayer = forwardRef<
       {isVideo && (
         <button
           onClick={toggleFullscreen}
-          className={`fullscreen-button absolute ${
-            isMobile
-              ? deviceOrientation === 'portrait'
-                ? 'top-3 right-3'
-                : 'top-2 right-2'
-              : 'top-3 right-3'
-          } ${
+          className={`fullscreen-button absolute top-3 right-3 ${
             isFullscreen
               ? 'bg-black/80 hover:bg-black/90 text-white border-2 border-white/50 opacity-90 hover:opacity-100'
+              : isMobile
+              ? 'bg-black/10 hover:bg-black/30 text-white/60 hover:text-white/80 opacity-40 hover:opacity-70'
               : 'bg-black/20 hover:bg-black/40 text-white/80 hover:text-white opacity-60 hover:opacity-100'
           } rounded-lg backdrop-blur-sm transition-all duration-300 z-20 flex items-center justify-center ${
             isMobile
@@ -437,7 +734,10 @@ const MediaPlayer = forwardRef<
         <div className="mobile-fullscreen-hint absolute top-16 left-1/2 transform -translate-x-1/2 bg-black/90 text-white px-4 py-2 rounded-lg text-sm backdrop-blur-sm border border-white/30 z-30 pointer-events-none">
           <div className="flex items-center space-x-2">
             <Minimize className="h-4 w-4" />
-            <span>Tap the exit button to leave fullscreen</span>
+            <span>
+              Use video controls at bottom or tap exit button to leave
+              fullscreen
+            </span>
           </div>
         </div>
       )}

@@ -123,22 +123,136 @@ video::-webkit-media-controls-enclosure {
   pointer-events: auto !important;
 }
 
-/* Enhanced mobile video controls and touch handling */
-@media (max-width: 480px) {
-  /* Extra small screens - phones in portrait */
-  .video-player {
-    min-height: 180px !important;
-    max-width: 100vw;
-    /* Prevent horizontal overflow */
-    overflow: hidden;
+/* Enhanced mobile video controls with aggressive visibility enforcement - FULLSCREEN ONLY */
+@media (max-width: 768px) {
+  /* Force video element to always show controls ONLY in fullscreen mode */
+  .video-player:fullscreen,
+  .video-player:-webkit-full-screen,
+  .video-player:-moz-full-screen {
+    /* Browser-specific control auto-hide prevention - FULLSCREEN ONLY */
+    -webkit-media-controls-auto-hide-time: never !important;
+    -webkit-media-controls-auto-hide-delay: 999999s !important;
+    -moz-media-controls-auto-hide-time: never !important;
+    -ms-media-controls-auto-hide-time: never !important;
   }
 
-  .fullscreen-button {
-    min-width: 52px !important;
-    min-height: 52px !important;
-    padding: 14px !important;
-    top: 8px !important;
-    right: 8px !important;
+  /* Ensure normal auto-hide behavior for non-fullscreen mobile video */
+  .video-player:not(:fullscreen):not(:-webkit-full-screen):not(
+      :-moz-full-screen
+    ) {
+    -webkit-media-controls-auto-hide-time: 3s !important;
+    -webkit-media-controls-auto-hide-delay: 3s !important;
+  }
+
+  /* Webkit-specific controls visibility - FULLSCREEN ONLY */
+  .video-player:fullscreen::-webkit-media-controls-panel {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+    animation: none !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 2147483647 !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls-panel {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+    animation: none !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 2147483647 !important;
+  }
+
+  /* Restore normal behavior for non-fullscreen mobile video */
+  .video-player:not(:fullscreen):not(
+      :-webkit-full-screen
+    )::-webkit-media-controls-panel {
+    position: relative !important;
+    z-index: auto !important;
+  }
+
+  /* Force all control elements to be visible - FULLSCREEN ONLY */
+  .video-player:fullscreen::-webkit-media-controls {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
+    transition: none !important;
+    pointer-events: auto !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
+    transition: none !important;
+    pointer-events: auto !important;
+  }
+
+  /* Force controls enclosure to be visible - FULLSCREEN ONLY */
+  .video-player:fullscreen::-webkit-media-controls-enclosure {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    bottom: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls-enclosure {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    bottom: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Ensure individual control buttons are visible - FULLSCREEN ONLY */
+  .video-player:fullscreen::-webkit-media-controls-play-button,
+  .video-player:fullscreen::-webkit-media-controls-fullscreen-button,
+  .video-player:fullscreen::-webkit-media-controls-timeline,
+  .video-player:fullscreen::-webkit-media-controls-current-time-display,
+  .video-player:fullscreen::-webkit-media-controls-time-remaining-display,
+  .video-player:fullscreen::-webkit-media-controls-mute-button,
+  .video-player:fullscreen::-webkit-media-controls-volume-slider {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls-play-button,
+  .video-player:-webkit-full-screen::-webkit-media-controls-fullscreen-button,
+  .video-player:-webkit-full-screen::-webkit-media-controls-timeline,
+  .video-player:-webkit-full-screen::-webkit-media-controls-current-time-display,
+  .video-player:-webkit-full-screen::-webkit-media-controls-time-remaining-display,
+  .video-player:-webkit-full-screen::-webkit-media-controls-mute-button,
+  .video-player:-webkit-full-screen::-webkit-media-controls-volume-slider {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  /* Make native controls more prominent in mobile fullscreen */
+  .video-player:fullscreen::-webkit-media-controls-panel,
+  .video-player:-webkit-full-screen::-webkit-media-controls-panel {
     /* Larger touch target for small screens */
     border-radius: 8px;
   }
@@ -162,12 +276,6 @@ video::-webkit-media-controls-enclosure {
     min-height: 150px !important;
     max-height: 90vh;
     /* Prevent video from being too tall in landscape */
-  }
-
-  .fullscreen-button {
-    top: 4px !important;
-    right: 4px !important;
-    /* Smaller positioning in landscape to save space */
   }
 }
 
@@ -285,6 +393,173 @@ video::-webkit-media-controls-enclosure {
 .video-player:-moz-full-screen {
   object-fit: contain;
   background: #000;
+}
+
+/* Force video controls to always be visible in fullscreen on mobile */
+@media (max-width: 768px) {
+  /* Primary controls visibility */
+  .video-player:fullscreen::-webkit-media-controls-panel {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls-panel {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+  }
+
+  /* Force all control elements to be visible */
+  .video-player:fullscreen::-webkit-media-controls {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Ensure fullscreen button in native controls is visible */
+  .video-player:fullscreen::-webkit-media-controls-fullscreen-button,
+  .video-player:-webkit-full-screen::-webkit-media-controls-fullscreen-button {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Force controls to stay visible and prevent auto-hide - Multiple approaches */
+  .video-player:fullscreen {
+    -webkit-media-controls-auto-hide-time: never !important;
+    -webkit-media-controls-auto-hide-delay: 999999s !important;
+  }
+
+  .video-player:-webkit-full-screen {
+    -webkit-media-controls-auto-hide-time: never !important;
+    -webkit-media-controls-auto-hide-delay: 999999s !important;
+  }
+
+  /* Force controls container visibility */
+  .video-player:fullscreen::-webkit-media-controls-enclosure {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    bottom: 0 !important;
+  }
+
+  .video-player:-webkit-full-screen::-webkit-media-controls-enclosure {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    bottom: 0 !important;
+  }
+
+  /* Make native controls more prominent in mobile fullscreen */
+  .video-player:fullscreen::-webkit-media-controls-panel,
+  .video-player:-webkit-full-screen::-webkit-media-controls-panel {
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  /* Ensure control buttons are large enough for touch */
+  .video-player:fullscreen::-webkit-media-controls-play-button,
+  .video-player:fullscreen::-webkit-media-controls-fullscreen-button,
+  .video-player:-webkit-full-screen::-webkit-media-controls-play-button,
+  .video-player:-webkit-full-screen::-webkit-media-controls-fullscreen-button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Ultra-robust fullscreen mobile control visibility strategies */
+video.force-controls-visible::-webkit-media-controls-panel,
+video.fullscreen-mobile-controls-visible::-webkit-media-controls-panel {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  transform: translateY(0) !important;
+}
+
+video.force-controls-visible::-webkit-media-controls,
+video.fullscreen-mobile-controls-visible::-webkit-media-controls {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+}
+
+video.force-controls-visible::-webkit-media-controls-fullscreen-button,
+video.fullscreen-mobile-controls-visible::-webkit-media-controls-fullscreen-button {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
+}
+
+/* Force controls to always show when video has these classes */
+video.force-controls-visible,
+video.fullscreen-mobile-controls-visible {
+  -webkit-media-controls-auto-hide-time: 15s !important;
+  -webkit-media-controls-auto-hide-delay: 0s !important;
+}
+
+/* Emergency last-resort control visibility */
+video[data-controls-forced='true']::-webkit-media-controls-panel {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  bottom: 0 !important;
+  position: absolute !important;
+  z-index: 2147483647 !important;
+}
+
+video[data-controls-forced='true']::-webkit-media-controls-fullscreen-button {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 2147483647 !important;
+}
+
+/* Enhanced mobile fullscreen control visibility */
+@media (max-width: 768px) {
+  video:fullscreen.force-controls-visible,
+  video:fullscreen.fullscreen-mobile-controls-visible,
+  video:fullscreen[data-controls-forced='true'] {
+    -webkit-media-controls-auto-hide-time: 20s !important;
+    -webkit-media-controls-auto-hide-delay: 0s !important;
+  }
+
+  video:fullscreen.force-controls-visible::-webkit-media-controls-panel,
+  video:fullscreen.fullscreen-mobile-controls-visible::-webkit-media-controls-panel,
+  video:fullscreen[data-controls-forced='true']::-webkit-media-controls-panel {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+  }
 }
 
 /* Mobile fullscreen exit hint animation */
