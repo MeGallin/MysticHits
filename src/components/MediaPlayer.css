@@ -9,9 +9,7 @@
   touch-action: manipulation;
   -webkit-user-drag: none;
   -moz-user-drag: none;
-  /* Enhanced mobile drag prevention */
   pointer-events: auto;
-  -webkit-touch-callout: none;
 }
 
 /* Enhanced mobile-specific video player adjustments */
@@ -393,95 +391,6 @@ video::-webkit-media-controls-enclosure {
 .video-player:-moz-full-screen {
   object-fit: contain;
   background: #000;
-}
-
-/* Force video controls to always be visible in fullscreen on mobile */
-@media (max-width: 768px) {
-  /* Primary controls visibility */
-  .video-player:fullscreen::-webkit-media-controls-panel {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(0) !important;
-    transition: none !important;
-  }
-
-  .video-player:-webkit-full-screen::-webkit-media-controls-panel {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(0) !important;
-    transition: none !important;
-  }
-
-  /* Force all control elements to be visible */
-  .video-player:fullscreen::-webkit-media-controls {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    animation: none !important;
-    transition: none !important;
-  }
-
-  .video-player:-webkit-full-screen::-webkit-media-controls {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    animation: none !important;
-    transition: none !important;
-  }
-
-  /* Ensure fullscreen button in native controls is visible */
-  .video-player:fullscreen::-webkit-media-controls-fullscreen-button,
-  .video-player:-webkit-full-screen::-webkit-media-controls-fullscreen-button {
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
-  /* Force controls to stay visible and prevent auto-hide - Multiple approaches */
-  .video-player:fullscreen {
-    -webkit-media-controls-auto-hide-time: never !important;
-    -webkit-media-controls-auto-hide-delay: 999999s !important;
-  }
-
-  .video-player:-webkit-full-screen {
-    -webkit-media-controls-auto-hide-time: never !important;
-    -webkit-media-controls-auto-hide-delay: 999999s !important;
-  }
-
-  /* Force controls container visibility */
-  .video-player:fullscreen::-webkit-media-controls-enclosure {
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    position: relative !important;
-    bottom: 0 !important;
-  }
-
-  .video-player:-webkit-full-screen::-webkit-media-controls-enclosure {
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    position: relative !important;
-    bottom: 0 !important;
-  }
-
-  /* Make native controls more prominent in mobile fullscreen */
-  .video-player:fullscreen::-webkit-media-controls-panel,
-  .video-player:-webkit-full-screen::-webkit-media-controls-panel {
-    background: rgba(0, 0, 0, 0.8) !important;
-    backdrop-filter: blur(10px) !important;
-  }
-
-  /* Ensure control buttons are large enough for touch */
-  .video-player:fullscreen::-webkit-media-controls-play-button,
-  .video-player:fullscreen::-webkit-media-controls-fullscreen-button,
-  .video-player:-webkit-full-screen::-webkit-media-controls-play-button,
-  .video-player:-webkit-full-screen::-webkit-media-controls-fullscreen-button {
-    min-width: 44px !important;
-    min-height: 44px !important;
-  }
 }
 
 /* Ultra-robust fullscreen mobile control visibility strategies */

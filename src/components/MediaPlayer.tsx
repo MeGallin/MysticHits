@@ -54,51 +54,10 @@ const MediaPlayer = forwardRef<
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [deviceOrientation, setDeviceOrientation] = useState('portrait');
   const [showFullscreenHint, setShowFullscreenHint] = useState(false);
-
-  // Enhanced mobile detection and handling
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isMobileDevice =
-        /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-          userAgent,
-        );
-      const isSmallScreen = window.innerWidth <= 768;
-      setIsMobile(isMobileDevice || isSmallScreen);
-    };
-
-    const checkOrientation = () => {
-      if (window.innerHeight > window.innerWidth) {
-        setDeviceOrientation('portrait');
-      } else {
-        setDeviceOrientation('landscape');
-      }
-    };
-
-    checkMobile();
-    checkOrientation();
-
-    const handleResize = () => {
-      checkMobile();
-      checkOrientation();
-    };
-
-    const handleOrientationChange = () => {
-      // Small delay to allow for orientation change to complete
-      setTimeout(checkOrientation, 100);
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleOrientationChange);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleOrientationChange);
-    };
-  }, []);
+  const [deviceOrientation, setDeviceOrientation] = useState<
+    'portrait' | 'landscape'
+  >('portrait');
 
   // Reset error state when src changes
   useEffect(() => {
@@ -178,6 +137,37 @@ const MediaPlayer = forwardRef<
     return false;
   };
 
+  // Mobile device detection utility
+  const isMobile =
+    typeof window !== 'undefined' &&
+    (/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    ) ||
+      window.innerWidth <= 768);
+
+  // Device orientation detection
+  useEffect(() => {
+    const updateOrientation = () => {
+      if (typeof window !== 'undefined') {
+        const orientation =
+          window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+        setDeviceOrientation(orientation);
+      }
+    };
+
+    // Initial orientation check
+    updateOrientation();
+
+    // Listen for orientation changes
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+
+    return () => {
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('orientationchange', updateOrientation);
+    };
+  }, []);
+
   // Fullscreen functionality with enhanced mobile support and controls visibility
   const toggleFullscreen = async () => {
     const videoElement = ref && 'current' in ref ? ref.current : null;
@@ -195,9 +185,6 @@ const MediaPlayer = forwardRef<
           await videoElement.requestFullscreen();
         } else if ((videoElement as any).webkitRequestFullscreen) {
           await (videoElement as any).webkitRequestFullscreen();
-        } else if ((videoElement as any).webkitEnterFullscreen) {
-          // iOS Safari
-          (videoElement as any).webkitEnterFullscreen();
         } else if ((videoElement as any).msRequestFullscreen) {
           await (videoElement as any).msRequestFullscreen();
         }
@@ -309,7 +296,7 @@ const MediaPlayer = forwardRef<
         handleFullscreenChange,
       );
     };
-  }, []);
+  }, [isMobile, ref]);
 
   // Optimized tap-to-show-controls for mobile fullscreen - Performance-optimized to prevent loops
   useEffect(() => {
@@ -602,7 +589,7 @@ const MediaPlayer = forwardRef<
     <div
       className={`media-player-container relative ${
         isVideo ? 'video-mode' : 'audio-mode'
-      } ${isMobile ? 'mobile-device' : 'desktop-device'} ${deviceOrientation}`}
+      }`}
       data-player-type={isVideo ? 'video' : 'audio'} // Add a data attribute for debugging
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
@@ -611,8 +598,6 @@ const MediaPlayer = forwardRef<
         WebkitTouchCallout: 'none',
         WebkitUserSelect: 'none',
         touchAction: 'manipulation',
-        // Enhanced mobile protection
-        WebkitTapHighlightColor: 'transparent',
       }}
     >
       {/* Media Player Element - with specific styling based on media type */}
@@ -628,13 +613,7 @@ const MediaPlayer = forwardRef<
           objectFit: isVideo ? 'contain' : 'none', // Set proper object-fit for video content
           display: isVideo ? 'block' : 'none', // Hide audio element completely, we'll use our custom UI
           height: isVideo ? 'auto' : '0', // Force height for audio mode
-          minHeight: isVideo
-            ? isMobile
-              ? deviceOrientation === 'portrait'
-                ? '180px'
-                : '150px'
-              : '200px'
-            : '0',
+          minHeight: isVideo ? '200px' : '0', // Set minimum height based on content type
           // Enhanced mobile protection
           userSelect: 'none',
           WebkitUserSelect: 'none',
@@ -649,8 +628,8 @@ const MediaPlayer = forwardRef<
             : 'nodownload nofullscreen noremoteplaybook'
         }
         disablePictureInPicture
+        playsInline
         preload="metadata"
-        playsInline // Important for mobile Safari
         onContextMenu={handleContextMenu}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -673,12 +652,9 @@ const MediaPlayer = forwardRef<
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
             userSelect: 'none',
-            // Dynamic clip path based on device and orientation
-            clipPath: isMobile
-              ? deviceOrientation === 'portrait'
-                ? 'polygon(0% 0%, 75% 0%, 75% 25%, 100% 25%, 100% 100%, 0% 100%)'
-                : 'polygon(0% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 100%, 0% 100%)'
-              : 'polygon(0% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 100%, 0% 100%)',
+            // Exclude fullscreen button area (top-right corner)
+            clipPath:
+              'polygon(0% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 100%, 0% 100%)',
           }}
           onContextMenu={handleContextMenu}
           onTouchStart={handleTouchStart}
@@ -710,21 +686,9 @@ const MediaPlayer = forwardRef<
           }
         >
           {isFullscreen ? (
-            <Minimize
-              className={`${
-                isMobile && deviceOrientation === 'portrait'
-                  ? 'h-5 w-5'
-                  : 'h-4 w-4'
-              }`}
-            />
+            <Minimize className="h-4 w-4" />
           ) : (
-            <Maximize
-              className={`${
-                isMobile && deviceOrientation === 'portrait'
-                  ? 'h-5 w-5'
-                  : 'h-4 w-4'
-              }`}
-            />
+            <Maximize className="h-4 w-4" />
           )}
         </button>
       )}
