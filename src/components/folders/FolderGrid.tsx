@@ -4,6 +4,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -80,7 +81,17 @@ const FolderGrid: React.FC<FolderGridProps> = ({
   }, []);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { 
+      activationConstraint: { 
+        distance: 8,
+      } 
+    }),
+    useSensor(TouchSensor, { 
+      activationConstraint: { 
+        delay: 250,
+        tolerance: 5,
+      } 
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
