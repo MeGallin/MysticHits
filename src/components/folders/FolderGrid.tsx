@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  MouseSensor,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -36,6 +37,7 @@ const FolderGrid: React.FC<FolderGridProps> = ({
 }) => {
   const [items, setItems] = useState<Folder[]>(folders);
   const [isSaving, setIsSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
 
   // Debounce timer reference
@@ -44,6 +46,18 @@ const FolderGrid: React.FC<FolderGridProps> = ({
   useEffect(() => {
     setItems(folders);
   }, [folders]);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Debounced save function to avoid too many API calls
   const saveReorderedFolders = useCallback(
@@ -81,16 +95,21 @@ const FolderGrid: React.FC<FolderGridProps> = ({
   }, []);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { 
-      activationConstraint: { 
-        distance: 8,
-      } 
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
     }),
-    useSensor(TouchSensor, { 
-      activationConstraint: { 
-        delay: 250,
-        tolerance: 5,
-      } 
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 300,
+        tolerance: 8,
+      },
+    }),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -122,6 +141,47 @@ const FolderGrid: React.FC<FolderGridProps> = ({
       });
     }
   };
+
+  // Mobile-specific reorder functions
+  const moveItemUp = (index: number) => {
+    if (index > 0) {
+      setItems((prev) => {
+        const newItems = arrayMove(prev, index, index - 1);
+        onReorder(newItems);
+        
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        
+        debounceTimerRef.current = setTimeout(() => {
+          const folderIds = newItems.map((folder) => folder._id);
+          saveReorderedFolders(folderIds);
+        }, 500);
+        
+        return newItems;
+      });
+    }
+  };
+
+  const moveItemDown = (index: number) => {
+    if (index < items.length - 1) {
+      setItems((prev) => {
+        const newItems = arrayMove(prev, index, index + 1);
+        onReorder(newItems);
+        
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+        
+        debounceTimerRef.current = setTimeout(() => {
+          const folderIds = newItems.map((folder) => folder._id);
+          saveReorderedFolders(folderIds);
+        }, 500);
+        
+        return newItems;
+      });
+    }
+  };
   return (
     <>
       {isSaving && (
@@ -149,33 +209,81 @@ const FolderGrid: React.FC<FolderGridProps> = ({
           Saving folder order...
         </div>
       )}{' '}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <SortableContext
-            items={items.map((f) => f._id)}
-            strategy={rectSortingStrategy}
-          >
-            {items.map((folder) => (
-              <div
-                key={folder._id}
-                className="flex flex-col w-full max-w-md mx-auto md:mx-0 mb-4"
-              >
-                <FolderCard
-                  id={folder._id}
-                  folder={folder}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onPlay={onPlay}
-                />
+      
+      {isMobile ? (
+        // Mobile view with up/down buttons
+        <div className="space-y-4">
+          {items.map((folder, index) => (
+            <div key={folder._id} className="relative">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => moveItemUp(index)}
+                    disabled={index === 0}
+                    className={`p-2 rounded-md text-xs font-medium transition-colors ${
+                      index === 0
+                        ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                    aria-label="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => moveItemDown(index)}
+                    disabled={index === items.length - 1}
+                    className={`p-2 rounded-md text-xs font-medium transition-colors ${
+                      index === items.length - 1
+                        ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                    aria-label="Move down"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <FolderCard
+                    folder={folder}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onPlay={onPlay}
+                  />
+                </div>
               </div>
-            ))}
-          </SortableContext>
+            </div>
+          ))}
         </div>
-      </DndContext>
+      ) : (
+        // Desktop view with drag and drop
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SortableContext
+              items={items.map((f) => f._id)}
+              strategy={rectSortingStrategy}
+            >
+              {items.map((folder) => (
+                <div
+                  key={folder._id}
+                  className="flex flex-col w-full max-w-md mx-auto md:mx-0 mb-4"
+                >
+                  <FolderCard
+                    id={folder._id}
+                    folder={folder}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onPlay={onPlay}
+                  />
+                </div>
+              ))}
+            </SortableContext>
+          </div>
+        </DndContext>
+      )}
     </>
   );
 };
